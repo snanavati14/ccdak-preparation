@@ -1,0 +1,2300 @@
+[
+  {
+    "id": "prod-acks-001",
+    "domain": "app-development",
+    "topics": [
+      "acks-durability"
+    ],
+    "type": "single",
+    "stem": "A Kafka 4.x Java producer is created with only `bootstrap.servers`, `key.serializer` and `value.serializer` set. Which `acks` value does it use?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`all`"
+      },
+      {
+        "id": "b",
+        "text": "`1`"
+      },
+      {
+        "id": "c",
+        "text": "`0`"
+      },
+      {
+        "id": "d",
+        "text": "`leader`"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The default for `acks` is `all` (equivalent to `-1`): the leader waits for the full set of in-sync replicas before acknowledging.\n\n- `1` was the default before Kafka 3.0; it is no longer.\n- `0` means no acknowledgement at all and is never a default.\n- `leader` is not a valid value; valid values are `all`, `-1`, `0` and `1`.",
+    "references": [
+      {
+        "title": "Producer configs: acks",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_acks",
+        "kind": "official"
+      },
+      {
+        "title": "KafkaProducer javadoc (class overview)",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/producer/KafkaProducer.html",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original",
+    "kafkaVersionNote": "The `acks` default changed from `1` to `all` in Kafka 3.0, together with `enable.idempotence=true`."
+  },
+  {
+    "id": "prod-acks-002",
+    "domain": "app-development",
+    "topics": [
+      "acks-durability",
+      "replication-isr"
+    ],
+    "type": "single",
+    "stem": "Topic `payments` has `replication.factor=3` and `min.insync.replicas=2`. Two of the three brokers hosting it go down, so the ISR is just the leader. A producer with `acks=all` and default retry settings keeps sending. What happens?",
+    "options": [
+      {
+        "id": "a",
+        "text": "The leader rejects the writes with `NotEnoughReplicasException`; the producer retries until `delivery.timeout.ms` expires and then reports failure"
+      },
+      {
+        "id": "b",
+        "text": "The leader accepts the writes and acknowledges them, because the leader itself is still in the ISR"
+      },
+      {
+        "id": "c",
+        "text": "The producer silently downgrades to `acks=1` until the ISR recovers"
+      },
+      {
+        "id": "d",
+        "text": "The producer fails at construction time with a `ConfigException` because `min.insync.replicas` cannot be met"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "With `acks=all`, if the ISR has fewer than `min.insync.replicas` members the broker raises `NotEnoughReplicas` (or `NotEnoughReplicasAfterAppend`). `NotEnoughReplicasException` is a retriable exception, so the producer retries (default `retries=2147483647`) until `delivery.timeout.ms` (default 120000 ms) runs out, then the send fails.\n\n- The leader alone does not satisfy `min.insync.replicas=2`, so the write is not acknowledged.\n- The producer never changes its own `acks` setting.\n- `min.insync.replicas` is a topic/broker setting checked at write time, not a producer config validated at construction.",
+    "references": [
+      {
+        "title": "Topic configs: min.insync.replicas",
+        "url": "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_min.insync.replicas",
+        "kind": "official"
+      },
+      {
+        "title": "Callback javadoc: retriable vs non-retriable exceptions",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/producer/Callback.html#onCompletion%28org.apache.kafka.clients.producer.RecordMetadata,java.lang.Exception%29",
+        "kind": "official"
+      },
+      {
+        "title": "Producer configs: delivery.timeout.ms",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_delivery.timeout.ms",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "prod-acks-003",
+    "domain": "app-development",
+    "topics": [
+      "acks-durability"
+    ],
+    "type": "single",
+    "stem": "Topic `orders` has `replication.factor=3` and `min.insync.replicas=2`. One follower's broker crashes and drops out of the ISR. What happens to new `acks=all` writes?",
+    "options": [
+      {
+        "id": "a",
+        "text": "They succeed once the two remaining in-sync replicas have the record"
+      },
+      {
+        "id": "b",
+        "text": "They fail with `NotEnoughReplicasException` until the third replica is back"
+      },
+      {
+        "id": "c",
+        "text": "They succeed as soon as the leader has written the record locally"
+      },
+      {
+        "id": "d",
+        "text": "They block in `send()` for up to `max.block.ms` waiting for the third replica"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`acks=all` waits for every member of the current ISR. With one follower out, the ISR has two members, which meets `min.insync.replicas=2`, so writes succeed after both have the record.\n\n- `NotEnoughReplicasException` only appears when the ISR drops below `min.insync.replicas`.\n- Acknowledging after the leader's local write alone is `acks=1` behaviour.\n- `max.block.ms` bounds metadata waits and buffer allocation, not replication.",
+    "references": [
+      {
+        "title": "Topic configs: min.insync.replicas",
+        "url": "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_min.insync.replicas",
+        "kind": "official"
+      },
+      {
+        "title": "Design: availability and durability guarantees",
+        "url": "https://kafka.apache.org/44/design/design/#availability-and-durability-guarantees",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "prod-acks-004",
+    "domain": "app-development",
+    "topics": [
+      "acks-durability",
+      "replication-isr"
+    ],
+    "type": "single",
+    "stem": "A topic has `replication.factor=3` and `min.insync.replicas=2`, and all three replicas are currently in the ISR. How many replicas must have a record before an `acks=all` write is acknowledged?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Three: every replica currently in the ISR"
+      },
+      {
+        "id": "b",
+        "text": "Two: exactly `min.insync.replicas`"
+      },
+      {
+        "id": "c",
+        "text": "One: the leader, with the followers catching up afterwards"
+      },
+      {
+        "id": "d",
+        "text": "A majority of all assigned replicas, whether or not they are in sync"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The docs are explicit: with `acks=all`, every in-sync replica must acknowledge the write. If all three are in the ISR, all three must have it, even though `min.insync.replicas` is only 2. `min.insync.replicas` is a floor on the ISR size for accepting writes, not the number of acks to wait for.\n\n- Two would only be enough if the ISR itself had shrunk to two.\n- Leader-only acknowledgement is `acks=1`.\n- Kafka does not use majority quorums over assigned replicas; it uses the ISR.",
+    "references": [
+      {
+        "title": "Topic configs: min.insync.replicas",
+        "url": "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_min.insync.replicas",
+        "kind": "official"
+      },
+      {
+        "title": "Design: replicated logs and ISR",
+        "url": "https://kafka.apache.org/44/design/design/#replicated-logs-quorums-isrs-and-state-machines-oh-my",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "prod-acks-005",
+    "domain": "app-development",
+    "topics": [
+      "acks-durability"
+    ],
+    "type": "multi",
+    "stem": "Which statements about a producer configured with `acks=0` are true? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "The `retries` setting has no practical effect, because the client generally does not learn about failures"
+      },
+      {
+        "id": "b",
+        "text": "The offset in the returned `RecordMetadata` is always `-1`"
+      },
+      {
+        "id": "c",
+        "text": "The leader writes the record to its log and responds without waiting for followers"
+      },
+      {
+        "id": "d",
+        "text": "The default idempotent producer stays enabled, giving exactly-once writes with no acknowledgement cost"
+      },
+      {
+        "id": "e",
+        "text": "The leader waits for the full ISR before the record is considered sent"
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "With `acks=0` the record is added to the socket buffer and considered sent. The docs say `retries` will not take effect because the client won't generally know of failures, and the offset returned for each record is always `-1`.\n\n- Writing locally and responding without followers describes `acks=1`.\n- Idempotence requires `acks=all`; with `acks=0` and `enable.idempotence` left unset, idempotence is disabled (and setting it explicitly to `true` would throw a `ConfigException`).\n- Waiting for the full ISR is `acks=all`.",
+    "references": [
+      {
+        "title": "Producer configs: acks",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_acks",
+        "kind": "official"
+      },
+      {
+        "title": "KafkaProducer.send() javadoc",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/producer/KafkaProducer.html#send%28org.apache.kafka.clients.producer.ProducerRecord,org.apache.kafka.clients.producer.Callback%29",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "prod-acks-006",
+    "domain": "app-development",
+    "topics": [
+      "acks-durability",
+      "replication-isr"
+    ],
+    "type": "single",
+    "stem": "A producer uses `acks=1`. The leader appends a record, acknowledges it, and crashes before any follower has fetched it. A follower that was in the ISR becomes the new leader. What happens to the acknowledged record?",
+    "options": [
+      {
+        "id": "a",
+        "text": "It is lost: the new leader never had it, and the producer already treated it as successful"
+      },
+      {
+        "id": "b",
+        "text": "It survives, because `acks=1` waits for at least one follower"
+      },
+      {
+        "id": "c",
+        "text": "The producer detects the leader change and resends it automatically"
+      },
+      {
+        "id": "d",
+        "text": "It is copied to the new leader when the old leader restarts"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The `acks=1` docs describe exactly this case: if the leader fails immediately after acknowledging but before followers replicate, the record is lost. The producer got a success, so it has no reason to retry.\n\n- `acks=1` waits only for the leader's own write.\n- Retries happen only for failed or timed-out requests, not for acknowledged ones.\n- When the old leader returns it follows the new leader and its log is brought in line with the new leader's; it does not push its extra records to the new leader.",
+    "references": [
+      {
+        "title": "Producer configs: acks",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_acks",
+        "kind": "official"
+      },
+      {
+        "title": "Design: message delivery semantics",
+        "url": "https://kafka.apache.org/44/design/design/#message-delivery-semantics",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "prod-acks-007",
+    "domain": "app-development",
+    "topics": [
+      "acks-durability"
+    ],
+    "type": "single",
+    "stem": "What is the default value of `min.insync.replicas` for a topic when neither the topic nor the cluster overrides it?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`1`"
+      },
+      {
+        "id": "b",
+        "text": "`2`"
+      },
+      {
+        "id": "c",
+        "text": "Equal to the topic's `replication.factor`"
+      },
+      {
+        "id": "d",
+        "text": "A majority of `replication.factor`"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "Both the topic config and the broker default are `1`. With `min.insync.replicas=1`, an `acks=all` write can be acknowledged when the ISR is only the leader, so a single broker failure can still lose acknowledged data. The common production pattern is `replication.factor=3` with `min.insync.replicas=2`, but you must set it yourself.",
+    "references": [
+      {
+        "title": "Topic configs: min.insync.replicas",
+        "url": "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_min.insync.replicas",
+        "kind": "official"
+      },
+      {
+        "title": "Broker configs: min.insync.replicas",
+        "url": "https://kafka.apache.org/44/configuration/broker-configs/#brokerconfigs_min.insync.replicas",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "prod-acks-008",
+    "domain": "app-development",
+    "topics": [
+      "acks-durability",
+      "replication-isr"
+    ],
+    "type": "multi",
+    "stem": "A topic has `replication.factor=3`. The team wants acknowledged writes never to be lost when one broker fails, and wants producers to keep writing while one broker is down. Which settings meet both goals? (Choose three.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "`acks=all` on the producer"
+      },
+      {
+        "id": "b",
+        "text": "`min.insync.replicas=2` on the topic"
+      },
+      {
+        "id": "c",
+        "text": "`unclean.leader.election.enable=false` on the topic (the default)"
+      },
+      {
+        "id": "d",
+        "text": "`min.insync.replicas=3` on the topic"
+      },
+      {
+        "id": "e",
+        "text": "`acks=1` on the producer"
+      },
+      {
+        "id": "f",
+        "text": "`replication.factor=2` on the topic"
+      }
+    ],
+    "correct": [
+      "a",
+      "b",
+      "c"
+    ],
+    "explanation": "`acks=all` plus `min.insync.replicas=2` means each acknowledged write is on at least two replicas, and the partition still accepts writes with one broker down. Keeping unclean leader election disabled (default `false`) stops an out-of-sync replica from becoming leader and discarding committed records.\n\n- `min.insync.replicas=3` would reject `acks=all` writes as soon as one broker is down, failing the availability goal.\n- `acks=1` can lose a record if the leader dies before followers copy it.\n- Lowering the replication factor to 2 reduces durability.",
+    "references": [
+      {
+        "title": "Design: availability and durability guarantees",
+        "url": "https://kafka.apache.org/44/design/design/#availability-and-durability-guarantees",
+        "kind": "official"
+      },
+      {
+        "title": "Topic configs: min.insync.replicas",
+        "url": "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_min.insync.replicas",
+        "kind": "official"
+      },
+      {
+        "title": "Topic configs: unclean.leader.election.enable",
+        "url": "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_unclean.leader.election.enable",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "prod-acks-009",
+    "domain": "app-development",
+    "topics": [
+      "acks-durability",
+      "idempotence-retries"
+    ],
+    "type": "single",
+    "stem": "A producer callback receives `NotEnoughReplicasAfterAppendException`. What does this tell you?",
+    "options": [
+      {
+        "id": "a",
+        "text": "The record was already appended to the leader's log when the ISR shortfall was detected, so a retry may write a duplicate"
+      },
+      {
+        "id": "b",
+        "text": "The broker rejected the record before writing anything, so a retry is always safe"
+      },
+      {
+        "id": "c",
+        "text": "The record exceeded `max.message.bytes` after compression"
+      },
+      {
+        "id": "d",
+        "text": "The producer's `max.in.flight.requests.per.connection` is too high for idempotence"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The javadoc says this exception is raised when the low ISR size is discovered *after* the message was already appended to the log, and that producer retries will cause duplicates. It is a retriable exception, like `NotEnoughReplicasException`.\n\n- Rejection before writing is `NotEnoughReplicasException`.\n- Oversized batches produce `RecordTooLargeException`.\n- An invalid `max.in.flight.requests.per.connection` is a configuration error at construction, not a send error.\n\nWith the idempotent producer, the broker uses the producer ID and sequence numbers to drop a resent batch it already has.",
+    "references": [
+      {
+        "title": "NotEnoughReplicasAfterAppendException javadoc",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/common/errors/NotEnoughReplicasAfterAppendException.html",
+        "kind": "official"
+      },
+      {
+        "title": "Topic configs: min.insync.replicas",
+        "url": "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_min.insync.replicas",
+        "kind": "official"
+      },
+      {
+        "title": "Design: message delivery semantics",
+        "url": "https://kafka.apache.org/44/design/design/#message-delivery-semantics",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "prod-acks-010",
+    "domain": "app-development",
+    "topics": [
+      "acks-durability",
+      "replication-isr"
+    ],
+    "type": "single",
+    "stem": "In Kafka 4.4, topic `audit` has `replication.factor=3` and `min.insync.replicas=2`. Both followers fall out of the ISR. A producer with `acks=1` keeps sending. According to the current `min.insync.replicas` documentation, what happens?",
+    "options": [
+      {
+        "id": "a",
+        "text": "The leader acknowledges the writes, but consumers cannot read them until the ISR is back to at least `min.insync.replicas` members"
+      },
+      {
+        "id": "b",
+        "text": "The leader rejects the writes with `NotEnoughReplicasException`"
+      },
+      {
+        "id": "c",
+        "text": "The leader acknowledges the writes and consumers can read them immediately"
+      },
+      {
+        "id": "d",
+        "text": "The producer automatically switches to `acks=all` and blocks"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The ISR-size check that raises `NotEnoughReplicas` applies when the producer uses `acks=all`. With `acks=1` the leader still acknowledges after its local write. But the 4.4 docs for `min.insync.replicas` say that, regardless of the `acks` setting, messages are not visible to consumers until they are replicated to all in-sync replicas and the `min.insync.replicas` condition is met. So the records are acknowledged but not yet readable.\n\n- Rejection with `NotEnoughReplicasException` only happens for `acks=all`.\n- Immediate visibility was the older behaviour, before the strict min-ISR rule.\n- The producer never changes its `acks` setting by itself.",
+    "references": [
+      {
+        "title": "Topic configs: min.insync.replicas",
+        "url": "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_min.insync.replicas",
+        "kind": "official"
+      },
+      {
+        "title": "Eligible Leader Replicas overview",
+        "url": "https://kafka.apache.org/44/operations/eligible-leader-replicas/#overview",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "unsure",
+    "source": "original",
+    "kafkaVersionNote": "The 'strict min ISR' rule (the high watermark cannot advance while the ISR is smaller than `min.insync.replicas`) came with KIP-966 in Kafka 4.x. In 3.x, `acks=1` writes became visible once the shrunken ISR had them. The docs do not say exactly which release made the rule unconditional, and the ELR page says the semantics of `min.insync.replicas` change when ELR is enabled (default on new clusters from 4.1)."
+  },
+  {
+    "id": "prod-acks-011",
+    "domain": "app-development",
+    "topics": [
+      "acks-durability"
+    ],
+    "type": "single",
+    "stem": "A colleague sets `acks=-1` in a producer config. What is the effect?",
+    "options": [
+      {
+        "id": "a",
+        "text": "It is the same as `acks=all`: the leader waits for the full current ISR"
+      },
+      {
+        "id": "b",
+        "text": "It disables acknowledgements, like `acks=0`"
+      },
+      {
+        "id": "c",
+        "text": "It is rejected with a `ConfigException` because negative values are invalid"
+      },
+      {
+        "id": "d",
+        "text": "The leader waits for every assigned replica, including replicas that are offline"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`-1` is a valid value and the docs state that `acks=all` is equivalent to `acks=-1`.\n\n- Disabling acknowledgements is `acks=0`.\n- Valid values are `all`, `-1`, `0` and `1`, so `-1` is accepted.\n- The design docs point out that acknowledgement by 'all' means all *current in-sync* replicas, not the full assigned replica set.",
+    "references": [
+      {
+        "title": "Producer configs: acks",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_acks",
+        "kind": "official"
+      },
+      {
+        "title": "Design: availability and durability guarantees",
+        "url": "https://kafka.apache.org/44/design/design/#availability-and-durability-guarantees",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "prod-acks-012",
+    "domain": "app-development",
+    "topics": [
+      "acks-durability",
+      "replication-isr"
+    ],
+    "type": "single",
+    "stem": "A topic has `replication.factor=2` and the default `min.insync.replicas`. One replica fails, leaving only the leader in the ISR. Producers use `acks=all`. Which statement is correct?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Writes keep succeeding, but they now live on one replica and are lost if that broker also fails"
+      },
+      {
+        "id": "b",
+        "text": "Writes fail with `NotEnoughReplicasException` until the second replica returns"
+      },
+      {
+        "id": "c",
+        "text": "Writes succeed and are guaranteed durable, because `acks=all` always means two replicas"
+      },
+      {
+        "id": "d",
+        "text": "Writes are refused because `replication.factor=2` does not support `acks=all`"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "With the default `min.insync.replicas=1`, a one-member ISR still satisfies the minimum, so `acks=all` writes succeed once the leader has them. The design docs use this example: such writes could be lost if the remaining replica also fails. Raising `min.insync.replicas` trades that availability for durability.\n\n- `NotEnoughReplicasException` needs the ISR below `min.insync.replicas`, which is 1 here.\n- `acks=all` waits for the current ISR, which may be just the leader.\n- `acks=all` works with any replication factor.",
+    "references": [
+      {
+        "title": "Design: availability and durability guarantees",
+        "url": "https://kafka.apache.org/44/design/design/#availability-and-durability-guarantees",
+        "kind": "official"
+      },
+      {
+        "title": "Topic configs: min.insync.replicas",
+        "url": "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_min.insync.replicas",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "prod-acks-013",
+    "domain": "app-development",
+    "topics": [
+      "acks-durability",
+      "replication-isr"
+    ],
+    "type": "multi",
+    "stem": "A topic has `replication.factor=3`. Two of its replicas are offline, so the ISR is only the leader. For which topic settings will an `acks=all` producer get `NotEnoughReplicasException`? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "`min.insync.replicas=2`"
+      },
+      {
+        "id": "b",
+        "text": "`min.insync.replicas=3`"
+      },
+      {
+        "id": "c",
+        "text": "`min.insync.replicas=1`"
+      },
+      {
+        "id": "d",
+        "text": "Any value, because `acks=all` needs every assigned replica"
+      },
+      {
+        "id": "e",
+        "text": "Any value, as long as `unclean.leader.election.enable=false`"
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "`NotEnoughReplicas` is raised when `acks=all` and the ISR has fewer than `min.insync.replicas` members. An ISR of 1 is below 2 and 3, so both reject writes. With `min.insync.replicas=1` the leader alone is enough and writes succeed.\n\n- `acks=all` waits for the current ISR, not all assigned replicas.\n- `unclean.leader.election.enable` controls which replica can become leader; it does not decide whether writes are accepted.",
+    "references": [
+      {
+        "title": "Topic configs: min.insync.replicas",
+        "url": "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_min.insync.replicas",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "prod-acks-014",
+    "domain": "app-development",
+    "topics": [
+      "acks-durability"
+    ],
+    "type": "multi",
+    "stem": "Where can `min.insync.replicas` be configured so that it affects `acks=all` producers? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "As a topic-level config on the topic being written to"
+      },
+      {
+        "id": "b",
+        "text": "As a cluster-wide or broker default, used by topics that don't override it"
+      },
+      {
+        "id": "c",
+        "text": "As a producer config, alongside `acks`"
+      },
+      {
+        "id": "d",
+        "text": "As a consumer config, to control when records become readable"
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "`min.insync.replicas` exists as a topic config whose server default property is the broker config of the same name. The topic value wins when set. The producer only chooses `acks`; it cannot set `min.insync.replicas`, and there is no consumer config of that name.\n\nWith Eligible Leader Replicas enabled (default on new clusters from 4.1), the broker-level value is removed and the default should be set at the cluster level instead.",
+    "references": [
+      {
+        "title": "Topic configs: min.insync.replicas",
+        "url": "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_min.insync.replicas",
+        "kind": "official"
+      },
+      {
+        "title": "Broker configs: min.insync.replicas",
+        "url": "https://kafka.apache.org/44/configuration/broker-configs/#brokerconfigs_min.insync.replicas",
+        "kind": "official"
+      },
+      {
+        "title": "Eligible Leader Replicas overview",
+        "url": "https://kafka.apache.org/44/operations/eligible-leader-replicas/#overview",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "prod-idem-001",
+    "domain": "app-development",
+    "topics": [
+      "idempotence-retries"
+    ],
+    "type": "single",
+    "stem": "In Kafka 4.x, what is the default for `enable.idempotence` on the Java producer?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`true`, as long as no conflicting configs are set"
+      },
+      {
+        "id": "b",
+        "text": "`false`; idempotence must be switched on"
+      },
+      {
+        "id": "c",
+        "text": "`true` only when `transactional.id` is set"
+      },
+      {
+        "id": "d",
+        "text": "`true` only when `max.in.flight.requests.per.connection=1`"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The default is `true`. The docs add that idempotence is enabled by default if no conflicting configs are set (`acks` other than `all`, `retries=0`, and so on).\n\n- `false` was the default before Kafka 3.0.\n- `transactional.id` implies idempotence, but idempotence does not need it.\n- Idempotence allows `max.in.flight.requests.per.connection` up to 5 and keeps ordering at any allowed value.",
+    "references": [
+      {
+        "title": "Producer configs: enable.idempotence",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_enable.idempotence",
+        "kind": "official"
+      },
+      {
+        "title": "KafkaProducer javadoc (class overview)",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/producer/KafkaProducer.html",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original",
+    "kafkaVersionNote": "Default changed from `false` to `true` in Kafka 3.0."
+  },
+  {
+    "id": "prod-idem-002",
+    "domain": "app-development",
+    "topics": [
+      "idempotence-retries",
+      "acks-durability"
+    ],
+    "type": "single",
+    "stem": "A Kafka 4.x producer sets `acks=1` and does not set `enable.idempotence`. What happens when the producer is created?",
+    "options": [
+      {
+        "id": "a",
+        "text": "It starts normally with idempotence disabled"
+      },
+      {
+        "id": "b",
+        "text": "It throws a `ConfigException` because idempotence requires `acks=all`"
+      },
+      {
+        "id": "c",
+        "text": "It starts with idempotence enabled and overrides `acks` to `all`"
+      },
+      {
+        "id": "d",
+        "text": "It starts with idempotence enabled and `acks=1`"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The `acks` and `enable.idempotence` docs both say: if conflicting configs are set and idempotence is not explicitly enabled, idempotence is disabled. `acks=1` conflicts, so the producer quietly turns idempotence off.\n\n- A `ConfigException` only happens if `enable.idempotence=true` is set explicitly alongside the conflict.\n- The client never rewrites your explicit `acks`.\n- Idempotence cannot run with `acks=1`.",
+    "references": [
+      {
+        "title": "Producer configs: enable.idempotence",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_enable.idempotence",
+        "kind": "official"
+      },
+      {
+        "title": "Producer configs: acks",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_acks",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "prod-idem-003",
+    "domain": "app-development",
+    "topics": [
+      "idempotence-retries"
+    ],
+    "type": "single",
+    "stem": "A producer is configured with `enable.idempotence=true` and `acks=1`. What happens?",
+    "options": [
+      {
+        "id": "a",
+        "text": "The constructor throws a `ConfigException`"
+      },
+      {
+        "id": "b",
+        "text": "Idempotence is silently disabled and the producer runs with `acks=1`"
+      },
+      {
+        "id": "c",
+        "text": "`acks` is silently raised to `all`"
+      },
+      {
+        "id": "d",
+        "text": "The producer starts, and every send fails with `OutOfOrderSequenceException`"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The `enable.idempotence` docs: if idempotence is explicitly enabled and conflicting configurations are set, a `ConfigException` is thrown. Idempotence needs `acks=all`.\n\n- The silent fallback only applies when `enable.idempotence` is left unset.\n- The client does not rewrite an explicit `acks`.\n- The error is caught at configuration time, not at send time.",
+    "references": [
+      {
+        "title": "Producer configs: enable.idempotence",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_enable.idempotence",
+        "kind": "official"
+      },
+      {
+        "title": "Producer configs: acks",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_acks",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "prod-idem-004",
+    "domain": "app-development",
+    "topics": [
+      "idempotence-retries",
+      "partitioning-ordering"
+    ],
+    "type": "single",
+    "stem": "A Kafka 4.x Java producer sets `max.in.flight.requests.per.connection=10` and leaves `enable.idempotence` and `acks` unset. What happens when it is created?",
+    "options": [
+      {
+        "id": "a",
+        "text": "The constructor throws a `ConfigException`, because the default idempotent producer allows at most 5 in-flight requests"
+      },
+      {
+        "id": "b",
+        "text": "Idempotence is silently disabled and the producer runs with 10 in-flight requests"
+      },
+      {
+        "id": "c",
+        "text": "`max.in.flight.requests.per.connection` is silently capped at 5"
+      },
+      {
+        "id": "d",
+        "text": "The producer starts, but ordering is only guaranteed for the first 5 requests"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The Kafka 4.0 upgrade notes say `enable.idempotence` no longer falls back automatically when `max.in.flight.requests.per.connection` exceeds 5. Since idempotence is on by default, a value above 5 is now a conflict that raises a `ConfigException`, even though idempotence was never set explicitly. To run with more than 5 in flight you must set `enable.idempotence=false` yourself (and accept possible reordering on retries).\n\n- The silent fallback still applies to `acks` other than `all` and to `retries=0`, but not to this setting in 4.x.\n- The client does not cap the value.\n- The limit exists because the broker keeps state for at most 5 batches per producer.",
+    "references": [
+      {
+        "title": "Upgrade notes: notable changes in 4.0.0",
+        "url": "https://kafka.apache.org/44/getting-started/upgrade/#notable-changes-in-400",
+        "kind": "official"
+      },
+      {
+        "title": "Producer configs: max.in.flight.requests.per.connection",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_max.in.flight.requests.per.connection",
+        "kind": "official"
+      },
+      {
+        "title": "Producer configs: enable.idempotence",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_enable.idempotence",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "unsure",
+    "source": "original",
+    "kafkaVersionNote": "Changed in Kafka 4.0. In 3.x clients, leaving `enable.idempotence` unset with `max.in.flight.requests.per.connection` above 5 disabled idempotence silently. The general sentence in the `enable.idempotence` docs ('If conflicting configurations are set and idempotence is not explicitly enabled, idempotence is disabled') still reads as if the fallback applies, so the docs are not fully consistent; the 4.0 upgrade note is the specific statement."
+  },
+  {
+    "id": "prod-idem-005",
+    "domain": "app-development",
+    "topics": [
+      "idempotence-retries"
+    ],
+    "type": "multi",
+    "stem": "Which settings are required for the idempotent producer to be enabled? (Choose three.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "`acks=all`"
+      },
+      {
+        "id": "b",
+        "text": "`retries` greater than 0"
+      },
+      {
+        "id": "c",
+        "text": "`max.in.flight.requests.per.connection` of 5 or less"
+      },
+      {
+        "id": "d",
+        "text": "`min.insync.replicas` of at least 2 on the topic"
+      },
+      {
+        "id": "e",
+        "text": "A `transactional.id`"
+      },
+      {
+        "id": "f",
+        "text": "`linger.ms` greater than 0"
+      }
+    ],
+    "correct": [
+      "a",
+      "b",
+      "c"
+    ],
+    "explanation": "The `enable.idempotence` docs list exactly three requirements: `max.in.flight.requests.per.connection` ≤ 5, `retries` > 0 and `acks=all`. All three hold by default (`5`, `2147483647`, `all`).\n\n- `min.insync.replicas` is a topic durability setting; idempotence does not require it.\n- `transactional.id` enables transactions (and implies idempotence) but isn't needed for idempotence.\n- `linger.ms` affects batching only.",
+    "references": [
+      {
+        "title": "Producer configs: enable.idempotence",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_enable.idempotence",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "prod-idem-006",
+    "domain": "app-development",
+    "topics": [
+      "idempotence-retries"
+    ],
+    "type": "single",
+    "stem": "What is the default value of the producer's `retries` setting, and how do the docs recommend controlling retry behaviour?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`2147483647`; leave it unset and bound retrying with `delivery.timeout.ms`"
+      },
+      {
+        "id": "b",
+        "text": "`0`; set it above zero to enable retries"
+      },
+      {
+        "id": "c",
+        "text": "`3`; raise it for unreliable networks"
+      },
+      {
+        "id": "d",
+        "text": "`2147483647`; lower it to bound how long a send can take"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`retries` defaults to `Integer.MAX_VALUE` (2147483647). The docs say users should generally leave it unset and use `delivery.timeout.ms` to control retry behaviour: requests are retried until they succeed, hit a non-transient error, or `delivery.timeout.ms` expires.\n\n- `0` disables retries and, unless idempotence is explicitly set, also disables idempotence.\n- `3` is not, and has not recently been, the default.\n- Lowering `retries` bounds the count, not the time; the recommended time bound is `delivery.timeout.ms`.",
+    "references": [
+      {
+        "title": "Producer configs: retries",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_retries",
+        "kind": "official"
+      },
+      {
+        "title": "Producer configs: delivery.timeout.ms",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_delivery.timeout.ms",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "prod-idem-007",
+    "domain": "app-development",
+    "topics": [
+      "idempotence-retries",
+      "acks-durability"
+    ],
+    "type": "single",
+    "stem": "A producer runs with default `retries`, `delivery.timeout.ms`, `request.timeout.ms` and `retry.backoff.ms`. The partition it writes to keeps answering `NotEnoughReplicasException`. When does the producer stop retrying and report the failure?",
+    "options": [
+      {
+        "id": "a",
+        "text": "When `delivery.timeout.ms` (120000 ms by default) has passed since `send()` returned"
+      },
+      {
+        "id": "b",
+        "text": "After `request.timeout.ms` (30000 ms by default)"
+      },
+      {
+        "id": "c",
+        "text": "After 2147483647 attempts"
+      },
+      {
+        "id": "d",
+        "text": "Never; the record stays buffered until the ISR recovers"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`delivery.timeout.ms` is the upper bound on reporting success or failure after `send()` returns, and it includes the time allowed for retriable failures. With `retries` at its huge default, the deadline is what ends retrying, after 2 minutes by default.\n\n- `request.timeout.ms` bounds a single request's wait for a response; a timeout there leads to a retry if time remains.\n- In practice the attempt count is never reached first.\n- Records do not wait forever; they expire when the delivery deadline is reached.",
+    "references": [
+      {
+        "title": "Producer configs: delivery.timeout.ms",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_delivery.timeout.ms",
+        "kind": "official"
+      },
+      {
+        "title": "Producer configs: retries",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_retries",
+        "kind": "official"
+      },
+      {
+        "title": "Producer configs: request.timeout.ms",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_request.timeout.ms",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "prod-idem-008",
+    "domain": "app-development",
+    "topics": [
+      "idempotence-retries",
+      "batching-compression"
+    ],
+    "type": "single",
+    "stem": "A Kafka 4.x producer explicitly sets `request.timeout.ms=30000` and `delivery.timeout.ms=30000`, and leaves `linger.ms` at its default. What happens when it is constructed?",
+    "options": [
+      {
+        "id": "a",
+        "text": "It throws a `ConfigException`, because `delivery.timeout.ms` must be at least `linger.ms` + `request.timeout.ms` (30005 ms here)"
+      },
+      {
+        "id": "b",
+        "text": "It starts normally, because `delivery.timeout.ms` equals `request.timeout.ms`"
+      },
+      {
+        "id": "c",
+        "text": "It starts and silently raises `delivery.timeout.ms` to 120000"
+      },
+      {
+        "id": "d",
+        "text": "It starts and silently lowers `request.timeout.ms` to 29995"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The docs say `delivery.timeout.ms` should be greater than or equal to `request.timeout.ms` + `linger.ms`. The default `linger.ms` is now 5, so the minimum here is 30005 ms. When the user explicitly sets a smaller `delivery.timeout.ms`, the Java client rejects it with a `ConfigException`; if `delivery.timeout.ms` were left at its default and too small, the client would raise it to the sum and log a warning instead.\n\n- Equal to `request.timeout.ms` alone isn't enough once `linger.ms` is non-zero.\n- The client doesn't reset an explicit value to 120000 or change `request.timeout.ms`.",
+    "references": [
+      {
+        "title": "Producer configs: delivery.timeout.ms",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_delivery.timeout.ms",
+        "kind": "official"
+      },
+      {
+        "title": "Producer configs: linger.ms",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_linger.ms",
+        "kind": "official"
+      },
+      {
+        "title": "Upgrade notes: notable changes in 4.0.0",
+        "url": "https://kafka.apache.org/44/getting-started/upgrade/#notable-changes-in-400",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "unsure",
+    "source": "original",
+    "kafkaVersionNote": "Before Kafka 4.0, `linger.ms` defaulted to 0, so this exact config (30000/30000) was valid. The docs only say the value 'should be' at least the sum; the `ConfigException` for an explicit smaller value comes from the Java client's constructor, not from a sentence in the config reference."
+  },
+  {
+    "id": "prod-idem-009",
+    "domain": "app-development",
+    "topics": [
+      "idempotence-retries"
+    ],
+    "type": "single",
+    "stem": "What does the producer's `request.timeout.ms` control?",
+    "options": [
+      {
+        "id": "a",
+        "text": "How long the client waits for a response to a single request before resending it (if retries remain) or failing it"
+      },
+      {
+        "id": "b",
+        "text": "The total time from `send()` returning until success or failure is reported"
+      },
+      {
+        "id": "c",
+        "text": "How long `send()` may block waiting for metadata or buffer space"
+      },
+      {
+        "id": "d",
+        "text": "How long the producer waits between two retries of a failed request"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`request.timeout.ms` (default 30000) is the maximum time to wait for the response to one request. If it elapses, the client resends if needed or fails the request when retries are exhausted.\n\n- The overall bound after `send()` is `delivery.timeout.ms`.\n- Blocking inside `send()` is bounded by `max.block.ms`.\n- The wait between retries is `retry.backoff.ms`, growing up to `retry.backoff.max.ms`.",
+    "references": [
+      {
+        "title": "Producer configs: request.timeout.ms",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_request.timeout.ms",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "prod-idem-010",
+    "domain": "app-development",
+    "topics": [
+      "idempotence-retries"
+    ],
+    "type": "single",
+    "stem": "A producer uses default `retry.backoff.ms` and `retry.backoff.max.ms`. A request to a partition keeps failing with a retriable error. How long does the producer wait between attempts?",
+    "options": [
+      {
+        "id": "a",
+        "text": "It starts around 100 ms and grows exponentially per failure up to about 1000 ms, with ±20% random jitter"
+      },
+      {
+        "id": "b",
+        "text": "Exactly 100 ms before every attempt"
+      },
+      {
+        "id": "c",
+        "text": "Exactly 1000 ms before every attempt"
+      },
+      {
+        "id": "d",
+        "text": "It retries immediately, with no backoff, until `delivery.timeout.ms`"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`retry.backoff.ms` (default 100) is the initial backoff and grows exponentially for each failed request, up to `retry.backoff.max.ms` (default 1000). A jitter factor of 0.2 puts each wait between 20% below and 20% above the computed value, so clients don't retry in lockstep.\n\n- A fixed 100 ms was the old behaviour before exponential backoff.\n- A constant 1000 ms only happens if `retry.backoff.ms` is set higher than `retry.backoff.max.ms`.\n- The backoff exists to avoid tight retry loops.",
+    "references": [
+      {
+        "title": "Producer configs: retry.backoff.ms",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_retry.backoff.ms",
+        "kind": "official"
+      },
+      {
+        "title": "Producer configs: retry.backoff.max.ms",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_retry.backoff.max.ms",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "prod-idem-011",
+    "domain": "app-development",
+    "topics": [
+      "idempotence-retries"
+    ],
+    "type": "multi",
+    "stem": "Which of these exceptions are retriable, so the producer retries them automatically within `delivery.timeout.ms`? (Choose three.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "`NotEnoughReplicasException`"
+      },
+      {
+        "id": "b",
+        "text": "`UnknownTopicOrPartitionException`"
+      },
+      {
+        "id": "c",
+        "text": "`NotEnoughReplicasAfterAppendException`"
+      },
+      {
+        "id": "d",
+        "text": "`RecordTooLargeException`"
+      },
+      {
+        "id": "e",
+        "text": "`AuthorizationException`"
+      },
+      {
+        "id": "f",
+        "text": "`InvalidTopicException`"
+      }
+    ],
+    "correct": [
+      "a",
+      "b",
+      "c"
+    ],
+    "explanation": "The `Callback` javadoc lists retriable (transient) exceptions, including `NotEnoughReplicasException`, `NotEnoughReplicasAfterAppendException`, `UnknownTopicOrPartitionException`, `TimeoutException` and `CorruptRecordException`. These extend `RetriableException`.\n\nNon-retriable (fatal for that record) ones include `RecordTooLargeException`, `AuthorizationException`, `AuthenticationException`, `InvalidTopicException` and `RecordBatchTooLargeException`. Retrying them would just fail again, so they go straight to your callback or future.",
+    "references": [
+      {
+        "title": "Callback javadoc: retriable vs non-retriable exceptions",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/producer/Callback.html#onCompletion%28org.apache.kafka.clients.producer.RecordMetadata,java.lang.Exception%29",
+        "kind": "official"
+      },
+      {
+        "title": "Producer configs: retries",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_retries",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "prod-idem-012",
+    "domain": "app-development",
+    "topics": [
+      "idempotence-retries",
+      "transactions-eos"
+    ],
+    "type": "single",
+    "stem": "How does the idempotent producer stop retries from writing duplicates?",
+    "options": [
+      {
+        "id": "a",
+        "text": "The broker assigns the producer an ID and drops batches whose per-partition sequence number it has already written"
+      },
+      {
+        "id": "b",
+        "text": "The broker hashes each record's value and drops values it has seen recently"
+      },
+      {
+        "id": "c",
+        "text": "Consumers drop records whose key matches the previous record"
+      },
+      {
+        "id": "d",
+        "text": "The producer waits for a transaction commit before each retry"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The design docs explain that the broker assigns each producer an ID and deduplicates using a sequence number the producer sends with every message. A resend of a batch the broker already has is recognised and not written again.\n\n- Kafka does not compare payloads.\n- Deduplication happens on the broker, not the consumer.\n- Idempotence works without transactions.",
+    "references": [
+      {
+        "title": "Design: message delivery semantics",
+        "url": "https://kafka.apache.org/44/design/design/#message-delivery-semantics",
+        "kind": "official"
+      },
+      {
+        "title": "Producer configs: enable.idempotence",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_enable.idempotence",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "prod-idem-013",
+    "domain": "app-development",
+    "topics": [
+      "idempotence-retries",
+      "transactions-eos"
+    ],
+    "type": "single",
+    "stem": "An idempotent (non-transactional) producer sends a record, the application crashes before the callback runs, and on restart the application creates a new producer and sends the same record again. Can the topic end up with two copies?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Yes. Idempotence only covers resends by the same producer session; an application-level resend from a new producer is not deduplicated"
+      },
+      {
+        "id": "b",
+        "text": "No. The broker recognises the same key and value and drops the second copy"
+      },
+      {
+        "id": "c",
+        "text": "No. Idempotence is keyed on `client.id`, which is unchanged after the restart"
+      },
+      {
+        "id": "d",
+        "text": "Yes, but only if `acks=1` was used"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The `KafkaProducer` javadoc says the producer can only guarantee idempotence for messages sent within a single session, and that application-level resends cannot be deduplicated. A new producer gets a new producer ID and fresh sequence numbers, so the broker sees the second send as new data.\n\n- The broker does not compare keys or values.\n- `client.id` is a label for logging and quotas, not an idempotence identity. A `transactional.id` is what lets a restarted producer fence and recover its predecessor.\n- An idempotent producer always uses `acks=all`.",
+    "references": [
+      {
+        "title": "KafkaProducer javadoc (class overview)",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/producer/KafkaProducer.html",
+        "kind": "official"
+      },
+      {
+        "title": "Design: message delivery semantics",
+        "url": "https://kafka.apache.org/44/design/design/#message-delivery-semantics",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "prod-idem-014",
+    "domain": "app-development",
+    "topics": [
+      "idempotence-retries",
+      "transactions-eos"
+    ],
+    "type": "multi",
+    "stem": "Which statements about idempotence and transactions are true? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "Setting `transactional.id` implies `enable.idempotence`"
+      },
+      {
+        "id": "b",
+        "text": "With idempotence on, producer retries cannot write duplicates of a batch within that producer session"
+      },
+      {
+        "id": "c",
+        "text": "Idempotence alone makes writes to several partitions atomic"
+      },
+      {
+        "id": "d",
+        "text": "Idempotence prevents duplicates even when a crashed application re-sends from a new producer instance"
+      },
+      {
+        "id": "e",
+        "text": "Idempotence requires a `transactional.id`"
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "The `transactional.id` docs say that if it is configured, `enable.idempotence` is implied. The javadoc says that with the idempotent producer, retries will no longer introduce duplicates.\n\n- Atomic writes across partitions need transactions, not idempotence alone.\n- Idempotence is per producer session; a new instance after a crash is not deduplicated.\n- Idempotence works without a `transactional.id`; it's on by default.",
+    "references": [
+      {
+        "title": "Producer configs: transactional.id",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_transactional.id",
+        "kind": "official"
+      },
+      {
+        "title": "KafkaProducer javadoc (class overview)",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/producer/KafkaProducer.html",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "prod-idem-015",
+    "domain": "app-development",
+    "topics": [
+      "idempotence-retries",
+      "partitioning-ordering"
+    ],
+    "type": "multi",
+    "stem": "A producer has `enable.idempotence=false`, default `retries`, and `max.in.flight.requests.per.connection=5`. Two batches go to the same partition; the first fails with a transient error and is retried after the second succeeds. Which changes keep records in order *without* turning retries off? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "Set `max.in.flight.requests.per.connection=1`"
+      },
+      {
+        "id": "b",
+        "text": "Remove `enable.idempotence=false` so the default idempotent producer is used (with `acks=all`)"
+      },
+      {
+        "id": "c",
+        "text": "Set `retries=0`"
+      },
+      {
+        "id": "d",
+        "text": "Increase `linger.ms`"
+      },
+      {
+        "id": "e",
+        "text": "Increase `batch.size`"
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "The `retries` docs describe this exact reordering: with idempotence off and more than one in-flight request, a retried first batch can land after the second. The `max.in.flight.requests.per.connection` docs say ordering is preserved if retries are disabled *or* idempotence is enabled. With only one request in flight, a retry is always sent before the next batch, so that preserves order too.\n\n- `retries=0` preserves order but gives up retries, which the question rules out.\n- `linger.ms` and `batch.size` change batching, not retry ordering.",
+    "references": [
+      {
+        "title": "Producer configs: max.in.flight.requests.per.connection",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_max.in.flight.requests.per.connection",
+        "kind": "official"
+      },
+      {
+        "title": "Producer configs: retries",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_retries",
+        "kind": "official"
+      },
+      {
+        "title": "Producer configs: enable.idempotence",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_enable.idempotence",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "prod-idem-016",
+    "domain": "app-development",
+    "topics": [
+      "idempotence-retries",
+      "acks-durability"
+    ],
+    "type": "single",
+    "stem": "Why do the docs recommend that the producer's `request.timeout.ms` be larger than the broker's `replica.lag.time.max.ms`?",
+    "options": [
+      {
+        "id": "a",
+        "text": "To reduce duplicates caused by the producer retrying requests that would have succeeded once a slow follower was dropped from the ISR"
+      },
+      {
+        "id": "b",
+        "text": "Because the broker rejects produce requests whose timeout is lower than `replica.lag.time.max.ms`"
+      },
+      {
+        "id": "c",
+        "text": "To make sure `linger.ms` batches fill before they are sent"
+      },
+      {
+        "id": "d",
+        "text": "Because `delivery.timeout.ms` is calculated from `replica.lag.time.max.ms`"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The `request.timeout.ms` docs say it should be larger than `replica.lag.time.max.ms` (a broker config, default 30000 ms) to reduce the chance of message duplication due to unnecessary producer retries. With `acks=all`, a slow follower can hold up the acknowledgement until the leader drops it from the ISR after `replica.lag.time.max.ms`; if the producer times out first, it resends a write that would have succeeded.\n\n- The broker doesn't validate the producer's timeout.\n- `linger.ms` is unrelated.\n- `delivery.timeout.ms` should be at least `request.timeout.ms` + `linger.ms`; it isn't derived from the broker config.",
+    "references": [
+      {
+        "title": "Producer configs: request.timeout.ms",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_request.timeout.ms",
+        "kind": "official"
+      },
+      {
+        "title": "Broker configs: replica.lag.time.max.ms",
+        "url": "https://kafka.apache.org/44/configuration/broker-configs/#brokerconfigs_replica.lag.time.max.ms",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "prod-idem-017",
+    "domain": "app-development",
+    "topics": [
+      "idempotence-retries",
+      "partitioning-ordering"
+    ],
+    "type": "single",
+    "stem": "An idempotent producer that has **no** `transactional.id` receives an `OutOfOrderSequenceException` for a partition. What does the javadoc say about continuing?",
+    "options": [
+      {
+        "id": "a",
+        "text": "You may keep sending with the same instance, but pending records may be delivered out of order; to guarantee ordering, close it and create a new producer"
+      },
+      {
+        "id": "b",
+        "text": "The producer is fenced and every later call throws `ProducerFencedException`"
+      },
+      {
+        "id": "c",
+        "text": "The exception is retried automatically and is never seen by the application"
+      },
+      {
+        "id": "d",
+        "text": "You must call `abortTransaction()` and then continue"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "For an idempotent-only producer, the javadoc says it is possible to continue after an `OutOfOrderSequenceException`, but doing so can deliver pending messages out of order; to ensure proper ordering, close the producer and create a new one. For transactional producers the same exception is fatal.\n\n- `ProducerFencedException` is about transactional producers being replaced.\n- `OutOfOrderSequenceException` is not a retriable exception.\n- `abortTransaction()` applies only to transactional producers.",
+    "references": [
+      {
+        "title": "KafkaProducer.send() javadoc",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/producer/KafkaProducer.html#send%28org.apache.kafka.clients.producer.ProducerRecord,org.apache.kafka.clients.producer.Callback%29",
+        "kind": "official"
+      },
+      {
+        "title": "OutOfOrderSequenceException javadoc",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/common/errors/OutOfOrderSequenceException.html",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "prod-batch-001",
+    "domain": "app-development",
+    "topics": [
+      "batching-compression"
+    ],
+    "type": "single",
+    "stem": "What is the default value of `linger.ms` for the Kafka 4.x Java producer?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`5`"
+      },
+      {
+        "id": "b",
+        "text": "`0`"
+      },
+      {
+        "id": "c",
+        "text": "`100`"
+      },
+      {
+        "id": "d",
+        "text": "`1000`"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "Since Kafka 4.0 the default is 5 ms. The docs explain that larger batches usually give similar or lower latency despite the extra linger. Before 4.0 the default was 0.\n\nYou may still see older material (including the `KafkaProducer` javadoc overview) describing `linger.ms=0` as the default; the config reference is authoritative.",
+    "references": [
+      {
+        "title": "Producer configs: linger.ms",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_linger.ms",
+        "kind": "official"
+      },
+      {
+        "title": "Upgrade notes: notable changes in 4.0.0",
+        "url": "https://kafka.apache.org/44/getting-started/upgrade/#notable-changes-in-400",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original",
+    "kafkaVersionNote": "Default changed from 0 to 5 in Kafka 4.0."
+  },
+  {
+    "id": "prod-batch-002",
+    "domain": "app-development",
+    "topics": [
+      "batching-compression"
+    ],
+    "type": "single",
+    "stem": "What is the default `batch.size` for the Java producer?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`16384` bytes (16 KB)"
+      },
+      {
+        "id": "b",
+        "text": "`1048576` bytes (1 MB)"
+      },
+      {
+        "id": "c",
+        "text": "`33554432` bytes (32 MB)"
+      },
+      {
+        "id": "d",
+        "text": "500 records"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`batch.size` defaults to 16384 bytes and is the upper bound on a per-partition batch.\n\n- 1048576 is the default `max.request.size`.\n- 33554432 is the default `buffer.memory`.\n- `batch.size` is measured in bytes, not records.",
+    "references": [
+      {
+        "title": "Producer configs: batch.size",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_batch.size",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "prod-batch-003",
+    "domain": "app-development",
+    "topics": [
+      "batching-compression"
+    ],
+    "type": "single",
+    "stem": "A producer sets `linger.ms=50` and keeps the default `batch.size`. Under light load, a single small record is sent to a partition with no other records waiting. When is that record's batch sent?",
+    "options": [
+      {
+        "id": "a",
+        "text": "After up to 50 ms, unless the batch reaches `batch.size` sooner"
+      },
+      {
+        "id": "b",
+        "text": "Immediately, because `linger.ms` only applies under heavy load"
+      },
+      {
+        "id": "c",
+        "text": "Only once 16384 bytes have accumulated for the partition"
+      },
+      {
+        "id": "d",
+        "text": "After `request.timeout.ms`"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`linger.ms` is the upper bound on the delay for batching: once a partition has `batch.size` bytes, the batch is sent at once; otherwise the producer waits up to `linger.ms`. The docs give this case: `linger.ms=50` adds up to 50 ms of latency to records sent without load.\n\n- With `linger.ms` above 0 the producer deliberately waits even under light load.\n- A batch never waits indefinitely for `batch.size`.\n- `request.timeout.ms` concerns waiting for a broker response.",
+    "references": [
+      {
+        "title": "Producer configs: linger.ms",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_linger.ms",
+        "kind": "official"
+      },
+      {
+        "title": "Producer configs: batch.size",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_batch.size",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "prod-batch-004",
+    "domain": "app-development",
+    "topics": [
+      "batching-compression"
+    ],
+    "type": "single",
+    "stem": "What happens if a producer sets `batch.size=0`?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Batching is disabled entirely"
+      },
+      {
+        "id": "b",
+        "text": "Batches have no size limit"
+      },
+      {
+        "id": "c",
+        "text": "The default of 16384 is used"
+      },
+      {
+        "id": "d",
+        "text": "The producer throws a `ConfigException`"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The `batch.size` docs say a batch size of zero disables batching entirely. Valid values start at 0, so it is accepted. A small batch size makes batching less common and can reduce throughput.",
+    "references": [
+      {
+        "title": "Producer configs: batch.size",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_batch.size",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "prod-batch-005",
+    "domain": "app-development",
+    "topics": [
+      "batching-compression"
+    ],
+    "type": "multi",
+    "stem": "A producer sends faster than the brokers can accept, and its `buffer.memory` (default 32 MB) fills up. What happens to subsequent `send()` calls? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "`send()` blocks waiting for buffer space"
+      },
+      {
+        "id": "b",
+        "text": "If no space frees up within `max.block.ms`, the send fails with `BufferExhaustedException`"
+      },
+      {
+        "id": "c",
+        "text": "The oldest buffered records are dropped to make room"
+      },
+      {
+        "id": "d",
+        "text": "The producer grows the buffer beyond `buffer.memory` and logs a warning"
+      },
+      {
+        "id": "e",
+        "text": "`send()` fails immediately without waiting"
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "The `buffer.memory` docs say that if records are sent faster than they can be delivered, the producer blocks for `max.block.ms` (default 60000) and then fails. The `KafkaProducer` javadoc names the result: a failed future with `BufferExhaustedException`, a subclass of `TimeoutException`.\n\n- Kafka never drops buffered records silently.\n- `buffer.memory` is the cap for buffering (though not a hard bound on total client memory).\n- `send()` waits before failing.",
+    "references": [
+      {
+        "title": "Producer configs: buffer.memory",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_buffer.memory",
+        "kind": "official"
+      },
+      {
+        "title": "Producer configs: max.block.ms",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_max.block.ms",
+        "kind": "official"
+      },
+      {
+        "title": "BufferExhaustedException javadoc",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/producer/BufferExhaustedException.html",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "prod-batch-006",
+    "domain": "app-development",
+    "topics": [
+      "batching-compression",
+      "partitioning-ordering"
+    ],
+    "type": "multi",
+    "stem": "Which waits inside `KafkaProducer.send()` count against `max.block.ms`? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "Waiting for topic metadata (for example, the first send to a topic)"
+      },
+      {
+        "id": "b",
+        "text": "Waiting for buffer space when `buffer.memory` is full"
+      },
+      {
+        "id": "c",
+        "text": "Time spent in a slow custom key serializer"
+      },
+      {
+        "id": "d",
+        "text": "Time spent in a custom partitioner"
+      },
+      {
+        "id": "e",
+        "text": "Waiting for the broker to acknowledge the record"
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "For `send()`, `max.block.ms` bounds the total time waiting for both the metadata fetch and buffer allocation. The docs say that blocking in user-supplied serializers or the partitioner is not counted.\n\nWaiting for acknowledgement doesn't happen inside `send()` at all: it returns once the record is buffered, and the ack arrives later through the future or callback, bounded by `delivery.timeout.ms`.",
+    "references": [
+      {
+        "title": "Producer configs: max.block.ms",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_max.block.ms",
+        "kind": "official"
+      },
+      {
+        "title": "KafkaProducer.send() javadoc",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/producer/KafkaProducer.html#send%28org.apache.kafka.clients.producer.ProducerRecord,org.apache.kafka.clients.producer.Callback%29",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "prod-batch-007",
+    "domain": "app-development",
+    "topics": [
+      "batching-compression"
+    ],
+    "type": "single",
+    "stem": "A producer sends to `events-v2`, a topic that does not exist, on a cluster with topic auto-creation disabled. All producer timeouts are at their defaults. What happens?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`send()` waits up to `max.block.ms` (60 seconds) for the topic's metadata, then the send fails with a `TimeoutException`"
+      },
+      {
+        "id": "b",
+        "text": "The send fails immediately with `InvalidTopicException`"
+      },
+      {
+        "id": "c",
+        "text": "The producer creates the topic itself with default settings"
+      },
+      {
+        "id": "d",
+        "text": "The record waits in the buffer until `delivery.timeout.ms` (120 seconds) expires"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The `send()` javadoc: if the topic or partition cannot be found in metadata within `max.block.ms`, the returned future times out. The default `max.block.ms` is 60000 ms. Since the partition can't be chosen without metadata, the record never reaches the accumulator, so `delivery.timeout.ms` doesn't apply yet.\n\n- `InvalidTopicException` is for illegal topic names, not missing topics.\n- Producers don't create topics; auto-creation is a broker feature, disabled here.",
+    "references": [
+      {
+        "title": "KafkaProducer.send() javadoc",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/producer/KafkaProducer.html#send%28org.apache.kafka.clients.producer.ProducerRecord,org.apache.kafka.clients.producer.Callback%29",
+        "kind": "official"
+      },
+      {
+        "title": "Producer configs: max.block.ms",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_max.block.ms",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "prod-batch-008",
+    "domain": "app-development",
+    "topics": [
+      "batching-compression"
+    ],
+    "type": "single",
+    "stem": "What is the default `compression.type` on the Java producer?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`none`"
+      },
+      {
+        "id": "b",
+        "text": "`producer`"
+      },
+      {
+        "id": "c",
+        "text": "`lz4`"
+      },
+      {
+        "id": "d",
+        "text": "`zstd`"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The producer default is `none` (no compression). Valid values are `none`, `gzip`, `snappy`, `lz4` and `zstd`.\n\n`producer` is the default of the *topic* config `compression.type`, meaning 'keep whatever codec the producer used'. It isn't a valid producer value.",
+    "references": [
+      {
+        "title": "Producer configs: compression.type",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_compression.type",
+        "kind": "official"
+      },
+      {
+        "title": "Topic configs: compression.type",
+        "url": "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_compression.type",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "prod-batch-009",
+    "domain": "app-development",
+    "topics": [
+      "batching-compression",
+      "topic-design"
+    ],
+    "type": "single",
+    "stem": "Producers write `lz4`-compressed batches to a topic whose `compression.type` is set to `zstd`. How are the records stored?",
+    "options": [
+      {
+        "id": "a",
+        "text": "The broker recompresses them and stores them with `zstd`"
+      },
+      {
+        "id": "b",
+        "text": "They are stored as `lz4`, because the producer's codec always wins"
+      },
+      {
+        "id": "c",
+        "text": "The broker rejects the batches with a codec mismatch error"
+      },
+      {
+        "id": "d",
+        "text": "They are stored uncompressed"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The topic `compression.type` sets the *final* compression type for the topic. Only the default `producer` means 'keep the producer's codec'. With an explicit `zstd`, the broker has to decompress the `lz4` batch and recompress it as `zstd`, which costs broker CPU.\n\n- The producer's codec is kept only when the topic config is `producer`.\n- There is no codec mismatch error.\n- `uncompressed` would be needed to store them uncompressed.",
+    "references": [
+      {
+        "title": "Topic configs: compression.type",
+        "url": "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_compression.type",
+        "kind": "official"
+      },
+      {
+        "title": "Producer configs: compression.type",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_compression.type",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "likely",
+    "source": "original"
+  },
+  {
+    "id": "prod-batch-010",
+    "domain": "app-development",
+    "topics": [
+      "batching-compression"
+    ],
+    "type": "multi",
+    "stem": "Which statements about producer compression are true? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "Compression is applied to whole batches, so better batching usually gives a better compression ratio"
+      },
+      {
+        "id": "b",
+        "text": "A compressed batch normally stays compressed in the broker's log and is sent to consumers compressed; the consumer decompresses it"
+      },
+      {
+        "id": "c",
+        "text": "Each record is compressed individually before it is added to a batch"
+      },
+      {
+        "id": "d",
+        "text": "The broker never decompresses producer batches"
+      },
+      {
+        "id": "e",
+        "text": "Consumers must set `compression.type` to match the producer"
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "The `compression.type` docs say compression is of full batches, so more batching means better compression. The design docs describe end-to-end batch compression: the batch is written to disk compressed, stays compressed in the log, and is sent to the consumer compressed; the consumer decompresses it.\n\n- Records aren't compressed one at a time; that would compress poorly.\n- The broker does decompress batches to validate them, as the design docs say.\n- Consumers detect the codec from the batch and need no `compression.type`.",
+    "references": [
+      {
+        "title": "Producer configs: compression.type",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_compression.type",
+        "kind": "official"
+      },
+      {
+        "title": "Design: end-to-end batch compression",
+        "url": "https://kafka.apache.org/44/design/design/#end-to-end-batch-compression",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "prod-batch-011",
+    "domain": "app-development",
+    "topics": [
+      "batching-compression",
+      "idempotence-retries"
+    ],
+    "type": "single",
+    "stem": "With default producer and topic settings, an application sends a single record whose serialized size is 2 MB. What happens?",
+    "options": [
+      {
+        "id": "a",
+        "text": "The send fails with `RecordTooLargeException`, a non-retriable error, because it exceeds `max.request.size` (1048576 bytes)"
+      },
+      {
+        "id": "b",
+        "text": "The producer splits the record across several batches and the broker reassembles it"
+      },
+      {
+        "id": "c",
+        "text": "The send is retried until `delivery.timeout.ms` expires"
+      },
+      {
+        "id": "d",
+        "text": "The record is accepted because it fits in `buffer.memory` (32 MB)"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`max.request.size` defaults to 1048576 bytes and is effectively a cap on the uncompressed batch size; the broker's `message.max.bytes`/topic `max.message.bytes` default is 1048588 bytes. A 2 MB record exceeds both. The `Callback` javadoc lists `RecordTooLargeException` as non-retriable, so it goes straight to the future/callback.\n\n- Kafka never splits a single record.\n- Only retriable errors are retried.\n- Fitting in `buffer.memory` is necessary but not sufficient.",
+    "references": [
+      {
+        "title": "Producer configs: max.request.size",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_max.request.size",
+        "kind": "official"
+      },
+      {
+        "title": "Callback javadoc: retriable vs non-retriable exceptions",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/producer/Callback.html#onCompletion%28org.apache.kafka.clients.producer.RecordMetadata,java.lang.Exception%29",
+        "kind": "official"
+      },
+      {
+        "title": "Topic configs: max.message.bytes",
+        "url": "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_max.message.bytes",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "prod-batch-012",
+    "domain": "app-development",
+    "topics": [
+      "batching-compression",
+      "topic-design"
+    ],
+    "type": "multi",
+    "stem": "An application needs to produce individual records of about 5 MB to one topic. Everything else is at its default. Which settings must be raised? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "`max.request.size` on the producer"
+      },
+      {
+        "id": "b",
+        "text": "`max.message.bytes` on the topic (or the broker default `message.max.bytes`)"
+      },
+      {
+        "id": "c",
+        "text": "`batch.size` on the producer"
+      },
+      {
+        "id": "d",
+        "text": "`buffer.memory` on the producer"
+      },
+      {
+        "id": "e",
+        "text": "`linger.ms` on the producer"
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "Two caps apply: the producer's `max.request.size` (default 1048576, effectively the cap on the uncompressed record batch) and the broker/topic cap on record batch size after compression (`max.message.bytes`, default 1048588, from broker `message.max.bytes`). Both are about 1 MB, so both must be raised.\n\n- `batch.size` doesn't need to change: the docs say no attempt is made to batch records larger than `batch.size`, so a big record goes in its own batch.\n- `buffer.memory` defaults to 32 MB, which is plenty for 5 MB records.\n- `linger.ms` doesn't affect size limits.\n\n(Consumers and replication fetch sizes are worth checking too, but they are outside this question.)",
+    "references": [
+      {
+        "title": "Producer configs: max.request.size",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_max.request.size",
+        "kind": "official"
+      },
+      {
+        "title": "Topic configs: max.message.bytes",
+        "url": "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_max.message.bytes",
+        "kind": "official"
+      },
+      {
+        "title": "Producer configs: batch.size",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_batch.size",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "likely",
+    "source": "original"
+  },
+  {
+    "id": "prod-batch-013",
+    "domain": "app-development",
+    "topics": [
+      "batching-compression"
+    ],
+    "type": "multi",
+    "stem": "A producer sends a high volume of small JSON records across a congested network link, and broker CPU has headroom. Which changes are most likely to raise throughput and cut bytes on the wire? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "Increase `batch.size` and `linger.ms` so batches fill up more"
+      },
+      {
+        "id": "b",
+        "text": "Set `compression.type` to `lz4` or `zstd`"
+      },
+      {
+        "id": "c",
+        "text": "Set `max.in.flight.requests.per.connection=1`"
+      },
+      {
+        "id": "d",
+        "text": "Set `batch.size=0`"
+      },
+      {
+        "id": "e",
+        "text": "Lower `buffer.memory`"
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "Larger batches mean fewer, more efficient requests, and the docs note that batching helps both client and server. Compression works on whole batches, and repetitive text like JSON compresses well, so better batching plus a codec cuts network bytes.\n\n- One in-flight request per connection limits pipelining and lowers throughput.\n- `batch.size=0` disables batching.\n- A smaller `buffer.memory` makes `send()` block sooner.",
+    "references": [
+      {
+        "title": "Producer configs: batch.size",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_batch.size",
+        "kind": "official"
+      },
+      {
+        "title": "Producer configs: linger.ms",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_linger.ms",
+        "kind": "official"
+      },
+      {
+        "title": "Producer configs: compression.type",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_compression.type",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "likely",
+    "source": "original"
+  },
+  {
+    "id": "prod-batch-014",
+    "domain": "app-development",
+    "topics": [
+      "batching-compression"
+    ],
+    "type": "single",
+    "stem": "With the default `batch.size` of 16384 bytes and default `max.request.size`, a producer sends one 100 KB record. What happens?",
+    "options": [
+      {
+        "id": "a",
+        "text": "It is sent in its own batch; records larger than `batch.size` aren't batched with others"
+      },
+      {
+        "id": "b",
+        "text": "It fails with `RecordTooLargeException` because it exceeds `batch.size`"
+      },
+      {
+        "id": "c",
+        "text": "It is split into 16 KB batches"
+      },
+      {
+        "id": "d",
+        "text": "It waits in the buffer until `batch.size` is raised"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`batch.size` is a target for grouping, not a record size limit. The docs say no attempt will be made to batch records larger than this size, so the record goes in a batch of its own. The hard limits are `max.request.size` (1 MB by default) on the producer and `max.message.bytes` on the topic.\n\n- `RecordTooLargeException` is about `max.request.size` and the broker/topic limits.\n- Records are never split.",
+    "references": [
+      {
+        "title": "Producer configs: batch.size",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_batch.size",
+        "kind": "official"
+      },
+      {
+        "title": "Producer configs: max.request.size",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_max.request.size",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "prod-batch-015",
+    "domain": "app-development",
+    "topics": [
+      "batching-compression",
+      "partitioning-ordering"
+    ],
+    "type": "single",
+    "stem": "A developer calls `producer.flush()` inside a `send()` callback in a Kafka 4.4 application. What happens?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`flush()` throws a `KafkaException`, because calling it from a callback can deadlock"
+      },
+      {
+        "id": "b",
+        "text": "`flush()` returns immediately without doing anything"
+      },
+      {
+        "id": "c",
+        "text": "`flush()` waits for all buffered records, including the one whose callback is running"
+      },
+      {
+        "id": "d",
+        "text": "The producer closes itself"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "Callbacks run on the producer's I/O thread, and `flush()` waits for that same thread to finish requests. The Kafka 4.1 upgrade notes say `flush()` now detects this possible deadlock and prohibits use inside a callback; the `flush()` javadoc says it must not be called from within a `send()` callback. The 4.x client throws a `KafkaException` when you try.\n\n- It doesn't silently return.\n- Waiting from the I/O thread is exactly the deadlock being prevented.\n- The producer doesn't close itself.",
+    "references": [
+      {
+        "title": "Upgrade notes: notable changes in 4.1.0",
+        "url": "https://kafka.apache.org/44/getting-started/upgrade/#notable-changes-in-410",
+        "kind": "official"
+      },
+      {
+        "title": "KafkaProducer.flush() javadoc",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/producer/KafkaProducer.html#flush%28%29",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "unsure",
+    "source": "original",
+    "kafkaVersionNote": "Changed in Kafka 4.1. Earlier clients did not detect this, and calling `flush()` from a callback could hang. The exact exception type (`KafkaException`) is in the 4.4 javadoc's `@throws`, not stated in the upgrade note."
+  },
+  {
+    "id": "prod-batch-016",
+    "domain": "app-development",
+    "topics": [
+      "batching-compression"
+    ],
+    "type": "single",
+    "stem": "What does `KafkaProducer.flush()` do?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Makes all buffered records sendable immediately (ignoring `linger.ms`) and blocks until their requests complete"
+      },
+      {
+        "id": "b",
+        "text": "Discards all buffered records that have not been sent"
+      },
+      {
+        "id": "c",
+        "text": "Commits the current transaction"
+      },
+      {
+        "id": "d",
+        "text": "Sends buffered records and returns immediately without waiting"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The javadoc: `flush()` makes all buffered records immediately available to send, even if `linger.ms` is greater than 0, and blocks until the requests for those records complete, either acknowledged according to `acks` or failed. Afterwards every earlier `send()` future is done and its callback has run.\n\n- Nothing is discarded.\n- `commitTransaction()` flushes on its own, but `flush()` doesn't commit anything.\n- It does block.",
+    "references": [
+      {
+        "title": "KafkaProducer.flush() javadoc",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/producer/KafkaProducer.html#flush%28%29",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  }
+]

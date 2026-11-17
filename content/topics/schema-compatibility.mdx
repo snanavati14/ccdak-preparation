@@ -1,0 +1,69 @@
+Schema Registry checks every new schema version against the subject's compatibility type before accepting it. The type decides which changes are allowed and which side, producers or consumers, must be upgraded first. The default is `BACKWARD`.
+
+## How it works
+
+Think in terms of a **reader** schema and a **writer** schema. Avro resolves them by field name: a writer field the reader lacks is ignored; a reader field the writer lacks takes the reader's default, or fails if there is none.
+
+- `BACKWARD`: the new schema can read data written with the latest schema. Upgrade consumers first.
+- `FORWARD`: the latest schema can read data written with the new schema. Upgrade producers first.
+- `FULL`: both. Upgrade in any order.
+- `NONE`: no check.
+- `_TRANSITIVE` variants compare against **all** earlier versions instead of only the latest.
+
+What that means for Avro record changes:
+
+| Change in the new version | `BACKWARD` | `FORWARD` | `FULL` |
+|---|---|---|---|
+| Add field with a default | yes | yes | yes |
+| Add field without a default | no | yes | no |
+| Remove field that had a default | yes | yes | yes |
+| Remove field without a default | yes | no | no |
+| Widen type (`int` to `long`) | yes | no | no |
+| Rename field, alias for the old name | yes | no | no |
+| Change type with no promotion (`string` to `int`) | no | no | no |
+
+The rule of thumb: in Avro, **only fields with defaults can be added and removed freely**. Avro promotions are `int` to `long`, `float` or `double`; `long` to `float` or `double`; `float` to `double`; `string` to and from `bytes`. An optional field is a union with `null` first and `"default": null`, for example `["null", "string"]`.
+
+Compatibility is set globally (`PUT /config`, starting from `schema.compatibility.level`, default `backward`) or per subject (`PUT /config/{subject}`). A subject-level setting overrides the global one for that subject. A global REST update overrides the properties file.
+
+Test before registering with `POST /compatibility/subjects/{subject}/versions/latest` (add `?verbose=true` for reasons). Registering an incompatible schema with `POST /subjects/{subject}/versions` returns HTTP 409.
+
+## Gotchas the exam loves
+
+- `BACKWARD` is the default and is **not** transitive. Confluent prefers it because consumers can rewind to the start of the topic.
+- Removing a field is always backward compatible; whether it was defaulted only matters for `FORWARD` and `FULL`.
+- Adding a field without a default passes `FORWARD` but fails `BACKWARD` and `FULL`.
+- Upgrade order: `BACKWARD` consumers first; `FORWARD` producers first; `FULL` any order; `NONE` coordinate by hand.
+- Changes can be compatible step by step but not transitively: drop a field in v2, re-add it with another type and a default in v3. `BACKWARD` accepts v3, `BACKWARD_TRANSITIVE` rejects it.
+- For an incompatible change, the docs suggest a new topic rather than mixing incompatible versions in one.
+- Avro renames use `aliases` on the **reader** (new) schema. Without one, a rename is a removal plus an addition.
+- Adding an enum symbol breaks old readers unless their enum declares a `default`.
+- Protobuf best practice is `BACKWARD_TRANSITIVE`, because adding message types is not forward compatible.
+- Kafka Streams needs backward compatibility (it reads old data from state stores): upgrade the Streams app first, then the upstream producer.
+
+## Java sample
+
+```java
+// v1: {"type":"record","name":"User","namespace":"com.acme",
+//      "fields":[{"name":"id","type":"string"}]}
+// v2 adds an optional field: passes BACKWARD, FORWARD and FULL.
+String v2 = """
+  {"type":"record","name":"User","namespace":"com.acme","fields":[
+    {"name":"id","type":"string"},
+    {"name":"email","type":["null","string"],"default":null}]}""";
+
+SchemaRegistryClient client =
+    new CachedSchemaRegistryClient("http://localhost:8081", 100);
+AvroSchema schema = new AvroSchema(v2);
+
+client.updateCompatibility("users-value", "FULL");      // subject-level override
+if (client.testCompatibility("users-value", schema)) {  // same check as register
+  int id = client.register("users-value", schema);     // returns the global ID
+}
+```
+
+## Version notes
+
+<Note>`avro.compatibility.level` is deprecated; since Confluent Platform 5.5 the server property is `schema.compatibility.level`, because Protobuf and JSON Schema were added. Newer releases also add a `compatibilityPolicy` (`STRICT`, `LENIENT`, `LOGICAL`) on top of the compatibility type; it is unlikely to be examined.</Note>
+
+Background reading: [Schema Evolution and Compatibility](https://docs.confluent.io/platform/current/schema-registry/fundamentals/schema-evolution.html#order-of-upgrading-clients) and [Avro schema resolution](https://avro.apache.org/docs/1.12.0/specification/#schema-resolution).

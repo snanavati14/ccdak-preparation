@@ -1,0 +1,82 @@
+Delivery semantics come down to two orderings: when the consumer saves its position compared with when it processes, and whether the output and the position are saved atomically. Kafka gives at-least-once by default. For Kafka-to-Kafka pipelines it can give exactly-once through the transactional producer and `read_committed` consumers.
+
+## How it works
+
+**At-most-once**: commit offsets, then process (and disable producer retries). A crash skips records. **At-least-once**: process, then commit. A crash replays records, so the output may get duplicates. **Exactly-once**: write the output records *and* the consumed offsets in one transaction, so they commit or abort together.
+
+Only the producer is transactional. Setting `transactional.id` (no default) enables the transactional API and implies `enable.idempotence`. The loop:
+
+1. `initTransactions()` once. It aborts or completes any transaction left by an earlier producer with the same `transactional.id`, and bumps the epoch, which fences that older instance (the zombie).
+2. Per batch: `beginTransaction()`, `send()` the results, `sendOffsetsToTransaction(offsets, consumer.groupMetadata())`, `commitTransaction()`.
+3. On an abortable error: `abortTransaction()`, then rewind the consumer (`seek()` to the committed offsets, or recreate it). The position does **not** rewind by itself.
+
+Committing or aborting writes **markers** into each partition. Consumers decide what to do with transactional records through `isolation.level`:
+
+- `read_uncommitted` (default): everything up to the high watermark, aborted records included.
+- `read_committed`: only committed transactional records plus all non-transactional ones, and only up to the **last stable offset** (LSO), the first offset of the oldest open transaction.
+
+<Figure caption="One partition with an open transaction at offset 10. A read_committed consumer stops at the LSO, even though offsets 11 to 20 are non-transactional and replicated.">
+  <svg viewBox="0 0 640 170" role="img" aria-label="Partition offsets with the LSO before the high watermark">
+    <rect x="20" y="50" width="200" height="40" fill="none" stroke="currentColor" strokeWidth="1.5" />
+    <text x="120" y="75" textAnchor="middle" fontSize="13" fill="currentColor">0 to 9: committed</text>
+    <rect className="accent" x="220" y="50" width="70" height="40" fill="none" stroke="currentColor" strokeWidth="2.5" strokeDasharray="5 4" />
+    <text x="255" y="75" textAnchor="middle" fontSize="13" fill="currentColor">10: open</text>
+    <rect x="290" y="50" width="230" height="40" fill="none" stroke="currentColor" strokeWidth="1.5" />
+    <text x="405" y="75" textAnchor="middle" fontSize="13" fill="currentColor">11 to 20: non-transactional</text>
+    <line x1="220" y1="40" x2="220" y2="110" stroke="currentColor" strokeWidth="1.5" />
+    <text x="220" y="128" textAnchor="middle" fontSize="13" fill="currentColor">LSO = 10</text>
+    <line x1="520" y1="40" x2="520" y2="110" stroke="currentColor" strokeWidth="1.5" />
+    <text x="520" y="128" textAnchor="middle" fontSize="13" fill="currentColor">high watermark = 21</text>
+    <text x="120" y="30" textAnchor="middle" fontSize="13" fill="currentColor">read_committed reads here</text>
+    <text x="370" y="30" textAnchor="middle" fontSize="13" fill="currentColor">read_uncommitted reads up to here</text>
+    <text x="320" y="158" textAnchor="middle" fontSize="13" fill="currentColor">Records come back in offset order, so 11 to 20 wait for offset 10's transaction.</text>
+  </svg>
+</Figure>
+
+The required settings, straight from the docs: consumer `isolation.level=read_committed` and `enable.auto.commit=false`, producer `transactional.id`. There is no consumer `transactional.id`.
+
+## Gotchas the exam loves
+
+- Exactly-once covers reading from and writing to **Kafka** only. A database write or an HTTP call inside the loop is outside the transaction; use idempotent writes or store offsets with the output.
+- Idempotence alone (default `true`) removes duplicates from the producer's internal retries within one session. It does not dedupe an application calling `send()` again, and it is not atomic across partitions.
+- The offset to commit is the **next** record to read: last processed offset + 1.
+- `sendOffsetsToTransaction()` goes before `commitTransaction()`. Don't also call `commitSync()` on the consumer.
+- `ProducerFencedException` is fatal: close the producer. Other `KafkaException`s in a transaction: abort and retry.
+- `commitTransaction()` flushes first and throws if any `send()` in the transaction failed; nothing is committed.
+- `transaction.timeout.ms` defaults to 60000 ms. The coordinator **aborts** transactions that stay open longer. It must not exceed the broker's `transaction.max.timeout.ms` (default 900000 ms), or the producer gets `InvalidTxnTimeoutException`.
+- An open transaction pins the LSO and stalls every `read_committed` consumer of that partition until it commits, aborts or times out.
+- Transaction markers use offsets but are never returned, so consumers see gaps in offsets.
+- For `read_committed`, `endOffsets()` and `seekToEnd()` use the LSO, and lag is measured against it.
+- By default the transaction state topic needs 3 brokers (`transaction.state.log.replication.factor=3`, `transaction.state.log.min.isr=2`). Lower both for a one-broker dev cluster.
+
+## Java sample
+
+```java
+producer.initTransactions();
+while (running) {
+    ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(500));
+    if (records.isEmpty()) continue;
+    try {
+        producer.beginTransaction();
+        for (ConsumerRecord<String, String> r : records) {
+            producer.send(new ProducerRecord<>("out", r.key(), r.value().toUpperCase()));
+        }
+        producer.sendOffsetsToTransaction(nextOffsets(records), consumer.groupMetadata());
+        producer.commitTransaction();
+    } catch (ProducerFencedException e) {
+        producer.close();           // another instance owns this transactional.id
+        throw e;
+    } catch (KafkaException e) {
+        producer.abortTransaction();
+        rewindToCommitted(consumer); // seek back; abort does not move the position
+    }
+}
+```
+
+`nextOffsets()` builds a map of `TopicPartition` to `new OffsetAndMetadata(lastOffset + 1)`.
+
+## Version notes
+
+<Note>Kafka 4.0 turned on the strengthened transaction protocol (KIP-890, `transaction.version=2`): 4.x producers bump the epoch on every transaction. 4.0 also removed `sendOffsetsToTransaction(Map, String)`; pass `consumer.groupMetadata()` instead.</Note>
+
+See the [Using Transactions](https://kafka.apache.org/44/design/design/#using-transactions) section of the design docs.

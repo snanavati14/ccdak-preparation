@@ -1,0 +1,2159 @@
+[
+  {
+    "id": "int-isr-001",
+    "domain": "fundamentals",
+    "topics": [
+      "replication-isr"
+    ],
+    "type": "single",
+    "stem": "What does the broker setting `replica.lag.time.max.ms` control, and what is its default?",
+    "options": [
+      {
+        "id": "a",
+        "text": "How long a follower may go without fetching, or without catching up to the leader's log end offset, before the leader removes it from the ISR; default 30000 ms"
+      },
+      {
+        "id": "b",
+        "text": "How many messages a follower may fall behind before it is removed from the ISR; default 4000 messages"
+      },
+      {
+        "id": "c",
+        "text": "How long a producer with `acks=all` waits for followers; default 30000 ms"
+      },
+      {
+        "id": "d",
+        "text": "How long the controller waits for a broker heartbeat before fencing it; default 30000 ms"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "From the broker config reference: \"If a follower hasn't sent any fetch requests or hasn't consumed up to the leader's log end offset for at least this time, the leader will remove the follower from ISR.\" Default `30000` (30 seconds).\n\n- ISR membership is based on **time**, not a message count.\n- Producer waiting is bounded by `request.timeout.ms` and `delivery.timeout.ms`.\n- Broker liveness with the controller is governed by `broker.session.timeout.ms`.",
+    "references": [
+      {
+        "title": "Broker configs: replica.lag.time.max.ms",
+        "url": "https://kafka.apache.org/44/configuration/broker-configs/#brokerconfigs_replica.lag.time.max.ms",
+        "kind": "official"
+      },
+      {
+        "title": "Kafka design: Replication",
+        "url": "https://kafka.apache.org/44/design/design/#replication",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "int-isr-002",
+    "domain": "fundamentals",
+    "topics": [
+      "replication-isr"
+    ],
+    "type": "single",
+    "stem": "A topic has `replication.factor=3`. How many of the brokers holding its replicas can fail without losing committed messages, assuming all three replicas were in sync when the failures started?",
+    "options": [
+      {
+        "id": "a",
+        "text": "0"
+      },
+      {
+        "id": "b",
+        "text": "1"
+      },
+      {
+        "id": "c",
+        "text": "2"
+      },
+      {
+        "id": "d",
+        "text": "3"
+      }
+    ],
+    "correct": [
+      "c"
+    ],
+    "explanation": "Kafka's ISR model: \"With this ISR model and f+1 replicas, a Kafka topic can tolerate f failures without losing committed messages.\" With 3 replicas, f = 2. The operations guide puts it the same way: \"If you have a replication factor of 3 then up to 2 servers can fail before you will lose access to your data.\"\n\nA committed message is on every ISR member, so it survives while at least one in-sync replica remains. Whether the partition still accepts `acks=all` **writes** is a separate question that depends on `min.insync.replicas`.",
+    "references": [
+      {
+        "title": "Kafka design: Replicated logs, quorums and ISRs",
+        "url": "https://kafka.apache.org/44/design/design/#replicated-logs-quorums-isrs-and-state-machines-oh-my",
+        "kind": "official"
+      },
+      {
+        "title": "Basic operations: adding and removing topics",
+        "url": "https://kafka.apache.org/44/operations/basic-kafka-operations/#adding-and-removing-topics",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "int-isr-003",
+    "domain": "fundamentals",
+    "topics": [
+      "replication-isr"
+    ],
+    "type": "multi",
+    "stem": "A topic has `replication.factor=3` and `min.insync.replicas=2`. Producers use `acks=all`. Two of the three brokers holding a partition go down, leaving only the leader in the ISR. Which two statements are true? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "`acks=all` produce requests to that partition fail with `NotEnoughReplicas` (or `NotEnoughReplicasAfterAppend`)"
+      },
+      {
+        "id": "b",
+        "text": "Consumers can still read the messages that were committed before the failures"
+      },
+      {
+        "id": "c",
+        "text": "The leader shrinks `min.insync.replicas` to 1 until the brokers return"
+      },
+      {
+        "id": "d",
+        "text": "Producer writes succeed, and are replicated later when the brokers return"
+      },
+      {
+        "id": "e",
+        "text": "The partition goes offline for reads and writes"
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "`min.insync.replicas`: \"If `acks=all` and the current ISR set contains fewer than `min.insync.replicas` members, then the producer will raise an exception (either `NotEnoughReplicas` or `NotEnoughReplicasAfterAppend`).\" This trades write availability for durability.\n\nThe partition still has a leader, so it is not offline. Messages committed earlier are below the high watermark and can still be read.\n\n- Kafka never lowers `min.insync.replicas` on its own.\n- With `acks=all`, writes are refused rather than accepted with too few copies.",
+    "references": [
+      {
+        "title": "Topic configs: min.insync.replicas",
+        "url": "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_min.insync.replicas",
+        "kind": "official"
+      },
+      {
+        "title": "Kafka design: Availability and durability guarantees",
+        "url": "https://kafka.apache.org/44/design/design/#availability-and-durability-guarantees",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "likely",
+    "source": "original"
+  },
+  {
+    "id": "int-isr-004",
+    "domain": "fundamentals",
+    "topics": [
+      "replication-isr"
+    ],
+    "type": "multi",
+    "stem": "In a KRaft cluster, which two events cause a follower replica to be removed from a partition's ISR? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "It has not fetched, or not caught up to the leader's log end offset, for longer than `replica.lag.time.max.ms`"
+      },
+      {
+        "id": "b",
+        "text": "Its broker stops heartbeating to the controller and its session times out (`broker.session.timeout.ms`)"
+      },
+      {
+        "id": "c",
+        "text": "It falls more than a fixed number of messages behind the leader"
+      },
+      {
+        "id": "d",
+        "text": "It is not the preferred leader for the partition"
+      },
+      {
+        "id": "e",
+        "text": "A consumer reads from it using follower fetching"
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "The design docs define \"in sync\" with two conditions: the broker keeps an active session with the controller (in KRaft, periodic heartbeats; it is considered offline if no heartbeat arrives within `broker.session.timeout.ms`), and a follower must replicate the leader's writes without falling \"too far\" behind, which is measured in time by `replica.lag.time.max.ms`. \"If either of these conditions fail to be satisfied, then the broker will be removed from the ISR.\"\n\n- There is no message-count threshold in current Kafka.\n- Being the preferred leader is about leadership balancing, not ISR membership.\n- Serving consumer reads does not affect ISR membership.",
+    "references": [
+      {
+        "title": "Kafka design: Replication",
+        "url": "https://kafka.apache.org/44/design/design/#replication",
+        "kind": "official"
+      },
+      {
+        "title": "Broker configs: replica.lag.time.max.ms",
+        "url": "https://kafka.apache.org/44/configuration/broker-configs/#brokerconfigs_replica.lag.time.max.ms",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "int-hw-005",
+    "domain": "fundamentals",
+    "topics": [
+      "replication-isr"
+    ],
+    "type": "single",
+    "stem": "A partition leader has a log end offset of 105, meaning offsets 0 to 104 are in its log. All ISR members have replicated up to offset 99, so the high watermark is 100. Which records can a `read_uncommitted` consumer fetch?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Offsets 0 to 104"
+      },
+      {
+        "id": "b",
+        "text": "Offsets 0 to 99"
+      },
+      {
+        "id": "c",
+        "text": "Offsets 0 to 100"
+      },
+      {
+        "id": "d",
+        "text": "None, until the high watermark reaches the log end offset"
+      }
+    ],
+    "correct": [
+      "b"
+    ],
+    "explanation": "Consumers only receive committed messages: \"Only committed messages are ever given out to the consumer.\" The high watermark is the offset of the last successfully replicated message plus one (the `endOffsets()` Javadoc), so with a high watermark of 100 the readable records are offsets 0 to 99. Offsets 100 to 104 exist only on the leader (and perhaps some followers) and could be lost if the leader failed, so they are not exposed yet.\n\n- The log end offset includes uncommitted records.\n- The high watermark itself (100) is the next offset to be committed, not a readable record.\n- Consumers don't wait for the whole log to be replicated; they read up to the high watermark.",
+    "references": [
+      {
+        "title": "Kafka design: Replication",
+        "url": "https://kafka.apache.org/44/design/design/#replication",
+        "kind": "official"
+      },
+      {
+        "title": "KafkaConsumer Javadoc: endOffsets()",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html#endOffsets%28java.util.Collection%29",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "int-hw-006",
+    "domain": "fundamentals",
+    "topics": [
+      "replication-isr"
+    ],
+    "type": "single",
+    "stem": "Kafka 4.4 docs: a topic has `replication.factor=3` and `min.insync.replicas=2`. The ISR shrinks to the leader alone. A producer with `acks=1` keeps writing to that partition and its sends succeed. When can consumers see these new records?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Immediately, because `acks=1` only needs the leader"
+      },
+      {
+        "id": "b",
+        "text": "Only once they are replicated to all in-sync replicas and the ISR again has at least `min.insync.replicas` members"
+      },
+      {
+        "id": "c",
+        "text": "Never; the records are discarded when the followers rejoin"
+      },
+      {
+        "id": "d",
+        "text": "Only after `replica.lag.time.max.ms` has passed"
+      }
+    ],
+    "correct": [
+      "b"
+    ],
+    "explanation": "The 4.4 design docs and the `min.insync.replicas` reference say: \"Regardless of the acks setting, the messages will not be visible to the consumers until\" they are replicated to all in-sync replicas **and** the number of in-sync replicas is no less than `min.insync.replicas`. The Eligible Leader Replicas page calls this the \"strict min ISR\" rule: the high watermark cannot advance while the ISR is smaller than `min.insync.replicas`.\n\nSo with `acks=1` the leader accepts and acknowledges the writes, but the high watermark stays put until the ISR grows back to 2; only then do consumers see the records.",
+    "references": [
+      {
+        "title": "Topic configs: min.insync.replicas",
+        "url": "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_min.insync.replicas",
+        "kind": "official"
+      },
+      {
+        "title": "Kafka design: Replication",
+        "url": "https://kafka.apache.org/44/design/design/#replication",
+        "kind": "official"
+      },
+      {
+        "title": "Eligible Leader Replicas",
+        "url": "https://kafka.apache.org/44/operations/eligible-leader-replicas/#overview",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "unsure",
+    "source": "original",
+    "kafkaVersionNote": "Version-dependent. The strict min ISR rule arrived with KIP-966 in Kafka 4.x. In older versions the high watermark advanced once the current ISR (even just the leader) had the record, so `acks=1` writes became visible immediately. Most prep material predates this."
+  },
+  {
+    "id": "int-unclean-007",
+    "domain": "fundamentals",
+    "topics": [
+      "replication-isr"
+    ],
+    "type": "single",
+    "stem": "What is the default value of `unclean.leader.election.enable`, and what does the default mean?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`false`: only an in-sync replica can become leader, so the partition may stay unavailable rather than lose committed data"
+      },
+      {
+        "id": "b",
+        "text": "`true`: any replica can become leader, so the partition recovers quickly but may lose data"
+      },
+      {
+        "id": "c",
+        "text": "`false`: leaders are never re-elected automatically, even from the ISR"
+      },
+      {
+        "id": "d",
+        "text": "`true`, but only for internal topics"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`unclean.leader.election.enable` defaults to `false` (broker and topic level). It \"indicates whether to enable replicas not in the ISR set to be elected as leader as a last resort, even though doing so may result in data loss.\" The design docs: by default Kafka \"favor[s] waiting for a consistent replica\", that is, it prefers unavailability to losing committed messages.\n\nNormal leader election from the ISR is always automatic; the setting only concerns replicas outside the ISR.",
+    "references": [
+      {
+        "title": "Topic configs: unclean.leader.election.enable",
+        "url": "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_unclean.leader.election.enable",
+        "kind": "official"
+      },
+      {
+        "title": "Kafka design: Unclean leader election",
+        "url": "https://kafka.apache.org/44/design/design/#unclean-leader-election-what-if-they-all-die",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "int-unclean-008",
+    "domain": "fundamentals",
+    "topics": [
+      "replication-isr"
+    ],
+    "type": "single",
+    "stem": "Partition `p3` has replicas on brokers 1, 2 and 3. Broker 3 fell out of the ISR an hour ago. Then brokers 1 and 2 (the only ISR members) both crash and stay down. `unclean.leader.election.enable` is `false`. What happens to `p3`?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Broker 3 becomes leader immediately, and the messages it is missing are lost"
+      },
+      {
+        "id": "b",
+        "text": "`p3` stays without a leader until an in-sync replica comes back (or an operator explicitly allows an unclean election)"
+      },
+      {
+        "id": "c",
+        "text": "Broker 3 becomes leader and copies the missing messages from the producer's buffer"
+      },
+      {
+        "id": "d",
+        "text": "The controller deletes and recreates `p3`"
+      }
+    ],
+    "correct": [
+      "b"
+    ],
+    "explanation": "With unclean election disabled, Kafka chooses consistency: it waits \"for a replica in the ISR to come back to life and choose this replica as the leader\". Until then the partition has no leader and cannot be read or written. An operator who prefers availability can enable `unclean.leader.election.enable` (dynamically, or trigger it with `kafka-leader-election.sh` and the unclean option), accepting that broker 3's log becomes the source of truth and the messages it is missing are lost.\n\n- Electing broker 3 automatically is exactly what the `false` default prevents.\n- Producers do not keep acknowledged data around for recovery.",
+    "references": [
+      {
+        "title": "Kafka design: Unclean leader election",
+        "url": "https://kafka.apache.org/44/design/design/#unclean-leader-election-what-if-they-all-die",
+        "kind": "official"
+      },
+      {
+        "title": "Topic configs: unclean.leader.election.enable",
+        "url": "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_unclean.leader.election.enable",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "likely",
+    "source": "original",
+    "kafkaVersionNote": "Since Kafka 4.x the controller can also elect from Eligible Leader Replicas (ELR, on by default for new clusters from 4.1). A replica that left the ISR because it fell behind, as here, is not expected to be in the ELR, so the answer is unchanged, but the exact ELR bookkeeping is beyond what the exam is likely to test."
+  },
+  {
+    "id": "int-unclean-009",
+    "domain": "fundamentals",
+    "topics": [
+      "replication-isr"
+    ],
+    "type": "multi",
+    "stem": "An operator sets `unclean.leader.election.enable=true` on a topic. Which two statements describe the consequences? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "When all in-sync replicas are down, an out-of-sync replica can become leader so the partition becomes available again sooner"
+      },
+      {
+        "id": "b",
+        "text": "Messages that were committed but never reached the new leader can be lost"
+      },
+      {
+        "id": "c",
+        "text": "Consumers begin receiving messages above the high watermark"
+      },
+      {
+        "id": "d",
+        "text": "It guarantees that no committed message is ever lost"
+      },
+      {
+        "id": "e",
+        "text": "It raises `min.insync.replicas` automatically to compensate"
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "Unclean election is a straight availability versus consistency trade. The design docs: if a non-in-sync replica \"comes back to life and we allow it to become leader, then its log becomes the source of truth even though it is not guaranteed to have every committed message.\" The setting exists \"to support use cases where uptime is preferable to consistency.\"\n\n- It does not change what consumers can read (still only up to the high watermark).\n- It weakens the no-loss guarantee rather than strengthening it.\n- It does not touch `min.insync.replicas`.",
+    "references": [
+      {
+        "title": "Kafka design: Unclean leader election",
+        "url": "https://kafka.apache.org/44/design/design/#unclean-leader-election-what-if-they-all-die",
+        "kind": "official"
+      },
+      {
+        "title": "Topic configs: unclean.leader.election.enable",
+        "url": "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_unclean.leader.election.enable",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "int-leader-010",
+    "domain": "fundamentals",
+    "topics": [
+      "replication-isr"
+    ],
+    "type": "single",
+    "stem": "In a Kafka 4.x (KRaft) cluster, the broker that leads partition `orders-2` fails. Which component chooses the new leader, and from which replicas?",
+    "options": [
+      {
+        "id": "a",
+        "text": "The active KRaft controller, choosing one of the remaining in-sync replicas"
+      },
+      {
+        "id": "b",
+        "text": "The producer, choosing the replica with the lowest latency"
+      },
+      {
+        "id": "c",
+        "text": "The consumer group coordinator, choosing the replica with the most committed offsets"
+      },
+      {
+        "id": "d",
+        "text": "ZooKeeper, choosing the replica with the highest broker id"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The design docs: the controller \"is responsible for managing the registration of brokers. If the controller detects the failure of a broker, it is responsible for electing one of the remaining members of the ISR to serve as the new leader.\" Batching these elections in the controller keeps failover fast for many partitions. In KRaft mode, the controller is the active member of the controller quorum.\n\n- Clients never choose leaders; they discover them through metadata.\n- The group coordinator manages consumer groups, not replication.\n- Kafka 4.x has no ZooKeeper.",
+    "references": [
+      {
+        "title": "Kafka design: Replica management",
+        "url": "https://kafka.apache.org/44/design/design/#replica-management",
+        "kind": "official"
+      },
+      {
+        "title": "KRaft: controllers",
+        "url": "https://kafka.apache.org/44/operations/kraft/#controllers",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "int-leader-011",
+    "domain": "fundamentals",
+    "topics": [
+      "replication-isr"
+    ],
+    "type": "single",
+    "stem": "After a rolling restart, broker 1 leads far fewer partitions than before, although all its replicas are back in sync. With default broker settings, what happens next?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Nothing; leadership only moves when a leader fails"
+      },
+      {
+        "id": "b",
+        "text": "Because `auto.leader.rebalance.enable` defaults to `true`, a background check moves leadership back to the preferred leaders when the imbalance is large enough"
+      },
+      {
+        "id": "c",
+        "text": "Producers automatically send to broker 1 to rebalance the load"
+      },
+      {
+        "id": "d",
+        "text": "The controller reassigns broker 1's partitions to other brokers permanently"
+      }
+    ],
+    "correct": [
+      "b"
+    ],
+    "explanation": "`auto.leader.rebalance.enable` defaults to `true`: \"A background thread checks the distribution of partition leaders at regular intervals, configurable by `leader.imbalance.check.interval.seconds`. If the leader is imbalanced, leader rebalance to the preferred leader for partitions is triggered.\" The preferred leader is the first replica in the partition's assignment.\n\n- Leadership does move back without a failure when this is enabled.\n- Producers follow leadership; they don't drive it.\n- Changing which brokers hold replicas is a reassignment, a separate operation.",
+    "references": [
+      {
+        "title": "Broker configs: auto.leader.rebalance.enable",
+        "url": "https://kafka.apache.org/44/configuration/broker-configs/#brokerconfigs_auto.leader.rebalance.enable",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "int-kraft-012",
+    "domain": "fundamentals",
+    "topics": [
+      "replication-isr"
+    ],
+    "type": "single",
+    "stem": "A production KRaft cluster must keep its metadata quorum available through two simultaneous controller failures. How many controllers does it need?",
+    "options": [
+      {
+        "id": "a",
+        "text": "2"
+      },
+      {
+        "id": "b",
+        "text": "3"
+      },
+      {
+        "id": "c",
+        "text": "4"
+      },
+      {
+        "id": "d",
+        "text": "5"
+      }
+    ],
+    "correct": [
+      "d"
+    ],
+    "explanation": "The KRaft operations guide: \"A majority of the controllers must be alive in order to maintain availability. With 3 controllers, the cluster can tolerate 1 controller failure; with 5 controllers, the cluster can tolerate 2 controller failures.\" In general, to withstand N concurrent failures the controller cluster needs 2N + 1 controllers.\n\nFour controllers still tolerate only one failure, because a majority of four is three.",
+    "references": [
+      {
+        "title": "KRaft: controllers",
+        "url": "https://kafka.apache.org/44/operations/kraft/#controllers",
+        "kind": "official"
+      },
+      {
+        "title": "KRaft: deploying considerations",
+        "url": "https://kafka.apache.org/44/operations/kraft/#deploying-considerations",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "int-kraft-013",
+    "domain": "fundamentals",
+    "topics": [
+      "replication-isr"
+    ],
+    "type": "multi",
+    "stem": "Which two statements about KRaft node roles in Kafka 4.x are true? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "A server with `process.roles=broker,controller` is a combined server, which the docs recommend only for small or development deployments"
+      },
+      {
+        "id": "b",
+        "text": "Brokers and controllers find the controller quorum through `controller.quorum.bootstrap.servers`"
+      },
+      {
+        "id": "c",
+        "text": "Every broker must also be a controller"
+      },
+      {
+        "id": "d",
+        "text": "A 4.x cluster can use ZooKeeper instead of a controller quorum if `zookeeper.connect` is set"
+      },
+      {
+        "id": "e",
+        "text": "`process.roles` defaults to `broker,controller`"
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "`process.roles` can be `broker`, `controller` or `broker,controller`. Servers with both roles are \"combined\" servers: \"simpler to operate for small use cases like a development environment\", but \"not recommended in critical deployment environments.\" \"Every broker and controller must set the `controller.quorum.bootstrap.servers` property.\"\n\n- Brokers and controllers are usually separate processes.\n- Kafka 4.x supports KRaft mode only; ZooKeeper mode was removed in 4.0.\n- `process.roles` has no default (empty) and must be set.",
+    "references": [
+      {
+        "title": "KRaft: process roles",
+        "url": "https://kafka.apache.org/44/operations/kraft/#process-roles",
+        "kind": "official"
+      },
+      {
+        "title": "KRaft: controllers",
+        "url": "https://kafka.apache.org/44/operations/kraft/#controllers",
+        "kind": "official"
+      },
+      {
+        "title": "Broker configs: process.roles",
+        "url": "https://kafka.apache.org/44/configuration/broker-configs/#brokerconfigs_process.roles",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "int-rf-016",
+    "domain": "fundamentals",
+    "topics": [
+      "replication-isr"
+    ],
+    "type": "multi",
+    "stem": "Which three settings together give a topic the usual \"no acknowledged write is lost if one broker fails, and writes keep working\" setup? (Choose three.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "Topic `replication.factor=3`"
+      },
+      {
+        "id": "b",
+        "text": "Topic `min.insync.replicas=2`"
+      },
+      {
+        "id": "c",
+        "text": "Producer `acks=all`"
+      },
+      {
+        "id": "d",
+        "text": "Topic `min.insync.replicas=3`"
+      },
+      {
+        "id": "e",
+        "text": "Topic `unclean.leader.election.enable=true`"
+      }
+    ],
+    "correct": [
+      "a",
+      "b",
+      "c"
+    ],
+    "explanation": "The `min.insync.replicas` reference: \"A typical scenario would be to create a topic with a replication factor of 3, set `min.insync.replicas` to 2, and produce with acks of 'all'. This ensures that a majority of replicas must persist a write before it's considered successful by the producer\". With one broker down, two replicas remain in sync, so writes continue.\n\n- `min.insync.replicas=3` with three replicas means any single broker outage blocks all `acks=all` writes.\n- Unclean leader election allows data loss; it works against durability. Its default, `false`, is the right choice here.\n\nNote that `min.insync.replicas` defaults to 1 and `acks` defaults to `all` in current clients.",
+    "references": [
+      {
+        "title": "Topic configs: min.insync.replicas",
+        "url": "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_min.insync.replicas",
+        "kind": "official"
+      },
+      {
+        "title": "Kafka design: Availability and durability guarantees",
+        "url": "https://kafka.apache.org/44/design/design/#availability-and-durability-guarantees",
+        "kind": "official"
+      },
+      {
+        "title": "Producer configs: acks",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_acks",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "int-isr-017",
+    "domain": "fundamentals",
+    "topics": [
+      "replication-isr"
+    ],
+    "type": "single",
+    "stem": "A topic has `replication.factor=2` and the default `min.insync.replicas` (1). Producers use `acks=all`. One of the two replicas fails. What happens to new writes?",
+    "options": [
+      {
+        "id": "a",
+        "text": "They fail with `NotEnoughReplicas` until the replica returns"
+      },
+      {
+        "id": "b",
+        "text": "They succeed with only one copy, and are lost if the remaining replica also fails before the other recovers"
+      },
+      {
+        "id": "c",
+        "text": "They succeed, and the leader waits for the failed replica to come back before acknowledging"
+      },
+      {
+        "id": "d",
+        "text": "They are redirected to a different partition"
+      }
+    ],
+    "correct": [
+      "b"
+    ],
+    "explanation": "`acks=all` waits for the **current** ISR, not for every assigned replica. The design docs use this exact case: \"if a topic is configured with only two replicas and one fails (i.e., only one in sync replica remains), then writes that specify acks=all will succeed. However, these writes could be lost if the remaining replica also fails.\"\n\nRaising `min.insync.replicas` to 2 would refuse those writes instead, trading availability for durability.\n\n- With `min.insync.replicas=1`, a single in-sync replica is enough.\n- The leader never waits for a replica that has left the ISR.\n- Kafka does not redirect a record to another partition.",
+    "references": [
+      {
+        "title": "Kafka design: Availability and durability guarantees",
+        "url": "https://kafka.apache.org/44/design/design/#availability-and-durability-guarantees",
+        "kind": "official"
+      },
+      {
+        "title": "Topic configs: min.insync.replicas",
+        "url": "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_min.insync.replicas",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "int-rf-018",
+    "domain": "fundamentals",
+    "topics": [
+      "replication-isr"
+    ],
+    "type": "multi",
+    "stem": "Which statements about replication are true according to the Kafka design docs? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "The unit of replication is the topic partition; each partition has one leader and zero or more followers"
+      },
+      {
+        "id": "b",
+        "text": "Followers pull data from the leader, much like a consumer"
+      },
+      {
+        "id": "c",
+        "text": "The leader pushes each record to all followers before writing it locally"
+      },
+      {
+        "id": "d",
+        "text": "Only the leader's copy of a partition has the same offsets as the producer saw; followers renumber records"
+      },
+      {
+        "id": "e",
+        "text": "`replication.factor` counts followers only, not the leader"
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "From the replication section: \"The unit of replication is the topic partition. Under non-failure conditions, each partition in Kafka has a single leader and zero or more followers. The total number of replicas including the leader constitute the replication factor.\" And: \"Followers consume messages from the leader just as a normal Kafka consumer would and apply them to their own log.\"\n\n- Replication is pull-based, not push-based.\n- \"The logs on the followers are identical to the leader's log: all have the same offsets and messages in the same order.\"\n- The replication factor includes the leader.",
+    "references": [
+      {
+        "title": "Kafka design: Replication",
+        "url": "https://kafka.apache.org/44/design/design/#replication",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "int-seg-019",
+    "domain": "fundamentals",
+    "topics": [
+      "log-retention-compaction"
+    ],
+    "type": "single",
+    "stem": "What are the default values of the topic settings `segment.bytes` and `segment.ms`?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`segment.bytes` = 1 GiB (1073741824); `segment.ms` = 7 days (604800000)"
+      },
+      {
+        "id": "b",
+        "text": "`segment.bytes` = 1 MiB; `segment.ms` = 1 day"
+      },
+      {
+        "id": "c",
+        "text": "`segment.bytes` = 100 MiB; `segment.ms` = 7 days"
+      },
+      {
+        "id": "d",
+        "text": "`segment.bytes` = 1 GiB; `segment.ms` = no limit (-1)"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "From the topic config reference: `segment.bytes` defaults to `1073741824` (1 gibibyte), broker default `log.segment.bytes`; `segment.ms` defaults to `604800000` (7 days), broker default `log.roll.ms`. The active segment is rolled when it reaches `segment.bytes`, or when it reaches `segment.ms` in age even if it is not full.\n\nSince Kafka 4.0, the smallest allowed `segment.bytes` is 1 MiB (1048576).",
+    "references": [
+      {
+        "title": "Topic configs: segment.bytes",
+        "url": "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_segment.bytes",
+        "kind": "official"
+      },
+      {
+        "title": "Topic configs: segment.ms",
+        "url": "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_segment.ms",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "int-seg-020",
+    "domain": "fundamentals",
+    "topics": [
+      "log-retention-compaction"
+    ],
+    "type": "single",
+    "stem": "A topic uses `cleanup.policy=delete` and `retention.ms=86400000` (1 day). A closed segment holds records with timestamps from 30 hours ago up to 20 hours ago. Is the segment deleted now?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Yes; records older than 1 day are removed from the segment"
+      },
+      {
+        "id": "b",
+        "text": "No; the segment is deleted as a whole, and its largest timestamp (20 hours ago) is still within retention"
+      },
+      {
+        "id": "c",
+        "text": "Yes; a segment is deleted as soon as its oldest record passes `retention.ms`"
+      },
+      {
+        "id": "d",
+        "text": "No; closed segments are only deleted when `retention.bytes` is reached"
+      }
+    ],
+    "correct": [
+      "b"
+    ],
+    "explanation": "Retention works on whole segments. The log implementation docs: \"Data is deleted one log segment at a time... For time-based policies, the record timestamps are considered, with the largest timestamp in a segment file (order of records is not relevant) defining the retention time for the entire segment.\"\n\nThe newest record in this segment is 20 hours old, so the whole segment, including the 30-hour-old records, is kept for about 4 more hours. This is why `segment.bytes` notes that larger segments give \"less granular control over retention\".\n\n- Kafka never deletes individual records from a segment for time retention.\n- Size retention is independent and disabled by default (`retention.bytes=-1`).",
+    "references": [
+      {
+        "title": "Log implementation: deletes",
+        "url": "https://kafka.apache.org/44/implementation/log/#deletes",
+        "kind": "official"
+      },
+      {
+        "title": "Topic configs: retention.ms",
+        "url": "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_retention.ms",
+        "kind": "official"
+      },
+      {
+        "title": "Topic configs: segment.bytes",
+        "url": "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_segment.bytes",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "int-ret-021",
+    "domain": "fundamentals",
+    "topics": [
+      "log-retention-compaction"
+    ],
+    "type": "single",
+    "stem": "A topic has 6 partitions, `replication.factor=3` and `retention.bytes=1073741824` (1 GiB). Ignoring the active segment and segment granularity, roughly how much data does each replica set keep for the whole topic?",
+    "options": [
+      {
+        "id": "a",
+        "text": "About 1 GiB for the whole topic"
+      },
+      {
+        "id": "b",
+        "text": "About 6 GiB for the whole topic (1 GiB per partition), stored on each of the 3 replicas"
+      },
+      {
+        "id": "c",
+        "text": "About 1 GiB per broker"
+      },
+      {
+        "id": "d",
+        "text": "About 2 GiB, because the limit is split across replicas"
+      }
+    ],
+    "correct": [
+      "b"
+    ],
+    "explanation": "`retention.bytes` \"controls the maximum size a partition... can grow to before we will discard old log segments\". \"Since this limit is enforced at the partition level, multiply it by the number of partitions to compute the topic retention in bytes.\" So 6 partitions × 1 GiB ≈ 6 GiB of topic data, and each replica of each partition keeps up to its own 1 GiB, so the cluster holds about 18 GiB across all replicas.\n\nThe other options treat the setting as topic-wide, broker-wide or split across replicas, and none of those is how it works.",
+    "references": [
+      {
+        "title": "Topic configs: retention.bytes",
+        "url": "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_retention.bytes",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "int-ret-022",
+    "domain": "fundamentals",
+    "topics": [
+      "log-retention-compaction"
+    ],
+    "type": "multi",
+    "stem": "Which two statements about the default retention settings are true? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "`retention.ms` defaults to 604800000 (7 days)"
+      },
+      {
+        "id": "b",
+        "text": "`retention.bytes` defaults to -1, meaning no size limit"
+      },
+      {
+        "id": "c",
+        "text": "`retention.bytes` defaults to 1 GiB per topic"
+      },
+      {
+        "id": "d",
+        "text": "`retention.ms=-1` deletes records immediately"
+      },
+      {
+        "id": "e",
+        "text": "`retention.ms` defaults to 1 day"
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "Topic config reference: `retention.ms` default `604800000` (7 days); \"If set to -1, no time limit is applied.\" `retention.bytes` default `-1`: \"By default there is no size limit only a time limit.\"\n\n- No default size limit exists, per topic or per partition.\n- `-1` means unlimited, not immediate deletion.\n- One day (86400000 ms) is the default of `delete.retention.ms`, a different setting.",
+    "references": [
+      {
+        "title": "Topic configs: retention.ms",
+        "url": "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_retention.ms",
+        "kind": "official"
+      },
+      {
+        "title": "Topic configs: retention.bytes",
+        "url": "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_retention.bytes",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "int-ret-023",
+    "domain": "fundamentals",
+    "topics": [
+      "log-retention-compaction"
+    ],
+    "type": "single",
+    "stem": "A topic sets both `retention.ms=604800000` (7 days) and `retention.bytes=10737418240` (10 GiB). A partition is 12 GiB, and its oldest closed segment holds records from 2 days ago. Is that segment eligible for deletion?",
+    "options": [
+      {
+        "id": "a",
+        "text": "No; both limits must be exceeded before a segment is deleted"
+      },
+      {
+        "id": "b",
+        "text": "Yes; a segment eligible under either policy is deleted"
+      },
+      {
+        "id": "c",
+        "text": "No; when both are set, only `retention.ms` applies"
+      },
+      {
+        "id": "d",
+        "text": "Yes, but only after `delete.retention.ms` has also passed"
+      }
+    ],
+    "correct": [
+      "b"
+    ],
+    "explanation": "The log implementation docs: \"If both policies are enabled at the same time, a segment that is eligible for deletion due to either policy will be deleted.\" Size-based deletion removes the oldest segments \"until the overall size of the partition is within the configured limit again\", so segments go regardless of their age until the partition is at or below 10 GiB.\n\n`delete.retention.ms` only concerns tombstones in compacted topics.",
+    "references": [
+      {
+        "title": "Log implementation: deletes",
+        "url": "https://kafka.apache.org/44/implementation/log/#deletes",
+        "kind": "official"
+      },
+      {
+        "title": "Topic configs: retention.bytes",
+        "url": "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_retention.bytes",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "int-ret-024",
+    "domain": "fundamentals",
+    "topics": [
+      "log-retention-compaction"
+    ],
+    "type": "single",
+    "stem": "A broker sets `log.retention.hours=168`. Topic `audit` was created with `retention.ms=2592000000` (30 days). Which retention applies to `audit`?",
+    "options": [
+      {
+        "id": "a",
+        "text": "168 hours, because broker settings override topic settings"
+      },
+      {
+        "id": "b",
+        "text": "30 days, because a topic-level setting overrides the broker default"
+      },
+      {
+        "id": "c",
+        "text": "Whichever is shorter"
+      },
+      {
+        "id": "d",
+        "text": "Whichever is longer"
+      }
+    ],
+    "correct": [
+      "b"
+    ],
+    "explanation": "The topic config reference: \"A given server default config value only applies to a topic if it does not have an explicit topic config override.\" `retention.ms` is the topic-level form of the broker's `log.retention.ms` / `log.retention.minutes` / `log.retention.hours` (default 168). Among the broker settings, `log.retention.hours` is the lowest priority: \"tertiary to `log.retention.ms`\".\n\nSo `audit` keeps data for 30 days; other topics without an override use 168 hours. Kafka does not take the shorter or longer of the two.",
+    "references": [
+      {
+        "title": "Topic configs: retention.ms",
+        "url": "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_retention.ms",
+        "kind": "official"
+      },
+      {
+        "title": "Broker configs: log.retention.hours",
+        "url": "https://kafka.apache.org/44/configuration/broker-configs/#brokerconfigs_log.retention.hours",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "int-ret-025",
+    "domain": "fundamentals",
+    "topics": [
+      "log-retention-compaction"
+    ],
+    "type": "single",
+    "stem": "A low-traffic topic receives one small record per minute. It has `retention.ms=3600000` (1 hour) and the default `segment.ms` (7 days) and `segment.bytes` (1 GiB), so the active segment would not roll on its own for a week. According to the Kafka 4.4 topic config docs, what happens to records older than one hour?",
+    "options": [
+      {
+        "id": "a",
+        "text": "They stay for up to 7 days, because the active segment can never be deleted"
+      },
+      {
+        "id": "b",
+        "text": "Once the retention condition is met, the broker rolls a new active segment, so the old one becomes eligible for deletion"
+      },
+      {
+        "id": "c",
+        "text": "Each old record is deleted individually from the active segment"
+      },
+      {
+        "id": "d",
+        "text": "They are compacted instead of deleted"
+      }
+    ],
+    "correct": [
+      "b"
+    ],
+    "explanation": "Retention never deletes from the active segment while it is being written to: data is \"deleted one log segment at a time\". But the 4.4 `retention.ms` docs also say it \"operates independently of `segment.ms` and `segment.bytes`\", and \"it triggers the rolling of new segment if the `retention.ms` condition is satisfied.\" Once the segment rolls, it is a closed segment and the usual rule applies (its largest timestamp decides). Since every record is about to pass the 1-hour limit, the old segment is removed at the next retention check (`log.retention.check.interval.ms`, default 5 minutes).\n\n- Records are never removed individually.\n- Compaction needs `cleanup.policy` to include `compact`.\n\nFor predictable cleanup on low-traffic topics, lowering `segment.ms` is still the common advice.",
+    "references": [
+      {
+        "title": "Topic configs: retention.ms",
+        "url": "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_retention.ms",
+        "kind": "official"
+      },
+      {
+        "title": "Log implementation: deletes",
+        "url": "https://kafka.apache.org/44/implementation/log/#deletes",
+        "kind": "official"
+      },
+      {
+        "title": "Broker configs: log.retention.check.interval.ms",
+        "url": "https://kafka.apache.org/44/configuration/broker-configs/#brokerconfigs_log.retention.check.interval.ms",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "likely",
+    "source": "original",
+    "kafkaVersionNote": "Older study material often says the active segment is never removed by retention, so low-traffic topics keep data until `segment.ms`. The 4.4 docs say a `retention.ms` breach itself rolls the segment. Expect older practice questions to assume the older wording."
+  },
+  {
+    "id": "int-cmp-026",
+    "domain": "fundamentals",
+    "topics": [
+      "log-retention-compaction"
+    ],
+    "type": "single",
+    "stem": "A topic stores the latest shipping address for each customer, keyed by customer id. Consumers need the current address of every customer, not the history. Which `cleanup.policy` fits?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`delete`"
+      },
+      {
+        "id": "b",
+        "text": "`compact`"
+      },
+      {
+        "id": "c",
+        "text": "An empty policy, so nothing is cleaned"
+      },
+      {
+        "id": "d",
+        "text": "`delete` with `retention.ms=-1`"
+      }
+    ],
+    "correct": [
+      "b"
+    ],
+    "explanation": "`compact` \"will enable log compaction, which retains the latest value for each key.\" Compaction \"ensures that Kafka will always retain at least the last known value for each message key\", so a consumer reading from the start rebuilds the current state without the topic growing forever.\n\n- `delete` (the default) drops old segments by time or size, so a customer who hasn't changed address in a while would disappear.\n- Unlimited retention (an empty policy or `retention.ms=-1`) keeps every old address forever.",
+    "references": [
+      {
+        "title": "Topic configs: cleanup.policy",
+        "url": "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_cleanup.policy",
+        "kind": "official"
+      },
+      {
+        "title": "Kafka design: Log compaction",
+        "url": "https://kafka.apache.org/44/design/design/#log-compaction",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "int-cmp-027",
+    "domain": "fundamentals",
+    "topics": [
+      "log-retention-compaction"
+    ],
+    "type": "multi",
+    "stem": "Which two statements about tombstones in a compacted topic are true? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "A tombstone is a record with a key and a `null` value"
+      },
+      {
+        "id": "b",
+        "text": "Tombstones are retained for `delete.retention.ms` (default 86400000 ms, 1 day) and are then themselves removed by the cleaner"
+      },
+      {
+        "id": "c",
+        "text": "A tombstone instantly removes all earlier records for its key from the log"
+      },
+      {
+        "id": "d",
+        "text": "Tombstones are never removed, so that late consumers can always see deletes"
+      },
+      {
+        "id": "e",
+        "text": "A tombstone is a record with a `null` key"
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "The design docs: \"A message with a key and a null payload will be treated as a delete from the log. Such a record is sometimes referred to as a tombstone.\" Earlier records with that key are removed when the cleaner compacts the log, not instantly. \"Delete markers are special in that they will themselves be cleaned out of the log after a period of time to free up space.\"\n\n`delete.retention.ms`: \"The amount of time to retain delete tombstone markers for log compacted topics\", default `86400000` (1 day).\n\nA record with a `null` key cannot be compacted at all, because compaction works per key.",
+    "references": [
+      {
+        "title": "Kafka design: Log compaction basics",
+        "url": "https://kafka.apache.org/44/design/design/#log-compaction-basics",
+        "kind": "official"
+      },
+      {
+        "title": "Topic configs: delete.retention.ms",
+        "url": "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_delete.retention.ms",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "int-cmp-028",
+    "domain": "fundamentals",
+    "topics": [
+      "log-retention-compaction"
+    ],
+    "type": "multi",
+    "stem": "Which two guarantees does log compaction give? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "A record's offset never changes"
+      },
+      {
+        "id": "b",
+        "text": "The order of the remaining records is never changed"
+      },
+      {
+        "id": "c",
+        "text": "Offsets are renumbered after compaction so that they are contiguous again"
+      },
+      {
+        "id": "d",
+        "text": "At any moment, exactly one record per key is in the log"
+      },
+      {
+        "id": "e",
+        "text": "Records with the same key are moved next to each other"
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "From \"What guarantees does log compaction provide?\": \"Ordering of messages is always maintained. Compaction will never re-order messages, just remove some.\" and \"The offset for a message never changes. It is the permanent identifier for a position in the log.\"\n\n- Compacted logs have gaps in offsets; reading from a removed offset returns the next one that exists.\n- Compaction guarantees **at least** the last value per key. The uncompacted head and the active segment can hold many records for the same key.\n- Records are not moved; that would be reordering.",
+    "references": [
+      {
+        "title": "Kafka design: What guarantees log compaction provides",
+        "url": "https://kafka.apache.org/44/design/design/#what-guarantees-does-log-compaction-provide",
+        "kind": "official"
+      },
+      {
+        "title": "Kafka design: Log compaction basics",
+        "url": "https://kafka.apache.org/44/design/design/#log-compaction-basics",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "int-cmp-029",
+    "domain": "fundamentals",
+    "topics": [
+      "log-retention-compaction"
+    ],
+    "type": "single",
+    "stem": "A compacted topic receives a few hundred updates per hour, so the active segment takes days to reach the default `segment.bytes` (1 GiB). A consumer that reads from the start keeps seeing many old values for the same keys. What is the most likely reason?",
+    "options": [
+      {
+        "id": "a",
+        "text": "The log cleaner is disabled by default"
+      },
+      {
+        "id": "b",
+        "text": "The records are still in the active segment, and the active segment is never compacted"
+      },
+      {
+        "id": "c",
+        "text": "`min.cleanable.dirty.ratio` defaults to 0, which disables compaction"
+      },
+      {
+        "id": "d",
+        "text": "Compaction only removes duplicates across partitions"
+      }
+    ],
+    "correct": [
+      "b"
+    ],
+    "explanation": "The design docs: \"The active segment will not be compacted even if all of its messages are older than the minimum compaction time lag.\" Records become eligible for compaction \"only through active segment rolling\". For a compacted topic the active segment rolls when it reaches `segment.bytes`, or when its age reaches the smaller of `segment.ms` (default 7 days) and `max.compaction.lag.ms`.\n\nTo compact sooner, lower `segment.ms` or set `max.compaction.lag.ms`.\n\n- The log cleaner is enabled by default.\n- `min.cleanable.dirty.ratio` defaults to 0.5.\n- Compaction works within each partition; the same key always goes to the same partition anyway.",
+    "references": [
+      {
+        "title": "Kafka design: Configuring the log cleaner",
+        "url": "https://kafka.apache.org/44/design/design/#configuring-the-log-cleaner",
+        "kind": "official"
+      },
+      {
+        "title": "Topic configs: max.compaction.lag.ms",
+        "url": "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_max.compaction.lag.ms",
+        "kind": "official"
+      },
+      {
+        "title": "Topic configs: segment.ms",
+        "url": "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_segment.ms",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "int-cmp-030",
+    "domain": "fundamentals",
+    "topics": [
+      "log-retention-compaction"
+    ],
+    "type": "single",
+    "stem": "What does the topic setting `min.compaction.lag.ms` do, and what is its default?",
+    "options": [
+      {
+        "id": "a",
+        "text": "It is the minimum time a record stays uncompacted after it is written; default 0"
+      },
+      {
+        "id": "b",
+        "text": "It is the maximum time a record can stay uncompacted; default 7 days"
+      },
+      {
+        "id": "c",
+        "text": "It is how long tombstones are kept; default 1 day"
+      },
+      {
+        "id": "d",
+        "text": "It is how often the log cleaner runs; default 15 seconds"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`min.compaction.lag.ms`: \"The minimum time a message will remain uncompacted in the log. Only applicable for logs that are being compacted.\" Default `0`. The design docs: it \"provides a lower bound on how long each message will remain in the (uncompacted) head\", which is useful when consumers must see every update, not just the latest, for some period.\n\n- The maximum delay is `max.compaction.lag.ms` (default `9223372036854775807`, effectively unlimited).\n- Tombstone retention is `delete.retention.ms` (default 1 day).",
+    "references": [
+      {
+        "title": "Topic configs: min.compaction.lag.ms",
+        "url": "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_min.compaction.lag.ms",
+        "kind": "official"
+      },
+      {
+        "title": "Kafka design: What guarantees log compaction provides",
+        "url": "https://kafka.apache.org/44/design/design/#what-guarantees-does-log-compaction-provide",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "int-cmp-031",
+    "domain": "fundamentals",
+    "topics": [
+      "log-retention-compaction"
+    ],
+    "type": "single",
+    "stem": "A compacted topic uses the default `min.cleanable.dirty.ratio`. An engineer raises it to 0.9. What changes?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Compaction runs less often but more efficiently, and up to about 90% of the log may be duplicates in the meantime"
+      },
+      {
+        "id": "b",
+        "text": "Compaction runs more often and the log uses less disk"
+      },
+      {
+        "id": "c",
+        "text": "The cleaner keeps 90% of each key's history"
+      },
+      {
+        "id": "d",
+        "text": "Tombstones are removed 90% sooner"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`min.cleanable.dirty.ratio` (default `0.5`) \"controls how frequently the log compactor will attempt to clean the log\". It \"bounds the maximum space wasted in the log by duplicates (at 50% at most 50% of the log could be duplicates). A higher ratio will mean fewer, more efficient cleanings but will mean more wasted space in the log.\"\n\nThe setting does not decide how much history per key is kept, and it has nothing to do with tombstone retention (`delete.retention.ms`).",
+    "references": [
+      {
+        "title": "Topic configs: min.cleanable.dirty.ratio",
+        "url": "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_min.cleanable.dirty.ratio",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "int-cmp-032",
+    "domain": "fundamentals",
+    "topics": [
+      "log-retention-compaction"
+    ],
+    "type": "multi",
+    "stem": "A topic is configured with `cleanup.policy=delete,compact` and `retention.ms=1209600000` (14 days). Which two statements describe its behaviour? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "Segments older than the retention limit are deleted"
+      },
+      {
+        "id": "b",
+        "text": "Segments that are kept are compacted, so they hold at least the latest value per key"
+      },
+      {
+        "id": "c",
+        "text": "The combination is rejected, because only one policy can be set"
+      },
+      {
+        "id": "d",
+        "text": "`retention.ms` is ignored because compaction is enabled"
+      },
+      {
+        "id": "e",
+        "text": "Every key is kept forever, even after 14 days"
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "`cleanup.policy` accepts a comma-separated list: \"It is also possible to specify both policies in a comma-separated list (e.g. 'delete,compact'). In this case, old segments will be discarded per the retention time and size configuration, while retained segments will be compacted.\"\n\nThis suits keyed data that should be deduplicated but also age out, for example windowed state. Keys whose last update is older than the retention limit eventually disappear.",
+    "references": [
+      {
+        "title": "Topic configs: cleanup.policy",
+        "url": "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_cleanup.policy",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "int-cmp-033",
+    "domain": "fundamentals",
+    "topics": [
+      "log-retention-compaction"
+    ],
+    "type": "single",
+    "stem": "A service rebuilds a cache by reading a compacted topic from offset 0. It reads slowly, and the full scan takes 3 days. The topic uses the default `delete.retention.ms`. What can go wrong?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Nothing; compaction guarantees every consumer sees every tombstone"
+      },
+      {
+        "id": "b",
+        "text": "A tombstone can be removed before the slow reader reaches it, so the cache keeps a key that was deleted"
+      },
+      {
+        "id": "c",
+        "text": "The reader receives records out of order"
+      },
+      {
+        "id": "d",
+        "text": "The reader receives offsets that change during the scan"
+      }
+    ],
+    "correct": [
+      "b"
+    ],
+    "explanation": "The design docs: all delete markers will be seen \"provided the consumer reaches the head of the log in a time period less than the topic's `delete.retention.ms` setting (the default is 24 hours)... it is possible for a consumer to miss delete markers if it lags by more than `delete.retention.ms`.\" The setting's description says the same: it bounds \"the time in which a consumer must complete a read if they begin from offset 0\".\n\nThe fix is to raise `delete.retention.ms` above the worst-case rebuild time.\n\nCompaction never reorders records and never changes offsets.",
+    "references": [
+      {
+        "title": "Kafka design: What guarantees log compaction provides",
+        "url": "https://kafka.apache.org/44/design/design/#what-guarantees-does-log-compaction-provide",
+        "kind": "official"
+      },
+      {
+        "title": "Topic configs: delete.retention.ms",
+        "url": "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_delete.retention.ms",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "int-cmp-034",
+    "domain": "fundamentals",
+    "topics": [
+      "log-retention-compaction"
+    ],
+    "type": "multi",
+    "stem": "Which two statements about `max.compaction.lag.ms` are true? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "For compacted topics, the active segment rolls once its age reaches the smaller of `segment.ms` and `max.compaction.lag.ms`"
+      },
+      {
+        "id": "b",
+        "text": "Once records have been dirty for `max.compaction.lag.ms`, they become eligible for compaction even if `min.cleanable.dirty.ratio` is not met"
+      },
+      {
+        "id": "c",
+        "text": "Its default is 0, so records are compacted immediately"
+      },
+      {
+        "id": "d",
+        "text": "It forces the cleaner to compact the active segment"
+      },
+      {
+        "id": "e",
+        "text": "It sets how long tombstones are retained"
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "Topic config reference: \"Because the active segment is never compacted, for compacted topics this value also drives active segment rolling: the effective time-based roll threshold is the smaller of `segment.ms` and `max.compaction.lag.ms`. Active segment rolling moves records out of the active segment, after which `max.compaction.lag.ms` makes them eligible for compaction even if `min.cleanable.dirty.ratio` is not met.\"\n\n- The default is `9223372036854775807` (`Long.MAX_VALUE`), effectively no limit.\n- The active segment itself is still never compacted; the setting works by rolling it.\n- Tombstones are governed by `delete.retention.ms`.\n\nThe design docs add that this is not a hard deadline; it depends on cleaner thread availability.",
+    "references": [
+      {
+        "title": "Topic configs: max.compaction.lag.ms",
+        "url": "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_max.compaction.lag.ms",
+        "kind": "official"
+      },
+      {
+        "title": "Kafka design: Configuring the log cleaner",
+        "url": "https://kafka.apache.org/44/design/design/#configuring-the-log-cleaner",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "int-seg-035",
+    "domain": "fundamentals",
+    "topics": [
+      "log-retention-compaction"
+    ],
+    "type": "single",
+    "stem": "On Kafka 4.x, an old test script creates a topic with `segment.bytes=102400` (100 KiB) to force frequent segment rolls. What happens?",
+    "options": [
+      {
+        "id": "a",
+        "text": "It works as before"
+      },
+      {
+        "id": "b",
+        "text": "The setting is rejected, because since Kafka 4.0 the minimum `segment.bytes` is 1 MiB (1048576)"
+      },
+      {
+        "id": "c",
+        "text": "The value is rounded up to 1 GiB"
+      },
+      {
+        "id": "d",
+        "text": "The topic is created but ignores `segment.bytes` and only rolls on `segment.ms`"
+      }
+    ],
+    "correct": [
+      "b"
+    ],
+    "explanation": "The 4.0 upgrade notes: \"The minimum `segment.bytes`/`log.segment.bytes` has changed from 14 bytes to 1MB\" (KIP-1030). The 4.4 topic config reference lists the valid values as `[1048576,...]`. A value outside the valid range fails config validation, so the create request is rejected rather than silently adjusted.\n\nUse `segment.ms` if you need time-based rolls in tests.",
+    "references": [
+      {
+        "title": "Topic configs: segment.bytes",
+        "url": "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_segment.bytes",
+        "kind": "official"
+      },
+      {
+        "title": "Upgrade notes: notable changes in 4.0",
+        "url": "https://kafka.apache.org/44/getting-started/upgrade/#notable-changes-in-400",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "likely",
+    "source": "original",
+    "kafkaVersionNote": "Changed in Kafka 4.0: the minimum `segment.bytes` went from 14 bytes to 1 MiB. Older tutorials use tiny segment sizes that no longer validate."
+  },
+  {
+    "id": "int-seg-036",
+    "domain": "fundamentals",
+    "topics": [
+      "log-retention-compaction"
+    ],
+    "type": "single",
+    "stem": "Partition `logs-0` lives in the directory `logs-0` on a broker. Its segment files are named `00000000000000000000.log`, `00000000000000052371.log` and `00000000000000104862.log`. What do the numbers in the file names mean?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Each is the offset of the first record in that segment"
+      },
+      {
+        "id": "b",
+        "text": "Each is the creation time of the segment in milliseconds"
+      },
+      {
+        "id": "c",
+        "text": "Each is the size of the segment in bytes"
+      },
+      {
+        "id": "d",
+        "text": "Each is the leader epoch that wrote the segment"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The log implementation docs: a partition's data lives in a directory named topic-partition, and \"Each log file is named with the offset of the first message it contains. So the first file created will be 00000000000000000000.log\". Only the last segment is active; appends \"always go to the last file\".\n\nNaming segments by base offset lets the broker find the segment for any offset with a simple search.",
+    "references": [
+      {
+        "title": "Log implementation",
+        "url": "https://kafka.apache.org/44/implementation/log/",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "int-part-037",
+    "domain": "fundamentals",
+    "topics": [
+      "topic-design"
+    ],
+    "type": "single",
+    "stem": "Topic `payments` is keyed by account id and has 6 partitions. To handle more load, an operator increases it to 8 partitions with `kafka-topics.sh --alter --partitions 8`. What happens to keyed data?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Existing records are redistributed so that each key is still in exactly one partition"
+      },
+      {
+        "id": "b",
+        "text": "New records for some keys go to a different partition than their older records, so per-key ordering across the change is no longer guaranteed"
+      },
+      {
+        "id": "c",
+        "text": "Nothing changes, because the default partitioner only uses the original partition count"
+      },
+      {
+        "id": "d",
+        "text": "The command fails because keyed topics cannot gain partitions"
+      }
+    ],
+    "correct": [
+      "b"
+    ],
+    "explanation": "The operations guide: when \"data is partitioned by hash(key) % number_of_partitions, the default partitioner's mapping logic changes when the partition count increases. This means that messages with the same key may be routed to different partitions after the expansion, potentially affecting message ordering guarantees for existing keys. Kafka will not attempt to automatically redistribute existing data.\"\n\nConsumers that build per-key state (for example Kafka Streams aggregations) can see a key's history split across two partitions. For keyed topics, pick a partition count with headroom up front.\n\nAdding partitions is allowed for any topic; it is the side effects that matter.",
+    "references": [
+      {
+        "title": "Basic operations: modifying topics",
+        "url": "https://kafka.apache.org/44/operations/basic-kafka-operations/#modifying-topics",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "int-part-038",
+    "domain": "fundamentals",
+    "topics": [
+      "topic-design"
+    ],
+    "type": "single",
+    "stem": "A topic was created with 48 partitions, which turned out to be far too many. How can the team get down to 12 partitions?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`kafka-topics.sh --alter --partitions 12`"
+      },
+      {
+        "id": "b",
+        "text": "`kafka-configs.sh --alter --add-config num.partitions=12`"
+      },
+      {
+        "id": "c",
+        "text": "Create a new topic with 12 partitions and move producers and consumers to it (copying data if needed); Kafka cannot reduce a topic's partition count"
+      },
+      {
+        "id": "d",
+        "text": "Delete partitions 12 to 47 with `kafka-delete-records.sh`"
+      }
+    ],
+    "correct": [
+      "c"
+    ],
+    "explanation": "The operations guide: \"Kafka does not currently support reducing the number of partitions for a topic.\" The usual path is a new topic with the right count, migrating clients (and data, if it must be kept).\n\n- `--alter --partitions` can only increase the count.\n- `num.partitions` is a broker default for new auto-created topics; it doesn't change existing topics.\n- `kafka-delete-records.sh` deletes records up to an offset; it doesn't remove partitions.",
+    "references": [
+      {
+        "title": "Basic operations: modifying topics",
+        "url": "https://kafka.apache.org/44/operations/basic-kafka-operations/#modifying-topics",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "int-part-039",
+    "domain": "fundamentals",
+    "topics": [
+      "topic-design"
+    ],
+    "type": "multi",
+    "stem": "Which two facts from the Kafka docs should drive the choice of a topic's partition count? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "Within one consumer group, each partition is consumed by exactly one consumer at a time, so the partition count caps the group's parallelism"
+      },
+      {
+        "id": "b",
+        "text": "Each partition must fit entirely on a single broker"
+      },
+      {
+        "id": "c",
+        "text": "Partitions can be reduced later if there are too many"
+      },
+      {
+        "id": "d",
+        "text": "Adding partitions later never affects keyed data"
+      },
+      {
+        "id": "e",
+        "text": "Every partition is replicated to every broker in the cluster"
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "The operations guide on partition count: \"First each partition must fit entirely on a single server... Finally the partition count impacts the maximum parallelism of your consumers.\" The design docs: each partition \"is consumed by exactly one consumer within each subscribing consumer group at any given time.\"\n\n- The count cannot be decreased.\n- Increasing it changes the key-to-partition mapping.\n- Each partition is replicated to `replication.factor` brokers, not to all brokers.",
+    "references": [
+      {
+        "title": "Basic operations: adding and removing topics",
+        "url": "https://kafka.apache.org/44/operations/basic-kafka-operations/#adding-and-removing-topics",
+        "kind": "official"
+      },
+      {
+        "title": "Kafka design: Consumer position",
+        "url": "https://kafka.apache.org/44/design/design/#consumer-position",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "int-part-040",
+    "domain": "fundamentals",
+    "topics": [
+      "topic-design",
+      "consumer-groups"
+    ],
+    "type": "single",
+    "stem": "A topic has 6 partitions. A consumer group subscribed to it has 10 running consumers. What happens?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Each consumer gets 0.6 partitions' worth of records, split round robin"
+      },
+      {
+        "id": "b",
+        "text": "6 consumers get one partition each and 4 consumers sit idle"
+      },
+      {
+        "id": "c",
+        "text": "The group rejects the extra 4 consumers with an error"
+      },
+      {
+        "id": "d",
+        "text": "Kafka adds 4 partitions so every consumer has work"
+      }
+    ],
+    "correct": [
+      "b"
+    ],
+    "explanation": "Each partition is consumed by exactly one consumer in the group at any time, so at most 6 consumers can be active; the other 4 receive no partitions and stay idle. Idle members do act as spares that take over partitions in a rebalance.\n\n- A partition cannot be split between consumers in a classic consumer group.\n- Extra members are allowed; they just get nothing.\n- Kafka never adds partitions on its own.",
+    "references": [
+      {
+        "title": "Kafka design: Consumer position",
+        "url": "https://kafka.apache.org/44/design/design/#consumer-position",
+        "kind": "official"
+      },
+      {
+        "title": "Basic operations: adding and removing topics",
+        "url": "https://kafka.apache.org/44/operations/basic-kafka-operations/#adding-and-removing-topics",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "int-msg-041",
+    "domain": "fundamentals",
+    "topics": [
+      "topic-design"
+    ],
+    "type": "multi",
+    "stem": "Producers must send single records of about 3 MB (after compression) to topic `media`. Broker and client settings are at their defaults. Which two changes are needed for the produce requests to succeed? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "Raise the topic's `max.message.bytes` (or the broker's `message.max.bytes`) above the batch size"
+      },
+      {
+        "id": "b",
+        "text": "Raise the producer's `max.request.size` above the record size"
+      },
+      {
+        "id": "c",
+        "text": "Raise the consumer's `max.partition.fetch.bytes`, or consumers will never be able to read the record"
+      },
+      {
+        "id": "d",
+        "text": "Raise the broker's `replica.fetch.max.bytes`, or followers will never be able to replicate the record"
+      },
+      {
+        "id": "e",
+        "text": "Raise `segment.bytes` above 3 MB"
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "The broker's limit is `message.max.bytes` / topic `max.message.bytes`: \"The largest record batch size allowed by Kafka (after compression if compression is enabled)\", default `1048588` (about 1 MiB). The producer's `max.request.size` (default `1048576`) is \"effectively a cap on the maximum uncompressed record batch size\". Both must allow the record.\n\nThe fetch limits are **not** absolute maximums: for `max.partition.fetch.bytes` and `replica.fetch.max.bytes`, \"if the first record batch in the first non-empty partition of the fetch is larger than this limit, the batch will still be returned to ensure that the consumer can make progress\". Raising them may help throughput but isn't required.\n\n`segment.bytes` defaults to 1 GiB, which is already far larger than 3 MB.",
+    "references": [
+      {
+        "title": "Topic configs: max.message.bytes",
+        "url": "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_max.message.bytes",
+        "kind": "official"
+      },
+      {
+        "title": "Producer configs: max.request.size",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_max.request.size",
+        "kind": "official"
+      },
+      {
+        "title": "Consumer configs: max.partition.fetch.bytes",
+        "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_max.partition.fetch.bytes",
+        "kind": "official"
+      },
+      {
+        "title": "Broker configs: replica.fetch.max.bytes",
+        "url": "https://kafka.apache.org/44/configuration/broker-configs/#brokerconfigs_replica.fetch.max.bytes",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "int-msg-042",
+    "domain": "fundamentals",
+    "topics": [
+      "topic-design"
+    ],
+    "type": "single",
+    "stem": "What is the default value of the topic setting `max.message.bytes`?",
+    "options": [
+      {
+        "id": "a",
+        "text": "1048588 bytes (about 1 MiB), taken from the broker's `message.max.bytes`"
+      },
+      {
+        "id": "b",
+        "text": "10485760 bytes (10 MiB)"
+      },
+      {
+        "id": "c",
+        "text": "1073741824 bytes (1 GiB)"
+      },
+      {
+        "id": "d",
+        "text": "Unlimited (-1)"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`max.message.bytes` is \"the largest record batch size allowed by Kafka (after compression if compression is enabled)\". Default `1048588`; its server default property is `message.max.bytes`, which has the same default.\n\n1 GiB is the default `segment.bytes`, not a message limit.",
+    "references": [
+      {
+        "title": "Topic configs: max.message.bytes",
+        "url": "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_max.message.bytes",
+        "kind": "official"
+      },
+      {
+        "title": "Broker configs: message.max.bytes",
+        "url": "https://kafka.apache.org/44/configuration/broker-configs/#brokerconfigs_message.max.bytes",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "int-auto-043",
+    "domain": "fundamentals",
+    "topics": [
+      "topic-design"
+    ],
+    "type": "single",
+    "stem": "A producer sends to topic `metrics-raw`, which does not exist. The brokers use default settings. What happens?",
+    "options": [
+      {
+        "id": "a",
+        "text": "The send fails with `UnknownTopicOrPartitionException` permanently"
+      },
+      {
+        "id": "b",
+        "text": "The topic is auto-created with 1 partition and a replication factor of 1"
+      },
+      {
+        "id": "c",
+        "text": "The topic is auto-created with 3 partitions and a replication factor of 3"
+      },
+      {
+        "id": "d",
+        "text": "The topic is auto-created with as many partitions as there are brokers"
+      }
+    ],
+    "correct": [
+      "b"
+    ],
+    "explanation": "`auto.create.topics.enable` defaults to `true`. Auto-created topics take the default partition count `num.partitions` (default `1`) and `default.replication.factor` (default `1`). A single, unreplicated partition is rarely what production needs, which is why many teams disable auto-creation and create topics explicitly with `kafka-topics.sh` or the Admin API.\n\nThe `num.partitions` docs add a 4.x detail: for auto topic creation the broker's value is used only if set explicitly, otherwise the controller's value is used. Both default to 1.",
+    "references": [
+      {
+        "title": "Broker configs: auto.create.topics.enable",
+        "url": "https://kafka.apache.org/44/configuration/broker-configs/#brokerconfigs_auto.create.topics.enable",
+        "kind": "official"
+      },
+      {
+        "title": "Broker configs: num.partitions",
+        "url": "https://kafka.apache.org/44/configuration/broker-configs/#brokerconfigs_num.partitions",
+        "kind": "official"
+      },
+      {
+        "title": "Broker configs: default.replication.factor",
+        "url": "https://kafka.apache.org/44/configuration/broker-configs/#brokerconfigs_default.replication.factor",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "int-rf-044",
+    "domain": "fundamentals",
+    "topics": [
+      "topic-design",
+      "replication-isr"
+    ],
+    "type": "single",
+    "stem": "A team creates a topic with `--replication-factor 3` on a cluster that has only two brokers. What happens?",
+    "options": [
+      {
+        "id": "a",
+        "text": "The topic is created with 2 replicas and gains a third replica when a broker is added"
+      },
+      {
+        "id": "b",
+        "text": "Topic creation fails, because the replication factor is larger than the number of available brokers"
+      },
+      {
+        "id": "c",
+        "text": "The topic is created with 3 replicas, two of them on the same broker"
+      },
+      {
+        "id": "d",
+        "text": "The topic is created and the extra replica stays offline"
+      }
+    ],
+    "correct": [
+      "b"
+    ],
+    "explanation": "Each replica of a partition must be on a different broker, so a replication factor larger than the number of available brokers cannot be placed, and the create request fails with an invalid replication factor error. The broker docs describe the same rule for internal topics: creation \"will fail until the cluster size meets this replication factor requirement\".\n\nKafka does not silently lower the replication factor, put two replicas on one broker, or grow the replica count later; changing a topic's replication factor is a manual reassignment.",
+    "references": [
+      {
+        "title": "Kafka design: Replication",
+        "url": "https://kafka.apache.org/44/design/design/#replication",
+        "kind": "official"
+      },
+      {
+        "title": "Broker configs: offsets.topic.replication.factor",
+        "url": "https://kafka.apache.org/44/configuration/broker-configs/#brokerconfigs_offsets.topic.replication.factor",
+        "kind": "official"
+      },
+      {
+        "title": "Basic operations: increasing replication factor",
+        "url": "https://kafka.apache.org/44/operations/basic-kafka-operations/#increasing-replication-factor",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "likely",
+    "source": "original"
+  },
+  {
+    "id": "fund-zc-001",
+    "domain": "fundamentals",
+    "topics": [
+      "log-retention-compaction"
+    ],
+    "type": "single",
+    "stem": "A topic is read by ten consumer groups that are all caught up. The brokers show almost no disk reads. Why?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Recent data is still in the OS page cache, and the broker sends it to the socket with `sendfile` without copying it through the JVM"
+      },
+      {
+        "id": "b",
+        "text": "Each broker keeps the last segment of every partition in a JVM heap cache sized by `log.segment.bytes`"
+      },
+      {
+        "id": "c",
+        "text": "Consumers read directly from the leader's disk over NFS"
+      },
+      {
+        "id": "d",
+        "text": "The producer sends each record to all consumer groups directly, bypassing the broker's log"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "Kafka relies on the operating system's page cache instead of an in-process cache, and uses the zero-copy `sendfile` path to move data \"from pagecache to the network directly\". The design docs: \"on a Kafka cluster where the consumers are mostly caught up you will see no read activity on the disks whatsoever as they will be serving data entirely from cache.\" The data is cached once and reused by every group.\n\n- Kafka deliberately avoids a large JVM heap cache; `log.segment.bytes` sizes segment files.\n- Consumers always fetch through the broker protocol.\n- Producers only write to brokers.",
+    "references": [
+      {
+        "title": "Kafka design: efficiency",
+        "url": "https://kafka.apache.org/44/design/design/#efficiency",
+        "kind": "official"
+      },
+      {
+        "title": "Kafka design: don't fear the filesystem",
+        "url": "https://kafka.apache.org/44/design/design/#dont-fear-the-filesystem",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "fund-zc-002",
+    "domain": "fundamentals",
+    "topics": [
+      "log-retention-compaction"
+    ],
+    "type": "multi",
+    "stem": "Which statements about Kafka's zero-copy reads are true? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "With `sendfile`, data goes from the page cache to the socket without being copied into a user-space buffer"
+      },
+      {
+        "id": "b",
+        "text": "Zero-copy `sendfile` is not used when the listener uses SSL/TLS, because encryption happens in user space"
+      },
+      {
+        "id": "c",
+        "text": "Zero-copy requires consumers to set `fetch.min.bytes` to the segment size"
+      },
+      {
+        "id": "d",
+        "text": "Zero-copy works because the broker converts every batch into the consumer's preferred format before sending"
+      },
+      {
+        "id": "e",
+        "text": "Zero-copy moves data straight from disk into the consumer's JVM heap without a network transfer"
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "The design docs compare the normal four-copy path with `sendfile`: \"this re-copying is avoided by allowing the OS to send the data from pagecache to the network directly.\" This works because producers, brokers and consumers share one binary format, so the broker doesn't rewrite batches. They also note: \"TLS/SSL libraries operate at the user space... sendfile is not used when SSL is enabled.\"\n\n- `fetch.min.bytes` controls how long a fetch waits for data; it has nothing to do with zero-copy.\n- Converting formats would defeat zero-copy; the point is that the bytes go out unchanged.\n- The data still crosses the network to the consumer.",
+    "references": [
+      {
+        "title": "Kafka design: efficiency",
+        "url": "https://kafka.apache.org/44/design/design/#efficiency",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "fund-tier-001",
+    "domain": "fundamentals",
+    "topics": [
+      "log-retention-compaction"
+    ],
+    "type": "single",
+    "stem": "Topic `trades` has `remote.storage.enable=true` and `local.retention.ms` of 1 day, so older segments exist only in remote storage. A new consumer group starts with `auto.offset.reset=earliest`. What does the consumer need to do to read the old data?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Nothing special: it fetches from the broker as usual, and the broker serves old offsets from the remote tier"
+      },
+      {
+        "id": "b",
+        "text": "Set a consumer config pointing at the remote store, such as an S3 bucket"
+      },
+      {
+        "id": "c",
+        "text": "Nothing will work: data older than `local.retention.ms` is no longer readable by consumers"
+      },
+      {
+        "id": "d",
+        "text": "Use the Admin client to copy segments back to local disk first"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "Tiered storage is a broker feature: completed segments are copied to a remote tier and local copies are deleted after `local.retention.ms`, while the topic's `retention.ms` still decides how long data exists overall. Consumers keep using the normal fetch protocol. The tiered storage quick start shows exactly this, using `kafka-console-consumer.sh --from-beginning` \"to make sure it will successfully fetch offset 0 from the remote storage.\"\n\n- Clients have no remote-storage settings.\n- `local.retention.ms` only limits the local copy.\n- No manual restore step exists.\n\nNote that tiered storage doesn't support compacted topics.",
+    "references": [
+      {
+        "title": "Tiered storage: quick start example",
+        "url": "https://kafka.apache.org/44/operations/tiered-storage/#quick-start-example",
+        "kind": "official"
+      },
+      {
+        "title": "Topic configs: local.retention.ms",
+        "url": "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_local.retention.ms",
+        "kind": "official"
+      },
+      {
+        "title": "Tiered storage: limitations",
+        "url": "https://kafka.apache.org/44/operations/tiered-storage/#limitations",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  }
+]

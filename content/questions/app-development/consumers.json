@@ -1,0 +1,3186 @@
+[
+  {
+    "id": "cons-groups-001",
+    "domain": "app-development",
+    "topics": [
+      "consumer-groups"
+    ],
+    "type": "multi",
+    "stem": "A topic has 3 partitions. A team starts 5 consumers, all with the same `group.id`, all subscribed to the topic. What happens? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "Three consumers each get one partition and two consumers get no partitions."
+      },
+      {
+        "id": "b",
+        "text": "If one of the consumers that owns a partition fails, a rebalance can hand its partition to one of the idle consumers."
+      },
+      {
+        "id": "c",
+        "text": "Each partition is split across the five consumers so that every consumer receives some records."
+      },
+      {
+        "id": "d",
+        "text": "The group coordinator rejects the fourth and fifth consumers with an error because the group is full."
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "Within one group, each partition is assigned to exactly one consumer. With 3 partitions and 5 members, only 3 members can own a partition; the other 2 sit idle.\n\n- Idle members are still group members. If an owner fails or leaves, the group rebalances and a former idle member can take over its partition.\n- Partitions are never split between members of the same group, so not every consumer receives records.\n- The broker does not reject extra members. A group-size cap exists (`group.max.size` for classic groups, `group.consumer.max.size` for consumer-protocol groups) but both default to `2147483647`.",
+    "references": [
+      {
+        "title": "KafkaConsumer Javadoc: Consumer Groups and Topic Subscriptions",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html#consumer-groups-and-topic-subscriptions-heading",
+        "kind": "official"
+      },
+      {
+        "title": "Confluent docs, Kafka consumer: Size a consumer group",
+        "url": "https://docs.confluent.io/platform/current/clients/consumer.html#size-a-consumer-group",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "cons-groups-002",
+    "domain": "app-development",
+    "topics": [
+      "consumer-groups"
+    ],
+    "type": "single",
+    "stem": "A topic is read by an analytics service (`group.id=analytics`) and by a billing service (`group.id=billing`). Each service runs three instances. Which statement describes how records are delivered?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Every record is delivered to one instance of `analytics` and to one instance of `billing`."
+      },
+      {
+        "id": "b",
+        "text": "Every record is delivered to exactly one instance across both services, because they read the same topic."
+      },
+      {
+        "id": "c",
+        "text": "Every record is delivered to all six instances."
+      },
+      {
+        "id": "d",
+        "text": "The second group to subscribe only receives records that the first group has already committed."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "Kafka delivers each record to one member of **each** consumer group that subscribes. Different groups are independent: each keeps its own committed offsets and gets the full stream. Within a group, the partitions are divided so a record goes to one member only.\n\n- \"Exactly one instance across both services\" would be true only if they shared a `group.id`.\n- \"All six instances\" would need six different groups (pub-sub with one consumer per group).\n- Groups do not wait on each other's commits.",
+    "references": [
+      {
+        "title": "KafkaConsumer Javadoc: Consumer Groups and Topic Subscriptions",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html#consumer-groups-and-topic-subscriptions-heading",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "cons-groups-003",
+    "domain": "app-development",
+    "topics": [
+      "consumer-groups"
+    ],
+    "type": "single",
+    "stem": "A Kafka 4.4 Java consumer uses the classic group protocol and does not set `partition.assignment.strategy`. Which assignor does the group use, and what kind of rebalance results?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`RangeAssignor`, with eager rebalancing: every member gives up all its partitions at the start of each rebalance."
+      },
+      {
+        "id": "b",
+        "text": "`CooperativeStickyAssignor`, with incremental rebalancing: only partitions that move are revoked."
+      },
+      {
+        "id": "c",
+        "text": "`StickyAssignor`, with eager rebalancing that tries to keep previous assignments."
+      },
+      {
+        "id": "d",
+        "text": "The `uniform` server-side assignor, chosen by the group coordinator."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The default for `partition.assignment.strategy` is the list `[RangeAssignor, CooperativeStickyAssignor]`. The docs state this \"will use the RangeAssignor by default, but allows upgrading to the CooperativeStickyAssignor with just a single rolling bounce that removes the RangeAssignor from the list.\" `RangeAssignor` is an eager assignor, so each rebalance revokes every partition first.\n\n- `CooperativeStickyAssignor` is in the default list but is second, so it is not chosen while every member still lists `RangeAssignor` first.\n- `StickyAssignor` is not in the default list.\n- `uniform` is the default server-side assignor for the new `consumer` group protocol, not the classic one.",
+    "references": [
+      {
+        "title": "Consumer configs: partition.assignment.strategy",
+        "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_partition.assignment.strategy",
+        "kind": "official"
+      },
+      {
+        "title": "ConsumerRebalanceListener Javadoc (eager vs cooperative revocation)",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/ConsumerRebalanceListener.html",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "cons-groups-004",
+    "domain": "app-development",
+    "topics": [
+      "consumer-groups"
+    ],
+    "type": "multi",
+    "stem": "A classic-protocol group switches from `RangeAssignor` to `CooperativeStickyAssignor`. Which statements describe the cooperative behaviour? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "During a rebalance, a member only gives up the partitions that are moving to another member and keeps processing the rest."
+      },
+      {
+        "id": "b",
+        "text": "`onPartitionsRevoked` is only called when the set of partitions being revoked from that member is non-empty."
+      },
+      {
+        "id": "c",
+        "text": "Members no longer need a group coordinator, because they agree on the assignment among themselves."
+      },
+      {
+        "id": "d",
+        "text": "Every member revokes all its partitions at the start of the rebalance, but gets the same ones back afterwards."
+      },
+      {
+        "id": "e",
+        "text": "Cooperative rebalancing removes the need for heartbeats."
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "`CooperativeStickyAssignor` uses the same sticky logic as `StickyAssignor` but with the cooperative (incremental) protocol. Members keep the partitions that stay with them and revoke only those that move.\n\nThe `ConsumerRebalanceListener` docs state that in cooperative rebalancing, `onPartitionsRevoked` is called with the partitions to revoke \"iff the set is non-empty\". In eager rebalancing it is called with the full assignment even when nothing is revoked.\n\n- The group coordinator still runs the group; with the classic protocol one member (the leader) computes the assignment.\n- Revoking everything at the start is the **eager** behaviour.\n- Heartbeats are still how the coordinator detects live members.",
+    "references": [
+      {
+        "title": "CooperativeStickyAssignor Javadoc",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/CooperativeStickyAssignor.html",
+        "kind": "official"
+      },
+      {
+        "title": "ConsumerRebalanceListener Javadoc",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/ConsumerRebalanceListener.html",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "cons-groups-005",
+    "domain": "app-development",
+    "topics": [
+      "consumer-groups"
+    ],
+    "type": "single",
+    "stem": "A classic-protocol group uses `RangeAssignor`. Consumers `C0` and `C1` both subscribe to topics `t0` and `t1`, and each topic has 3 partitions. How are the six partitions assigned?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`C0` gets `t0p0, t0p1, t1p0, t1p1`; `C1` gets `t0p2, t1p2`."
+      },
+      {
+        "id": "b",
+        "text": "`C0` gets `t0p0, t0p2, t1p1`; `C1` gets `t0p1, t1p0, t1p2`."
+      },
+      {
+        "id": "c",
+        "text": "`C0` gets all of `t0`; `C1` gets all of `t1`."
+      },
+      {
+        "id": "d",
+        "text": "`C0` and `C1` each get three partitions, chosen to minimise movement from the last assignment."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`RangeAssignor` works **per topic**: for each topic it lays out partitions in order and consumers in lexicographic order, divides, and gives the first consumers one extra when it does not divide evenly. With 3 partitions and 2 consumers, `C0` gets 2 and `C1` gets 1 for **each** topic, so `C0` ends up with 4 partitions and `C1` with 2. This imbalance across many topics is a known trait of range assignment.\n\n- The interleaved layout is what `RoundRobinAssignor` produces for this example.\n- One whole topic per consumer is not how any built-in assignor works.\n- Minimising movement is the sticky assignors' goal.",
+    "references": [
+      {
+        "title": "RangeAssignor Javadoc",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/RangeAssignor.html",
+        "kind": "official"
+      },
+      {
+        "title": "RoundRobinAssignor Javadoc",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/RoundRobinAssignor.html",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "cons-groups-006",
+    "domain": "app-development",
+    "topics": [
+      "consumer-groups"
+    ],
+    "type": "single",
+    "stem": "A classic-protocol group runs Kafka 4.4 consumers with the default `partition.assignment.strategy`. The team wants cooperative rebalancing with as few restarts as possible. What is the documented path?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Do one rolling bounce that sets `partition.assignment.strategy` to only `CooperativeStickyAssignor` on each consumer."
+      },
+      {
+        "id": "b",
+        "text": "Stop every consumer, delete the group with `kafka-consumer-groups --delete`, then start them with `CooperativeStickyAssignor`."
+      },
+      {
+        "id": "c",
+        "text": "Set `group.instance.id` on each consumer; static members rebalance cooperatively."
+      },
+      {
+        "id": "d",
+        "text": "Nothing: the default list already selects `CooperativeStickyAssignor` once all brokers run 4.x."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The default list is `[RangeAssignor, CooperativeStickyAssignor]`. The config reference says this lets you upgrade to `CooperativeStickyAssignor` \"with just a single rolling bounce that removes the RangeAssignor from the list\". While some members still list `RangeAssignor` first, the group keeps using it; once all members only support the cooperative assignor, the group switches.\n\n- Deleting the group is unnecessary and would throw away committed offsets.\n- Static membership avoids rebalances on restart but does not change the assignor.\n- The default list picks `RangeAssignor` (the first entry every member supports).",
+    "references": [
+      {
+        "title": "Consumer configs: partition.assignment.strategy",
+        "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_partition.assignment.strategy",
+        "kind": "official"
+      },
+      {
+        "title": "Confluent docs, Kafka consumer: Upgrade to CooperativeStickyAssignor",
+        "url": "https://docs.confluent.io/platform/current/clients/consumer.html#upgrade-to-cooperativestickyassignor",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "cons-groups-007",
+    "domain": "app-development",
+    "topics": [
+      "consumer-groups"
+    ],
+    "type": "single",
+    "stem": "A classic-protocol consumer sets `group.instance.id=orders-3` and `session.timeout.ms=120000`. The pod restarts and is back in 40 seconds with the same `group.instance.id`. What happens to the group?",
+    "options": [
+      {
+        "id": "a",
+        "text": "No rebalance is triggered; the restarted member rejoins with its previous identity and keeps its partitions."
+      },
+      {
+        "id": "b",
+        "text": "An immediate rebalance happens when the pod stops, and another when it comes back."
+      },
+      {
+        "id": "c",
+        "text": "The restarted consumer is fenced with `FencedInstanceIdException` because the ID is still registered."
+      },
+      {
+        "id": "d",
+        "text": "The group waits for `max.poll.interval.ms` before deciding whether to rebalance."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "With `group.instance.id` set, the consumer is a **static member**. The design docs say group membership \"remains unchanged based on those ids, thus no rebalance will be triggered\". A static member does not send a leave-group request when it shuts down, so the coordinator only removes it if no heartbeat arrives before the session timeout. Here the restart (40 s) is shorter than `session.timeout.ms` (120 s), so the member rejoins under the same identity.\n\n- Two rebalances is the behaviour of a **dynamic** member (default `group.instance.id=null`).\n- `FencedInstanceIdException` is for two live instances using the same ID at once, not for a restart.\n- `max.poll.interval.ms` bounds the time between `poll()` calls; it is not what governs restarts.",
+    "references": [
+      {
+        "title": "Consumer configs: group.instance.id",
+        "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_group.instance.id",
+        "kind": "official"
+      },
+      {
+        "title": "Kafka design: Static Membership",
+        "url": "https://kafka.apache.org/44/design/design/#static-membership",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "cons-groups-008",
+    "domain": "app-development",
+    "topics": [
+      "consumer-groups"
+    ],
+    "type": "single",
+    "stem": "Because of a deployment mistake, two consumer processes in the same group start with the same `group.instance.id`. What does Kafka do?",
+    "options": [
+      {
+        "id": "a",
+        "text": "The broker fences the duplicate, and the client gets a `FencedInstanceIdException`."
+      },
+      {
+        "id": "b",
+        "text": "Both are accepted and the partitions are split between them."
+      },
+      {
+        "id": "c",
+        "text": "The second process silently becomes a dynamic member with a generated ID."
+      },
+      {
+        "id": "d",
+        "text": "The coordinator assigns both processes the same partitions, so every record is read twice."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`group.instance.id` must be unique per instance: \"only one instance with this ID is allowed in the consumer group at any time.\" The design docs describe the fencing: \"If you accidentally configure duplicate ids for different instances, a fencing mechanism on broker side will inform your duplicate client to shutdown immediately by triggering a `org.apache.kafka.common.errors.FencedInstanceIdException`.\"\n\nNone of the other outcomes happen: the coordinator does not split, downgrade or double-assign.",
+    "references": [
+      {
+        "title": "Kafka design: Static Membership",
+        "url": "https://kafka.apache.org/44/design/design/#static-membership",
+        "kind": "official"
+      },
+      {
+        "title": "Consumer configs: group.instance.id",
+        "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_group.instance.id",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "cons-groups-009",
+    "domain": "app-development",
+    "topics": [
+      "consumer-groups"
+    ],
+    "type": "multi",
+    "stem": "A team sets `group.protocol=consumer` on its Kafka 4.4 Java consumers. Which client settings or APIs are **no longer usable** with this protocol? (Choose three.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "`session.timeout.ms`"
+      },
+      {
+        "id": "b",
+        "text": "`heartbeat.interval.ms`"
+      },
+      {
+        "id": "c",
+        "text": "`partition.assignment.strategy`"
+      },
+      {
+        "id": "d",
+        "text": "`max.poll.interval.ms`"
+      },
+      {
+        "id": "e",
+        "text": "`group.instance.id`"
+      },
+      {
+        "id": "f",
+        "text": "`enable.auto.commit`"
+      }
+    ],
+    "correct": [
+      "a",
+      "b",
+      "c"
+    ],
+    "explanation": "The consumer rebalance protocol page lists what stops working when `group.protocol=consumer`: `heartbeat.interval.ms`, `session.timeout.ms`, `partition.assignment.strategy`, and `enforceRebalance()`. The broker controls the session timeout (`group.consumer.session.timeout.ms`) and heartbeat interval (`group.consumer.heartbeat.interval.ms`), and the coordinator runs a server-side assignor (pick one with `group.remote.assignor`).\n\n- `max.poll.interval.ms` still applies; its docs describe behaviour under both protocols.\n- `group.instance.id` (static membership) is still supported.\n- `enable.auto.commit` is unchanged.",
+    "references": [
+      {
+        "title": "Consumer Rebalance Protocol: Consumer",
+        "url": "https://kafka.apache.org/44/operations/consumer-rebalance-protocol/#consumer",
+        "kind": "official"
+      },
+      {
+        "title": "Consumer configs: session.timeout.ms",
+        "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_session.timeout.ms",
+        "kind": "official"
+      },
+      {
+        "title": "Consumer configs: heartbeat.interval.ms",
+        "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_heartbeat.interval.ms",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original",
+    "kafkaVersionNote": "KIP-848 (`group.protocol=consumer`) is GA since Kafka 4.0. In 4.4 the client default is still `classic`."
+  },
+  {
+    "id": "cons-groups-010",
+    "domain": "app-development",
+    "topics": [
+      "consumer-groups"
+    ],
+    "type": "single",
+    "stem": "In Apache Kafka 4.4, what is the default value of the consumer setting `group.protocol`?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`classic`"
+      },
+      {
+        "id": "b",
+        "text": "`consumer`"
+      },
+      {
+        "id": "c",
+        "text": "`cooperative`"
+      },
+      {
+        "id": "d",
+        "text": "`streams`"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The consumer config reference lists `group.protocol` with valid values `classic` and `consumer`, default `classic`. The new protocol (KIP-848) is GA since 4.0 and enabled on the brokers by default, but clients must opt in with `group.protocol=consumer`.\n\n- `consumer` is the opt-in value. The rebalance-protocol page says the plan is for it to become the default in Kafka 5.0.\n- `cooperative` is a rebalancing style of the classic protocol, not a `group.protocol` value.\n- `streams` is a Kafka Streams group protocol, not a valid value for the plain consumer.",
+    "references": [
+      {
+        "title": "Consumer configs: group.protocol",
+        "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_group.protocol",
+        "kind": "official"
+      },
+      {
+        "title": "Consumer Rebalance Protocol: Evolution Timeline",
+        "url": "https://kafka.apache.org/44/operations/consumer-rebalance-protocol/#evolution-timeline",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original",
+    "kafkaVersionNote": "Planned: KafkaConsumer defaults to `consumer` in Kafka 5.0 and drops `classic` in 6.0 (KIP-1274). Check the version your exam targets."
+  },
+  {
+    "id": "cons-groups-011",
+    "domain": "app-development",
+    "topics": [
+      "consumer-groups"
+    ],
+    "type": "single",
+    "stem": "A group uses `group.protocol=consumer` and no member sets `group.remote.assignor`. Who computes the partition assignment, and with which assignor by default?",
+    "options": [
+      {
+        "id": "a",
+        "text": "The broker's group coordinator, using the first assignor in `group.consumer.assignors` (`uniform` by default)."
+      },
+      {
+        "id": "b",
+        "text": "The group leader (one of the consumers), using `RangeAssignor`."
+      },
+      {
+        "id": "c",
+        "text": "Each consumer independently, using `CooperativeStickyAssignor`."
+      },
+      {
+        "id": "d",
+        "text": "The KRaft controller quorum, using round robin."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "With the new protocol the assignment moves to the server. The rebalance-protocol page states that `uniform` and `range` assignors are provided and that `uniform` is the default, being \"the first assignor in the list of `group.consumer.assignors`\", unless a consumer chooses another via `group.remote.assignor`. The broker config `group.consumer.assignors` defaults to `uniform,range`.\n\n- A consumer acting as group leader is how the **classic** protocol works.\n- Client-side assignors such as `CooperativeStickyAssignor` are not supported by the new protocol.\n- The controller quorum manages cluster metadata, not consumer group assignment.",
+    "references": [
+      {
+        "title": "Consumer Rebalance Protocol: Server",
+        "url": "https://kafka.apache.org/44/operations/consumer-rebalance-protocol/#server",
+        "kind": "official"
+      },
+      {
+        "title": "Broker configs: group.consumer.assignors",
+        "url": "https://kafka.apache.org/44/configuration/broker-configs/#brokerconfigs_group.consumer.assignors",
+        "kind": "official"
+      },
+      {
+        "title": "Consumer configs: group.remote.assignor",
+        "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_group.remote.assignor",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original",
+    "kafkaVersionNote": "New in Kafka 4.0 (KIP-848 GA). How much the CCDAK tests the new protocol is not known."
+  },
+  {
+    "id": "cons-groups-012",
+    "domain": "app-development",
+    "topics": [
+      "consumer-groups"
+    ],
+    "type": "single",
+    "stem": "A group runs with `group.protocol=consumer`. An engineer sets `session.timeout.ms=10000` on the clients to detect failures faster. Where is the session timeout actually controlled for this group?",
+    "options": [
+      {
+        "id": "a",
+        "text": "By the broker config `group.consumer.session.timeout.ms` (default 45 seconds)."
+      },
+      {
+        "id": "b",
+        "text": "By the client `session.timeout.ms`, as with the classic protocol."
+      },
+      {
+        "id": "c",
+        "text": "By `max.poll.interval.ms`, which replaces the session timeout in the new protocol."
+      },
+      {
+        "id": "d",
+        "text": "By `heartbeat.interval.ms` multiplied by three."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The `session.timeout.ms` reference says the client setting \"is not supported when `group.protocol` is set to `consumer`. In that case, session timeout is controlled by the broker config `group.consumer.session.timeout.ms`.\" That broker config defaults to `45000`.\n\n- The client setting only applies to the classic protocol.\n- `max.poll.interval.ms` is a separate check on the time between `poll()` calls; it does not replace the session timeout.\n- There is no multiply-by-three rule; \"no higher than 1/3\" is only guidance for `heartbeat.interval.ms` under the classic protocol.",
+    "references": [
+      {
+        "title": "Consumer configs: session.timeout.ms",
+        "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_session.timeout.ms",
+        "kind": "official"
+      },
+      {
+        "title": "Broker configs: group.consumer.session.timeout.ms",
+        "url": "https://kafka.apache.org/44/configuration/broker-configs/#brokerconfigs_group.consumer.session.timeout.ms",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "cons-groups-013",
+    "domain": "app-development",
+    "topics": [
+      "consumer-groups"
+    ],
+    "type": "multi",
+    "stem": "A classic group using `CooperativeStickyAssignor` must move to `group.protocol=consumer`. Which statements about the migration are true? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "The group can be upgraded online by rolling out consumers with `group.protocol=consumer`; the group converts when the first such consumer joins."
+      },
+      {
+        "id": "b",
+        "text": "An empty group is converted automatically when its consumers come back with the new protocol, at the cost of taking the group down."
+      },
+      {
+        "id": "c",
+        "text": "The group must first be deleted with `kafka-consumer-groups --delete`, which also preserves its committed offsets."
+      },
+      {
+        "id": "d",
+        "text": "Online migration works even if the classic assignor embeds custom metadata in the subscription."
+      },
+      {
+        "id": "e",
+        "text": "Every broker must set `group.coordinator.rebalance.protocols=consumer` and drop `classic` before any consumer can switch."
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "The rebalance-protocol page describes two paths:\n\n- **Offline:** groups convert automatically between classic and consumer \"when they are empty\", so you can stop all consumers and restart them with `group.protocol=consumer`. The downside is downtime.\n- **Online:** roll out consumers with `group.protocol=consumer`; \"when the first consumer using the new Consumer rebalance protocol joins the group, the group is converted\", and the classic members interoperate. This \"is only possible when the classic group uses an assignor that does not embed custom metadata\".\n\nDeleting the group would delete its committed offsets. The broker setting `group.coordinator.rebalance.protocols` defaults to `classic,consumer,streams` (and is deprecated); removing `classic` is not a step in the migration.",
+    "references": [
+      {
+        "title": "Consumer Rebalance Protocol: Upgrade & Downgrade",
+        "url": "https://kafka.apache.org/44/operations/consumer-rebalance-protocol/#upgrade--downgrade",
+        "kind": "official"
+      },
+      {
+        "title": "Broker configs: group.coordinator.rebalance.protocols",
+        "url": "https://kafka.apache.org/44/configuration/broker-configs/#brokerconfigs_group.coordinator.rebalance.protocols",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "likely",
+    "source": "original",
+    "kafkaVersionNote": "Based on the Kafka 4.4 rebalance-protocol page. The migration process is new in 4.x and its details may still change."
+  },
+  {
+    "id": "cons-groups-014",
+    "domain": "app-development",
+    "topics": [
+      "consumer-groups"
+    ],
+    "type": "single",
+    "stem": "A consumer calls `assign()` with partitions 0 and 1 of `orders` and sets `group.id=reporting`. Another consumer with the same `group.id` dies. What happens to the first consumer's partitions?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Nothing: manual assignment does not use group coordination, so there is no rebalance; `group.id` is only used for committing offsets."
+      },
+      {
+        "id": "b",
+        "text": "A rebalance runs and the first consumer is given the dead consumer's partitions too."
+      },
+      {
+        "id": "c",
+        "text": "The first consumer's partitions are revoked and `onPartitionsRevoked` is called."
+      },
+      {
+        "id": "d",
+        "text": "The first consumer throws `IllegalStateException` because two consumers shared a `group.id`."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "With `assign()`, \"dynamic partition assignment and consumer group coordination will be disabled.\" The Javadoc adds: \"The group that the consumer specifies is still used for committing offsets, but now the set of partitions will only change with another call to `assign`.\" Consumer failures do not cause rebalances in this mode, and `ConsumerRebalanceListener` callbacks do not apply.\n\nSharing a `group.id` between manually-assigned consumers is allowed, though the Javadoc suggests a unique group per instance to avoid offset commit conflicts.",
+    "references": [
+      {
+        "title": "KafkaConsumer Javadoc: Manual Partition Assignment",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html#manual-partition-assignment-heading",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "cons-groups-015",
+    "domain": "app-development",
+    "topics": [
+      "consumer-groups"
+    ],
+    "type": "single",
+    "stem": "A consumer calls `subscribe(List.of(\"orders\"))` and later, without calling `unsubscribe()`, calls `assign()` on partition 0 of `payments`. What happens?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`assign()` throws `IllegalStateException`, because subscription and manual assignment cannot be mixed."
+      },
+      {
+        "id": "b",
+        "text": "The consumer reads `orders` through the group and `payments` partition 0 directly."
+      },
+      {
+        "id": "c",
+        "text": "`assign()` silently replaces the subscription."
+      },
+      {
+        "id": "d",
+        "text": "The group rebalances to add `payments` to every member."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The `assign()` Javadoc lists `IllegalStateException` \"if `subscribe()` is called previously with topics or pattern (without a subsequent call to `unsubscribe()`)\". The class docs say \"it isn't possible to mix manual partition assignment (i.e. using `assign`) with dynamic partition assignment through topic subscription\". To switch, call `unsubscribe()` first.",
+    "references": [
+      {
+        "title": "KafkaConsumer Javadoc: Manual Partition Assignment",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html#manual-partition-assignment-heading",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "cons-groups-016",
+    "domain": "app-development",
+    "topics": [
+      "consumer-groups"
+    ],
+    "type": "multi",
+    "stem": "A classic-protocol group is stable. Which events cause a rebalance of the group? (Choose three.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "A new consumer with the same `group.id` subscribes and joins."
+      },
+      {
+        "id": "b",
+        "text": "A member stops sending heartbeats for longer than `session.timeout.ms`."
+      },
+      {
+        "id": "c",
+        "text": "An admin adds partitions to a topic the group subscribes to."
+      },
+      {
+        "id": "d",
+        "text": "A producer starts writing to the topic with a new key."
+      },
+      {
+        "id": "e",
+        "text": "A member commits offsets with `commitSync()`."
+      },
+      {
+        "id": "f",
+        "text": "A follower replica of a subscribed partition drops out of the ISR."
+      }
+    ],
+    "correct": [
+      "a",
+      "b",
+      "c"
+    ],
+    "explanation": "The `KafkaConsumer` Javadoc says rebalancing happens when a process fails, when a new consumer joins, and \"when new partitions are added to one of the subscribed topics or when a new topic matching a subscribed regex is created\". A member that misses heartbeats for `session.timeout.ms` (default 45 s) is considered dead and its partitions are reassigned.\n\n- New keys only change which partition records go to; the group does not care.\n- Committing offsets does not change membership.\n- ISR changes are a replication matter. The `RangeAssignor` docs note that consumers do not rebalance on ISR change.",
+    "references": [
+      {
+        "title": "KafkaConsumer Javadoc: Consumer Groups and Topic Subscriptions",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html#consumer-groups-and-topic-subscriptions-heading",
+        "kind": "official"
+      },
+      {
+        "title": "KafkaConsumer Javadoc: Detecting Consumer Failures",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html#detecting-consumer-failures-heading",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "cons-groups-017",
+    "domain": "app-development",
+    "topics": [
+      "consumer-groups"
+    ],
+    "type": "single",
+    "stem": "How is the group coordinator broker for a consumer group chosen?",
+    "options": [
+      {
+        "id": "a",
+        "text": "The `group.id` is hashed to a partition of `__consumer_offsets`; the leader of that partition is the group's coordinator."
+      },
+      {
+        "id": "b",
+        "text": "The active KRaft controller is the coordinator for every group."
+      },
+      {
+        "id": "c",
+        "text": "The first broker in the consumer's `bootstrap.servers` list is the coordinator."
+      },
+      {
+        "id": "d",
+        "text": "The coordinator is the leader of partition 0 of the first subscribed topic."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "Confluent's consumer documentation: \"The group's ID is hashed to a specific partition of Kafka's internal offsets topic, `__consumer_offsets`. The broker which is the leader for that particular partition is then assigned as the coordinator for that consumer group.\" This spreads coordination work across brokers.\n\n- The KRaft controller manages cluster metadata, not groups.\n- `bootstrap.servers` is only for discovering the cluster.\n- Subscribed topics play no part in choosing the coordinator.",
+    "references": [
+      {
+        "title": "Confluent docs, Kafka consumer: Consumer groups",
+        "url": "https://docs.confluent.io/platform/current/clients/consumer.html#consumer-groups",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "cons-groups-018",
+    "domain": "app-development",
+    "topics": [
+      "consumer-groups"
+    ],
+    "type": "multi",
+    "stem": "A classic-protocol consumer uses an eager assignor (`RangeAssignor`) and registers a `ConsumerRebalanceListener`. Which statements about the callbacks are true? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "`onPartitionsRevoked` is called at the start of every rebalance with the member's full assignment, even if it will get the same partitions back."
+      },
+      {
+        "id": "b",
+        "text": "`onPartitionsAssigned` is called once when the rebalance completes, even if the collection is empty."
+      },
+      {
+        "id": "c",
+        "text": "`onPartitionsLost` is called on every rebalance in place of `onPartitionsRevoked`."
+      },
+      {
+        "id": "d",
+        "text": "The callbacks run on a background heartbeat thread, so they must be thread-safe."
+      },
+      {
+        "id": "e",
+        "text": "Throwing an exception from `onPartitionsAssigned` rejects the assignment and triggers a new rebalance."
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "From the `ConsumerRebalanceListener` docs: \"With eager rebalancing, `onPartitionsRevoked` will always be called at the start of a rebalance\", and in eager mode it receives the full set of assigned partitions, \"even if there are no partitions to revoke\". Also, `onPartitionsAssigned` \"will always be triggered exactly once when the rebalance completes... even if there is no newly assigned partitions\".\n\n- `onPartitionsLost` is only for exceptional cases where ownership was lost without a normal revoke, such as a session timeout.\n- Callbacks run in the user thread as part of `poll()`.\n- Callbacks only notify. An exception is passed up to `poll()` and \"does not affect the assignment in any way\".",
+    "references": [
+      {
+        "title": "ConsumerRebalanceListener Javadoc",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/ConsumerRebalanceListener.html",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "cons-groups-019",
+    "domain": "app-development",
+    "topics": [
+      "consumer-groups"
+    ],
+    "type": "single",
+    "stem": "A consumer's network is cut for longer than its session timeout. When it reconnects, it finds that its partitions were already given to other members. Which callback runs, and what should it avoid doing?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`onPartitionsLost`; it should not commit offsets for those partitions, because other members may already own them."
+      },
+      {
+        "id": "b",
+        "text": "`onPartitionsRevoked`; it should commit offsets synchronously for those partitions."
+      },
+      {
+        "id": "c",
+        "text": "`onPartitionsAssigned` with an empty list; it should seek to the end."
+      },
+      {
+        "id": "d",
+        "text": "No callback runs; the consumer throws `FencedInstanceIdException`."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`onPartitionsLost` exists for the case where \"the session times out, then the partitions may be reassigned before we have a chance to revoke them gracefully.\" When it runs, \"the partitions may already be owned by some other members in the group and therefore users would not be able to commit its consumed offsets\". By default it calls `onPartitionsRevoked`, so override it if your revoke logic commits.\n\n- `onPartitionsRevoked` is the graceful path, used when the member still owns the partitions.\n- `FencedInstanceIdException` is about duplicate `group.instance.id` values.",
+    "references": [
+      {
+        "title": "ConsumerRebalanceListener Javadoc",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/ConsumerRebalanceListener.html",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "cons-groups-020",
+    "domain": "app-development",
+    "topics": [
+      "consumer-groups"
+    ],
+    "type": "multi",
+    "stem": "A 40-member classic group pauses for many seconds on every rolling deploy because each restart triggers rebalances. Which changes reduce this disruption? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "Give each instance a stable `group.instance.id` and a `session.timeout.ms` longer than a typical restart."
+      },
+      {
+        "id": "b",
+        "text": "Move to cooperative rebalancing (`CooperativeStickyAssignor`) or to `group.protocol=consumer`, so unaffected partitions keep being processed."
+      },
+      {
+        "id": "c",
+        "text": "Lower `session.timeout.ms` to 1000 so that departures are detected faster."
+      },
+      {
+        "id": "d",
+        "text": "Set `max.poll.records=1` so that each poll returns faster."
+      },
+      {
+        "id": "e",
+        "text": "Set `enable.auto.commit=false`."
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "Static membership stops a quick restart from triggering a rebalance at all: the member keeps its identity and the coordinator waits for the session timeout. Cooperative rebalancing and the new consumer protocol are incremental, so only partitions that move are revoked and other members keep working. Confluent's sizing guidance recommends both.\n\n- A 1 s session timeout is below the broker's `group.min.session.timeout.ms` (6 s by default) and would cause more spurious rebalances.\n- `max.poll.records` affects poll-loop timing, not rebalances caused by restarts.\n- How offsets are committed does not change how often rebalances happen.",
+    "references": [
+      {
+        "title": "Kafka design: Static Membership",
+        "url": "https://kafka.apache.org/44/design/design/#static-membership",
+        "kind": "official"
+      },
+      {
+        "title": "Confluent docs, Kafka consumer: Size a consumer group",
+        "url": "https://docs.confluent.io/platform/current/clients/consumer.html#size-a-consumer-group",
+        "kind": "official"
+      },
+      {
+        "title": "Broker configs: group.min.session.timeout.ms",
+        "url": "https://kafka.apache.org/44/configuration/broker-configs/#brokerconfigs_group.min.session.timeout.ms",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "likely",
+    "source": "original"
+  },
+  {
+    "id": "cons-groups-021",
+    "domain": "app-development",
+    "topics": [
+      "consumer-groups"
+    ],
+    "type": "single",
+    "stem": "A topic has 12 partitions and a group of 12 consumers falls behind. The team adds 6 more consumers to the same group. What is the effect on throughput?",
+    "options": [
+      {
+        "id": "a",
+        "text": "No gain: the 6 new consumers sit idle, because one partition can only go to one member of a group."
+      },
+      {
+        "id": "b",
+        "text": "Throughput rises about 50%, because partitions are shared between consumers."
+      },
+      {
+        "id": "c",
+        "text": "Throughput doubles, because each new consumer reads from the follower replicas."
+      },
+      {
+        "id": "d",
+        "text": "The group rejects the new consumers until partitions are added."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "Each partition is assigned to exactly one member of a group, so the number of partitions caps a group's parallelism. With 12 partitions, members 13 to 18 get nothing. To scale further, add partitions (keeping in mind this changes key-to-partition mapping) or make each consumer faster.\n\nPartitions are not shared; extra members are accepted, just idle. Fetching from followers (`client.rack`) does not change how many members get work.",
+    "references": [
+      {
+        "title": "KafkaConsumer Javadoc: Consumer Groups and Topic Subscriptions",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html#consumer-groups-and-topic-subscriptions-heading",
+        "kind": "official"
+      },
+      {
+        "title": "Confluent docs, Kafka consumer: Size a consumer group",
+        "url": "https://docs.confluent.io/platform/current/clients/consumer.html#size-a-consumer-group",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "cons-groups-022",
+    "domain": "app-development",
+    "topics": [
+      "consumer-groups"
+    ],
+    "type": "single",
+    "stem": "A Kafka 4.4 consumer with `group.protocol=consumer` subscribes with `subscribe(SubscriptionPattern)`. Where is the regular expression evaluated?",
+    "options": [
+      {
+        "id": "a",
+        "text": "On the broker side, using the RE2J syntax."
+      },
+      {
+        "id": "b",
+        "text": "On the client, using `java.util.regex`, after each metadata refresh."
+      },
+      {
+        "id": "c",
+        "text": "By the KRaft controller when a topic is created."
+      },
+      {
+        "id": "d",
+        "text": "Nowhere: pattern subscriptions are not supported with the new protocol."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The rebalance-protocol page: `subscribe(SubscriptionPattern)` and its listener variant \"have been added to subscribe to a regular expression with the new Consumer rebalance protocol. With these methods, the regular expression uses the RE2J format and is now evaluated on the server side.\"\n\nClient-side `java.util.regex.Pattern` evaluation is how `subscribe(Pattern)` works.",
+    "references": [
+      {
+        "title": "Consumer Rebalance Protocol: Consumer",
+        "url": "https://kafka.apache.org/44/operations/consumer-rebalance-protocol/#consumer",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original",
+    "kafkaVersionNote": "`SubscriptionPattern` arrived with the GA of KIP-848 in Kafka 4.0. Low exam likelihood."
+  },
+  {
+    "id": "cons-groups-023",
+    "domain": "app-development",
+    "topics": [
+      "consumer-groups"
+    ],
+    "type": "single",
+    "stem": "Which `KafkaConsumer` API can no longer be used when `group.protocol=consumer`?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`enforceRebalance()`"
+      },
+      {
+        "id": "b",
+        "text": "`commitSync()`"
+      },
+      {
+        "id": "c",
+        "text": "`pause()`"
+      },
+      {
+        "id": "d",
+        "text": "`wakeup()`"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The rebalance-protocol page lists `enforceRebalance(String)` and `enforceRebalance()` among the APIs that are \"no longer usable\" with the new protocol, along with `heartbeat.interval.ms`, `session.timeout.ms` and `partition.assignment.strategy`. Committing, pausing and `wakeup()` are unchanged.",
+    "references": [
+      {
+        "title": "Consumer Rebalance Protocol: Consumer",
+        "url": "https://kafka.apache.org/44/operations/consumer-rebalance-protocol/#consumer",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original",
+    "kafkaVersionNote": "Applies to the KIP-848 consumer protocol (GA in Kafka 4.0)."
+  },
+  {
+    "id": "cons-groups-024",
+    "domain": "app-development",
+    "topics": [
+      "consumer-groups",
+      "poll-liveness"
+    ],
+    "type": "single",
+    "stem": "A static member (`group.instance.id` set) using the classic protocol gets stuck and does not call `poll()` for longer than `max.poll.interval.ms`. What happens to its partitions?",
+    "options": [
+      {
+        "id": "a",
+        "text": "They are not reassigned straight away; the consumer stops heartbeating, and they move after the session timeout expires."
+      },
+      {
+        "id": "b",
+        "text": "They are reassigned straight away, because the consumer sends a leave-group request."
+      },
+      {
+        "id": "c",
+        "text": "They are never reassigned, because static members are exempt from `max.poll.interval.ms`."
+      },
+      {
+        "id": "d",
+        "text": "The broker fences the member with `FencedInstanceIdException`."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The `max.poll.interval.ms` reference: \"For consumers using a non-null `group.instance.id` which reach this timeout, partitions will not be immediately reassigned. Instead, the consumer will stop sending heartbeats and partitions will be reassigned after expiration of the session timeout\" (`session.timeout.ms` for the classic protocol, `group.consumer.session.timeout.ms` for the consumer protocol). \"This mirrors the behavior of a static consumer which has shutdown.\"\n\nAn immediate leave is the behaviour of a **dynamic** member. Static members are not exempt. Fencing is for duplicate instance IDs.",
+    "references": [
+      {
+        "title": "Consumer configs: max.poll.interval.ms",
+        "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_max.poll.interval.ms",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "cons-offsets-001",
+    "domain": "app-development",
+    "topics": [
+      "offsets-commits"
+    ],
+    "type": "single",
+    "stem": "A new consumer group `audit` starts reading a topic that already holds a week of data. No offsets have been committed for `audit`, and `auto.offset.reset` is not set. What does the consumer read first?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Only records produced after it starts, because the default `auto.offset.reset` is `latest`."
+      },
+      {
+        "id": "b",
+        "text": "The whole week of data, because the default `auto.offset.reset` is `earliest`."
+      },
+      {
+        "id": "c",
+        "text": "Nothing: `poll()` throws an exception because no offset is committed."
+      },
+      {
+        "id": "d",
+        "text": "The records from the last `auto.commit.interval.ms` window."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`auto.offset.reset` decides where to start when there is no committed offset (or it is out of range). Its default is `latest`, which resets to the log end offset, so only new records are read. To read history, set `earliest`.\n\n- `earliest` is not the default.\n- An exception is the behaviour of `none`.\n- `auto.commit.interval.ms` controls how often offsets are auto-committed and has nothing to do with the starting position.",
+    "references": [
+      {
+        "title": "Consumer configs: auto.offset.reset",
+        "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_auto.offset.reset",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "cons-offsets-002",
+    "domain": "app-development",
+    "topics": [
+      "offsets-commits"
+    ],
+    "type": "single",
+    "stem": "A consumer in a brand-new group sets `auto.offset.reset=none` and calls `poll()`. What happens?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`poll()` throws a `NoOffsetForPartitionException` (an `InvalidOffsetException`), because there is no committed offset and no reset policy."
+      },
+      {
+        "id": "b",
+        "text": "The consumer starts from the earliest offset."
+      },
+      {
+        "id": "c",
+        "text": "The consumer starts from the latest offset."
+      },
+      {
+        "id": "d",
+        "text": "`poll()` blocks until another member commits an offset for the group."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "With `none`, the consumer will \"throw exception to the consumer if no previous offset is found for the consumer's group\". The `poll()` Javadoc lists `InvalidOffsetException` \"if the offset for a partition or set of partitions is undefined or out of range and no offset reset policy has been configured\"; `NoOffsetForPartitionException` is the subclass for the no-stored-offset case.\n\n`none` is useful when silently jumping to the start or end would be dangerous: the application must decide, for example by calling `seek()`.",
+    "references": [
+      {
+        "title": "Consumer configs: auto.offset.reset",
+        "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_auto.offset.reset",
+        "kind": "official"
+      },
+      {
+        "title": "NoOffsetForPartitionException Javadoc",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/NoOffsetForPartitionException.html",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "cons-offsets-003",
+    "domain": "app-development",
+    "topics": [
+      "offsets-commits"
+    ],
+    "type": "single",
+    "stem": "Group `billing` has been running for months with the default `auto.offset.reset` and commits offsets normally. To reprocess everything, a developer changes the setting to `auto.offset.reset=earliest` and restarts the consumers. What happens?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Nothing changes: the consumers resume from the group's committed offsets, because the reset policy only applies when there is no valid committed offset."
+      },
+      {
+        "id": "b",
+        "text": "The consumers start again from the earliest available offset in every partition."
+      },
+      {
+        "id": "c",
+        "text": "The consumers start from the earliest offset only for partitions with lag."
+      },
+      {
+        "id": "d",
+        "text": "The restart fails, because `auto.offset.reset` cannot be changed for an existing group."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`auto.offset.reset` only applies \"when there is no initial offset in Kafka or if the current offset does not exist any more on the server\". A group with valid committed offsets resumes from them. The 4.4 docs repeat it: \"Consumers with a valid committed offset are unaffected.\"\n\nTo really reprocess, reset the group's offsets with `kafka-consumer-groups --reset-offsets --to-earliest --execute` while the group is inactive, use a new `group.id`, or call `seekToBeginning()` in code.",
+    "references": [
+      {
+        "title": "Consumer configs: auto.offset.reset",
+        "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_auto.offset.reset",
+        "kind": "official"
+      },
+      {
+        "title": "Kafka operations: Managing consumer groups",
+        "url": "https://kafka.apache.org/44/operations/basic-kafka-operations/#managing-consumer-groups",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "cons-offsets-004",
+    "domain": "app-development",
+    "topics": [
+      "offsets-commits"
+    ],
+    "type": "single",
+    "stem": "A consumer group was stopped for three weeks. Its committed offset for partition 0 is 1,000, but retention has deleted everything below offset 50,000. The consumer restarts with `auto.offset.reset=earliest`. Where does it start in partition 0?",
+    "options": [
+      {
+        "id": "a",
+        "text": "At the earliest offset still in the log (about 50,000), because offset 1,000 is out of range."
+      },
+      {
+        "id": "b",
+        "text": "At offset 1,000, after the broker restores the deleted segments."
+      },
+      {
+        "id": "c",
+        "text": "At the log end offset, because `earliest` only applies to new groups."
+      },
+      {
+        "id": "d",
+        "text": "`poll()` throws `OffsetOutOfRangeException`, whatever the reset policy."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`auto.offset.reset` covers two cases: no committed offset, **or** \"the current offset does not exist any more on the server (e.g. because that data has been deleted)\". With `earliest`, the consumer resets to the earliest offset still available. With `latest` it would jump to the end, and with `none` it would throw.\n\nNote also that offsets of a group that has been empty for longer than `offsets.retention.minutes` (default 7 days) are themselves expired, in which case there is no committed offset at all. Either way, `earliest` resets to the start of what is left.",
+    "references": [
+      {
+        "title": "Consumer configs: auto.offset.reset",
+        "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_auto.offset.reset",
+        "kind": "official"
+      },
+      {
+        "title": "Broker configs: offsets.retention.minutes",
+        "url": "https://kafka.apache.org/44/configuration/broker-configs/#brokerconfigs_offsets.retention.minutes",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "cons-offsets-005",
+    "domain": "app-development",
+    "topics": [
+      "offsets-commits"
+    ],
+    "type": "single",
+    "stem": "A consumer has finished processing the record at offset 41 in partition 3 and commits manually with `commitSync(Map)`. Which offset should it commit for partition 3?",
+    "options": [
+      {
+        "id": "a",
+        "text": "42"
+      },
+      {
+        "id": "b",
+        "text": "41"
+      },
+      {
+        "id": "c",
+        "text": "40"
+      },
+      {
+        "id": "d",
+        "text": "-1, to mean 'latest processed'"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The committed offset is the position the group will resume from: \"The committed offset should always be the offset of the next message that your application will read.\" After processing offset 41, commit 42 (for example `record.offset() + 1`, or use `ConsumerRecords.nextOffsets()`).\n\nCommitting 41 would cause the record at 41 to be read again after a restart.",
+    "references": [
+      {
+        "title": "KafkaConsumer Javadoc: Manual Offset Control",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html#manual-offset-control-heading",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "cons-offsets-006",
+    "domain": "app-development",
+    "topics": [
+      "offsets-commits"
+    ],
+    "type": "multi",
+    "stem": "Which statements correctly compare `commitSync()` and `commitAsync()`? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "`commitSync()` blocks until the commit succeeds, hits an unrecoverable error, or `default.api.timeout.ms` (60 s by default) expires, retrying retriable errors meanwhile."
+      },
+      {
+        "id": "b",
+        "text": "`commitAsync()` does not retry a failed commit; errors go to the `OffsetCommitCallback` if one is given, otherwise they are discarded."
+      },
+      {
+        "id": "c",
+        "text": "`commitAsync()` guarantees no duplicates after a rebalance, because it is faster."
+      },
+      {
+        "id": "d",
+        "text": "`commitSync()` returns immediately and reports errors through a callback."
+      },
+      {
+        "id": "e",
+        "text": "`commitAsync()` commits offsets in a random order, so callbacks may run in any order."
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "The `commitSync()` Javadoc: it \"will block until either the commit succeeds, an unrecoverable error is encountered (in which case it is thrown to the caller), or the timeout specified by `default.api.timeout.ms` expires\". Confluent's docs add that it retries until that timeout. `default.api.timeout.ms` defaults to 60000.\n\n`commitAsync(callback)`: \"Any errors encountered are either passed to the callback (if provided) or discarded.\" Confluent: \"the consumer does not retry the request if the commit fails.\"\n\n- Neither style removes duplicates after a rebalance; async is less safe if its last commit fails.\n- Async commits are sent in call order and their callbacks run in the same order.",
+    "references": [
+      {
+        "title": "KafkaConsumer Javadoc: Manual Offset Control",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html#manual-offset-control-heading",
+        "kind": "official"
+      },
+      {
+        "title": "Confluent docs, Kafka consumer: Asynchronous commits",
+        "url": "https://docs.confluent.io/platform/current/clients/consumer.html#asynchronous-commits",
+        "kind": "official"
+      },
+      {
+        "title": "Consumer configs: default.api.timeout.ms",
+        "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_default.api.timeout.ms",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "cons-offsets-007",
+    "domain": "app-development",
+    "topics": [
+      "offsets-commits"
+    ],
+    "type": "single",
+    "stem": "In an `OffsetCommitCallback`, a developer retries any failed `commitAsync()` by calling `commitAsync()` again with the same offsets. Why is this risky?",
+    "options": [
+      {
+        "id": "a",
+        "text": "A later commit with a higher offset may already have succeeded, and the retry can move the committed offset backwards, causing duplicates after a restart."
+      },
+      {
+        "id": "b",
+        "text": "The retry is ignored, because Kafka only accepts one commit per partition per second."
+      },
+      {
+        "id": "c",
+        "text": "The retry blocks the poll loop until `max.poll.interval.ms` expires."
+      },
+      {
+        "id": "d",
+        "text": "Retrying a commit turns the consumer into a transactional consumer."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "Confluent's consumer docs: \"By the time the consumer finds out that a commit has failed, you might have already processed the next batch of messages and even sent the next commit. In this case, a retry of the old commit could cause duplicate consumption.\" The usual fix is to retry only if no newer commit has been sent (for example by tracking a sequence number), or to rely on the next commit and finish with a final `commitSync()`.\n\nThere is no one-commit-per-second limit, an async retry does not block, and commits have nothing to do with transactions.",
+    "references": [
+      {
+        "title": "Confluent docs, Kafka consumer: Asynchronous commits",
+        "url": "https://docs.confluent.io/platform/current/clients/consumer.html#asynchronous-commits",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "likely",
+    "source": "original"
+  },
+  {
+    "id": "cons-offsets-008",
+    "domain": "app-development",
+    "topics": [
+      "offsets-commits"
+    ],
+    "type": "single",
+    "stem": "Which commit pattern is commonly recommended for good throughput while keeping duplicates low on shutdown and rebalance?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`commitAsync()` inside the poll loop, plus `commitSync()` in `onPartitionsRevoked` and in the `finally` block before `close()`."
+      },
+      {
+        "id": "b",
+        "text": "`commitSync()` after every single record."
+      },
+      {
+        "id": "c",
+        "text": "`commitAsync()` only, with `enable.auto.commit=true` as a backup."
+      },
+      {
+        "id": "d",
+        "text": "No commits at all; rely on `auto.offset.reset=earliest` after a restart."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "Confluent's docs: \"A common pattern is to combine asynchronous commits in the poll loop with sync commits on rebalances or shutdown.\" Async commits keep the loop fast, and the final synchronous commit makes sure the last offsets really land before partitions are handed over or the consumer closes.\n\n- Committing synchronously per record is safe but slow.\n- Mixing auto-commit with manual commits is not recommended; disable auto-commit when using the commit API.\n- Never committing means reprocessing from the start (or skipping to the end) after every restart.",
+    "references": [
+      {
+        "title": "Confluent docs, Kafka consumer: Dealing with commit failures and rebalances",
+        "url": "https://docs.confluent.io/platform/current/clients/consumer.html#dealing-with-commit-failures-and-rebalances",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "cons-offsets-009",
+    "domain": "app-development",
+    "topics": [
+      "offsets-commits"
+    ],
+    "type": "single",
+    "stem": "A consumer sets only `bootstrap.servers`, `group.id` and the deserializers. How are offsets committed?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Automatically, because `enable.auto.commit` defaults to `true` with `auto.commit.interval.ms=5000`."
+      },
+      {
+        "id": "b",
+        "text": "Never, because `enable.auto.commit` defaults to `false`."
+      },
+      {
+        "id": "c",
+        "text": "Automatically after every record, because `auto.commit.interval.ms` defaults to 0."
+      },
+      {
+        "id": "d",
+        "text": "Only when the consumer calls `commitSync()`."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The config reference: `enable.auto.commit` defaults to `true` (\"the consumer's offset will be periodically committed in the background\"), and `auto.commit.interval.ms` defaults to `5000` (5 seconds).\n\nKafka Streams and many frameworks turn auto-commit off and manage commits themselves, but the plain Java consumer default is on.",
+    "references": [
+      {
+        "title": "Consumer configs: enable.auto.commit",
+        "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_enable.auto.commit",
+        "kind": "official"
+      },
+      {
+        "title": "Consumer configs: auto.commit.interval.ms",
+        "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_auto.commit.interval.ms",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "cons-offsets-010",
+    "domain": "app-development",
+    "topics": [
+      "offsets-commits"
+    ],
+    "type": "single",
+    "stem": "A consumer keeps `enable.auto.commit=true`. After each `poll()` it hands the records to a thread pool and polls again at once. The process crashes while the pool still has unprocessed records. What is the likely outcome after restart?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Some records are never processed: auto-commit may already have committed offsets for records the pool had not finished."
+      },
+      {
+        "id": "b",
+        "text": "Every record is processed exactly once, because auto-commit waits for the thread pool."
+      },
+      {
+        "id": "c",
+        "text": "Records are only duplicated, never lost."
+      },
+      {
+        "id": "d",
+        "text": "The consumer refuses to restart until the pool's records are acknowledged."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "Auto-commit commits the offsets of records already **returned by `poll()`**, whether or not your code has processed them. The Javadoc warns that auto-commit only gives at-least-once if \"you must consume all data returned from each call to `poll(Duration)` before any subsequent calls, or before closing the consumer. If you fail to do either of these, it is possible for the committed offset to get ahead of the consumed position, which results in missing records.\"\n\nFor hand-off to other threads, the Javadoc recommends disabling auto-commit, committing only after processing finishes, and pausing partitions while work is in flight.",
+    "references": [
+      {
+        "title": "KafkaConsumer Javadoc: Manual Offset Control",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html#manual-offset-control-heading",
+        "kind": "official"
+      },
+      {
+        "title": "KafkaConsumer Javadoc: Detecting Consumer Failures",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html#detecting-consumer-failures-heading",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "cons-offsets-011",
+    "domain": "app-development",
+    "topics": [
+      "offsets-commits"
+    ],
+    "type": "multi",
+    "stem": "A classic-protocol consumer uses `enable.auto.commit=true` and `auto.commit.interval.ms=5000`. When are offsets actually committed? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "During a later call to `poll()`, once the interval has elapsed, using the offsets of records returned by earlier polls."
+      },
+      {
+        "id": "b",
+        "text": "During `close()`, which commits the current offsets if it can within its timeout."
+      },
+      {
+        "id": "c",
+        "text": "Each time a record is deserialized inside `poll()`, before it is returned."
+      },
+      {
+        "id": "d",
+        "text": "Only when the application calls `commitSync()` or `commitAsync()`."
+      },
+      {
+        "id": "e",
+        "text": "Exactly every 5 seconds by a broker-side timer, even if the consumer has stopped calling `poll()`."
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "The commit is not a broker timer and not per record. In the classic consumer, the auto-commit check runs when the application calls `poll()`: once `auto.commit.interval.ms` has passed, it commits the positions reached by the records already handed out. Confluent's docs describe it this way: \"every time your application calls the poll method... the consumer is ready to automatically commit the offsets of the messages that the poll returned\", and the Javadoc says auto-commit is only safe if you finish each batch \"before any subsequent calls, or before closing the consumer\".\n\n`close()` also commits: \"If auto-commit is enabled, this will commit the current offsets if possible within the default timeout.\"\n\nCommits happen without calling the commit API, so the last option is wrong.",
+    "references": [
+      {
+        "title": "Confluent docs, Kafka consumer: Auto-commit offsets",
+        "url": "https://docs.confluent.io/platform/current/clients/consumer.html#auto-commit-offsets",
+        "kind": "official"
+      },
+      {
+        "title": "KafkaConsumer Javadoc: Manual Offset Control",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html#manual-offset-control-heading",
+        "kind": "official"
+      },
+      {
+        "title": "Consumer configs: auto.commit.interval.ms",
+        "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_auto.commit.interval.ms",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "unsure",
+    "source": "original",
+    "kafkaVersionNote": "The Kafka docs only say \"periodically committed in the background\". The poll-driven timing is how the classic consumer works and how Confluent describes it. With `group.protocol=consumer` (Kafka 4.x) the client's background thread runs the auto-commit timer, but it still commits only offsets already returned by `poll()`."
+  },
+  {
+    "id": "cons-offsets-012",
+    "domain": "app-development",
+    "topics": [
+      "offsets-commits"
+    ],
+    "type": "multi",
+    "stem": "A consumer that owns partition `orders-0` calls `seek(new TopicPartition(\"orders\", 0), 100)`. Which statements are true? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "The next `poll()` returns records from offset 100 onwards for that partition, if offset 100 still exists."
+      },
+      {
+        "id": "b",
+        "text": "The group's committed offset is not changed until the consumer commits."
+      },
+      {
+        "id": "c",
+        "text": "The committed offset for the group is changed to 100 straight away."
+      },
+      {
+        "id": "d",
+        "text": "The seek is applied to every consumer in the group."
+      },
+      {
+        "id": "e",
+        "text": "Calling `seek()` on a partition this consumer is not assigned is fine; it takes effect when the partition is assigned later."
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "`seek()` \"overrides the fetch offsets that the consumer will use on the next `poll(timeout)`\". It changes only this consumer's in-memory **position**; the committed offset changes only when you (or auto-commit) commit. If the offset is out of range, `auto.offset.reset` decides what happens.\n\n- Other members of the group are unaffected.\n- `seek()` throws `IllegalStateException` \"if the provided TopicPartition is not assigned to this consumer\".",
+    "references": [
+      {
+        "title": "KafkaConsumer Javadoc: Controlling The Consumer's Position",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html#controlling-the-consumer-s-position-heading",
+        "kind": "official"
+      },
+      {
+        "title": "KafkaConsumer Javadoc: Offsets and Consumer Position",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html#offsets-and-consumer-position-heading",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "cons-offsets-013",
+    "domain": "app-development",
+    "topics": [
+      "offsets-commits"
+    ],
+    "type": "single",
+    "stem": "A consumer calls `seekToBeginning(partitions)`. When is the beginning offset actually looked up?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Lazily, on the next `poll()` or `position()` call."
+      },
+      {
+        "id": "b",
+        "text": "Immediately, inside `seekToBeginning()`, which blocks until the broker replies."
+      },
+      {
+        "id": "c",
+        "text": "At the next rebalance."
+      },
+      {
+        "id": "d",
+        "text": "When the next auto-commit runs."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The `seekToBeginning()` Javadoc: \"This function evaluates lazily, seeking to the first offset in all partitions only when `poll(Duration)` or `position(TopicPartition)` are called.\" `seekToEnd()` works the same way (and for `read_committed` consumers it seeks to the last stable offset).",
+    "references": [
+      {
+        "title": "KafkaConsumer Javadoc: Controlling The Consumer's Position",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html#controlling-the-consumer-s-position-heading",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "cons-offsets-014",
+    "domain": "app-development",
+    "topics": [
+      "offsets-commits"
+    ],
+    "type": "single",
+    "stem": "A service uses `subscribe()` and must always start from offsets kept in its own database. Where should it call `seek()`?",
+    "options": [
+      {
+        "id": "a",
+        "text": "In `ConsumerRebalanceListener.onPartitionsAssigned`, for each newly assigned partition."
+      },
+      {
+        "id": "b",
+        "text": "Right after `subscribe()` returns, before the first `poll()`."
+      },
+      {
+        "id": "c",
+        "text": "In `onPartitionsRevoked`, before the partitions are handed back."
+      },
+      {
+        "id": "d",
+        "text": "In the `OffsetCommitCallback` of `commitAsync()`."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "With `subscribe()`, the consumer has no partitions until a rebalance completes inside `poll()`, and `seek()` throws `IllegalStateException` for partitions not assigned to it. The Javadoc pattern for offsets stored outside Kafka is: disable auto-commit, save the offset with the results, and \"when partitions are assigned to a consumer, the consumer will want to look up the offset for those new partitions and correctly initialize the consumer to that position by implementing `ConsumerRebalanceListener.onPartitionsAssigned`\".\n\n- Straight after `subscribe()` nothing is assigned yet.\n- `onPartitionsRevoked` is where you save offsets, not restore them.",
+    "references": [
+      {
+        "title": "KafkaConsumer Javadoc: Storing Offsets Outside Kafka",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html#storing-offsets-outside-kafka-heading",
+        "kind": "official"
+      },
+      {
+        "title": "ConsumerRebalanceListener Javadoc",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/ConsumerRebalanceListener.html",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "cons-offsets-015",
+    "domain": "app-development",
+    "topics": [
+      "offsets-commits"
+    ],
+    "type": "single",
+    "stem": "`kafka-consumer-groups --describe --group payments` shows `CURRENT-OFFSET 1200`, `LOG-END-OFFSET 1500` for partition 0. What is the lag on partition 0?",
+    "options": [
+      {
+        "id": "a",
+        "text": "300"
+      },
+      {
+        "id": "b",
+        "text": "1200"
+      },
+      {
+        "id": "c",
+        "text": "1500"
+      },
+      {
+        "id": "d",
+        "text": "2700"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "Lag is how far the group is behind the end of the log: `LOG-END-OFFSET - CURRENT-OFFSET = 1500 - 1200 = 300`. The Kafka operations docs show the `LAG` column computed exactly this way.",
+    "references": [
+      {
+        "title": "Kafka operations: Checking consumer position",
+        "url": "https://kafka.apache.org/44/operations/basic-kafka-operations/#checking-consumer-position",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "cons-offsets-016",
+    "domain": "app-development",
+    "topics": [
+      "offsets-commits"
+    ],
+    "type": "multi",
+    "stem": "Which statements about consumer lag are true? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "The client metric `records-lag-max` is published by the consumer itself and is based on its current position, not its committed offset."
+      },
+      {
+        "id": "b",
+        "text": "For a `read_committed` consumer, the fetch lag metrics are measured against the last stable offset (LSO)."
+      },
+      {
+        "id": "c",
+        "text": "Lag is measured in bytes and reported by the broker's `BytesInPerSec` metric."
+      },
+      {
+        "id": "d",
+        "text": "A lag of 0 proves every record has been processed and committed."
+      },
+      {
+        "id": "e",
+        "text": "Lag can only be seen with JMX; `kafka-consumer-groups` does not show it."
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "The monitoring docs describe `records-lag-max` as \"the maximum lag in terms of number of records for any partition in this window. NOTE: This is based on current offset and not committed offset\", and as \"published by the consumer, not broker\". The `KafkaConsumer` Javadoc says that for `read_committed`, \"the fetch lag metrics are also adjusted to be relative to the LSO\".\n\n- Lag is counted in records (offsets), not bytes.\n- Because `records-lag-max` uses the current position, records can be fetched but not yet processed or committed when it reads 0.\n- `kafka-consumer-groups --describe` prints a `LAG` column.",
+    "references": [
+      {
+        "title": "Kafka monitoring: Consumer Fetch Metrics",
+        "url": "https://kafka.apache.org/44/operations/monitoring/#consumer-fetch-metrics",
+        "kind": "official"
+      },
+      {
+        "title": "KafkaConsumer Javadoc: Reading Transactional Messages",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html#reading-transactional-messages-heading",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "cons-offsets-017",
+    "domain": "app-development",
+    "topics": [
+      "offsets-commits",
+      "transactions-eos"
+    ],
+    "type": "single",
+    "stem": "A producer opens a transaction on partition 0 at offset 500 and has not yet committed it. Non-transactional records land at offsets 510 to 520. What does a consumer with `isolation.level=read_committed` see?",
+    "options": [
+      {
+        "id": "a",
+        "text": "It reads up to offset 499 and then waits; offsets 510 to 520 are held back until the transaction commits or aborts."
+      },
+      {
+        "id": "b",
+        "text": "It skips the open transaction and returns offsets 510 to 520 at once, because they are non-transactional."
+      },
+      {
+        "id": "c",
+        "text": "It returns everything up to the high watermark, including the open transaction."
+      },
+      {
+        "id": "d",
+        "text": "It throws an exception until the transaction completes."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "Records are always returned in offset order. A `read_committed` consumer only reads up to the last stable offset (LSO), the offset of the first record of the first open transaction. The config reference: \"any messages appearing after messages belonging to ongoing transactions will be withheld until the relevant transaction has been completed. As a result, `read_committed` consumers will not be able to read up to the high watermark when there are in flight transactions.\"\n\nNon-transactional records are returned in both isolation levels, but only once the consumer reaches them in order. Reading up to the high watermark is what the default `read_uncommitted` does.",
+    "references": [
+      {
+        "title": "Consumer configs: isolation.level",
+        "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_isolation.level",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "cons-offsets-018",
+    "domain": "app-development",
+    "topics": [
+      "offsets-commits",
+      "transactions-eos"
+    ],
+    "type": "multi",
+    "stem": "A consumer sets `isolation.level=read_committed` on a topic written by transactional producers. Which statements are true? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "Records from aborted transactions are not returned to the application."
+      },
+      {
+        "id": "b",
+        "text": "The application can see gaps in offsets, because commit and abort markers take offsets but are never returned."
+      },
+      {
+        "id": "c",
+        "text": "The consumer buffers open transactions on the client until they commit."
+      },
+      {
+        "id": "d",
+        "text": "Non-transactional records are filtered out."
+      },
+      {
+        "id": "e",
+        "text": "`read_committed` is the default, so the setting changes nothing."
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "From the Javadoc: \"A `read_committed` consumer will only read up to the LSO and filter out any transactional messages which have been aborted.\" Also, transaction markers \"are not returned to applications, yet have an offset in the log. As a result, applications reading from topics with transactional messages will see gaps in the consumed offsets.\"\n\n- \"There is no client-side buffering in `read_committed` mode.\"\n- Non-transactional records \"will be returned unconditionally in either mode\".\n- The default is `read_uncommitted`.",
+    "references": [
+      {
+        "title": "KafkaConsumer Javadoc: Reading Transactional Messages",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html#reading-transactional-messages-heading",
+        "kind": "official"
+      },
+      {
+        "title": "Consumer configs: isolation.level",
+        "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_isolation.level",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "cons-offsets-019",
+    "domain": "app-development",
+    "topics": [
+      "offsets-commits",
+      "cli-tools"
+    ],
+    "type": "single",
+    "stem": "An operator runs `kafka-consumer-groups --bootstrap-server b:9092 --group etl --topic orders --reset-offsets --to-earliest` while the `etl` consumers are stopped. What happens?",
+    "options": [
+      {
+        "id": "a",
+        "text": "It only prints the planned new offsets, because `--dry-run` is the default; `--execute` is needed to apply them."
+      },
+      {
+        "id": "b",
+        "text": "It resets the offsets at once and restarts the consumers."
+      },
+      {
+        "id": "c",
+        "text": "It fails because `--reset-offsets` needs the consumers to be running."
+      },
+      {
+        "id": "d",
+        "text": "It deletes the group and recreates it with offset 0."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The operations docs list three execution options for `--reset-offsets`: `--dry-run` (\"the default\"), `--execute` and `--export`. Without `--execute`, nothing is changed. The docs also say to \"make sure that the consumer instances are inactive\" before resetting.\n\nThe tool never starts consumers, and it does not delete groups when resetting.",
+    "references": [
+      {
+        "title": "Kafka operations: Managing consumer groups",
+        "url": "https://kafka.apache.org/44/operations/basic-kafka-operations/#managing-consumer-groups",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "cons-offsets-020",
+    "domain": "app-development",
+    "topics": [
+      "offsets-commits"
+    ],
+    "type": "single",
+    "stem": "A consumer writes results to a relational database and needs each record's effect to be applied exactly once, even across crashes. Which approach do the Kafka docs suggest?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Disable auto-commit, store each partition's offset in the same database transaction as the results, and on assignment `seek()` to the stored offset."
+      },
+      {
+        "id": "b",
+        "text": "Use `commitSync()` after each database insert."
+      },
+      {
+        "id": "c",
+        "text": "Set `isolation.level=read_committed` on the consumer."
+      },
+      {
+        "id": "d",
+        "text": "Set `enable.auto.commit=true` with `auto.commit.interval.ms=0`."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The Javadoc section \"Storing Offsets Outside Kafka\": if results go to a relational database, \"storing the offset in the database as well can allow committing both the results and offset in a single transaction\", which gives exactly-once that is \"stronger than the default at-least once\". Steps: set `enable.auto.commit=false`, save the offset with each result, and restore it with `seek()` (in `onPartitionsAssigned` when using `subscribe()`).\n\n- `commitSync()` after the insert is still at-least-once: a crash between the two duplicates the last batch.\n- `read_committed` filters Kafka transactions; it does not make database writes atomic with offsets.\n- Auto-commit never couples commits to the database write.",
+    "references": [
+      {
+        "title": "KafkaConsumer Javadoc: Storing Offsets Outside Kafka",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html#storing-offsets-outside-kafka-heading",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "cons-offsets-021",
+    "domain": "app-development",
+    "topics": [
+      "offsets-commits"
+    ],
+    "type": "single",
+    "stem": "A consumer group is shut down for a 10-day maintenance window. The brokers use default settings. What happens to its committed offsets?",
+    "options": [
+      {
+        "id": "a",
+        "text": "They expire after the group has been empty for `offsets.retention.minutes` (10080 minutes, 7 days), so on restart `auto.offset.reset` decides where to start."
+      },
+      {
+        "id": "b",
+        "text": "They are kept forever, because committed offsets never expire."
+      },
+      {
+        "id": "c",
+        "text": "They expire after 24 hours."
+      },
+      {
+        "id": "d",
+        "text": "They are deleted the moment the last consumer leaves the group."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`offsets.retention.minutes` (default `10080`, which is 7 days) controls this: committed offsets are discarded when \"this retention period has elapsed after the consumer group loses all its consumers (i.e. becomes empty)\". After 10 days, the group has no committed offsets, so the consumers fall back to `auto.offset.reset` (default `latest`, which would skip everything produced during the window).",
+    "references": [
+      {
+        "title": "Broker configs: offsets.retention.minutes",
+        "url": "https://kafka.apache.org/44/configuration/broker-configs/#brokerconfigs_offsets.retention.minutes",
+        "kind": "official"
+      },
+      {
+        "title": "Consumer configs: auto.offset.reset",
+        "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_auto.offset.reset",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "cons-offsets-022",
+    "domain": "app-development",
+    "topics": [
+      "offsets-commits"
+    ],
+    "type": "single",
+    "stem": "A Kafka 4.4 consumer group is new and must start from data produced in the last hour, not from the very beginning and not only new data. Which setting does this?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`auto.offset.reset=by_duration:PT1H`"
+      },
+      {
+        "id": "b",
+        "text": "`auto.offset.reset=earliest` with `retention.ms=3600000`"
+      },
+      {
+        "id": "c",
+        "text": "`auto.commit.interval.ms=3600000`"
+      },
+      {
+        "id": "d",
+        "text": "`auto.offset.reset=latest` with `fetch.max.wait.ms=3600000`"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "Kafka 4.x adds `by_duration:<duration>` to `auto.offset.reset`: \"automatically reset the offset to a configured `<duration>` from the current timestamp\", in ISO 8601 format (`PnDTnHnMn.nS`). `PT1H` means one hour. It only applies where there is no valid committed offset.\n\n- Changing topic retention deletes data for everyone; it is not a consumer start-position setting.\n- `auto.commit.interval.ms` and `fetch.max.wait.ms` are about commit frequency and fetch waiting.\n\nThe 4.4 docs also warn that `latest` can silently skip records written to newly added partitions before the consumer discovers them, and suggest `by_duration` to avoid it.",
+    "references": [
+      {
+        "title": "Consumer configs: auto.offset.reset",
+        "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_auto.offset.reset",
+        "kind": "official"
+      },
+      {
+        "title": "Confluent docs, Kafka consumer: Offset management configuration",
+        "url": "https://docs.confluent.io/platform/current/clients/consumer.html#offset-management-configuration",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original",
+    "kafkaVersionNote": "`by_duration` is new in Kafka 4.0 Java clients (Confluent docs: \"In Kafka Java clients 4.0 and later\"). Older exam material only knows `earliest`, `latest` and `none`."
+  },
+  {
+    "id": "cons-offsets-023",
+    "domain": "app-development",
+    "topics": [
+      "offsets-commits"
+    ],
+    "type": "multi",
+    "stem": "A consumer reads a batch and commits offsets. Which statements about delivery semantics are true? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "Committing offsets before processing the batch gives at-most-once: a crash after the commit loses the unprocessed records."
+      },
+      {
+        "id": "b",
+        "text": "Processing the batch and then committing gives at-least-once: a crash before the commit causes the batch to be read again."
+      },
+      {
+        "id": "c",
+        "text": "Using `commitAsync()` instead of `commitSync()` gives exactly-once."
+      },
+      {
+        "id": "d",
+        "text": "Auto-commit with the default settings gives exactly-once."
+      },
+      {
+        "id": "e",
+        "text": "Setting `isolation.level=read_committed` on its own makes any consumer exactly-once."
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "The Kafka design docs describe both orders. Saving the position and then processing: a crash in between means \"a few messages prior to that position had not been processed\", which is at-most-once. Processing and then saving: a crash in between means \"the first few messages it receives will already have been processed\", which is at-least-once.\n\n- Neither commit style is exactly-once; async is if anything less safe.\n- Auto-commit is at best at-least-once.\n- Exactly-once needs the transactional producer with `sendOffsetsToTransaction` plus `read_committed` downstream (or offsets stored atomically with the output); `read_committed` alone only filters aborted data.",
+    "references": [
+      {
+        "title": "Kafka design: Message Delivery Semantics",
+        "url": "https://kafka.apache.org/44/design/design/#message-delivery-semantics",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "cons-offsets-024",
+    "domain": "app-development",
+    "topics": [
+      "offsets-commits",
+      "poll-liveness"
+    ],
+    "type": "single",
+    "stem": "A consumer with manual commits takes 8 minutes to process one batch (default `max.poll.interval.ms`). It then calls `commitSync()`. What is the most likely result?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`commitSync()` throws `CommitFailedException`, because the consumer left the group after `max.poll.interval.ms` and its partitions were reassigned."
+      },
+      {
+        "id": "b",
+        "text": "The commit succeeds, because heartbeats kept the session alive."
+      },
+      {
+        "id": "c",
+        "text": "The commit succeeds but is applied to a new partition."
+      },
+      {
+        "id": "d",
+        "text": "`commitSync()` blocks until the next rebalance and then succeeds."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`max.poll.interval.ms` defaults to 300000 (5 minutes). If `poll()` is not called within it, \"the client will proactively leave the group so that another consumer can take over its partitions. When this happens, you may see an offset commit failure (as indicated by a `CommitFailedException` thrown from a call to `commitSync()`).\" This is \"a safety mechanism which guarantees that only active members of the group are able to commit offsets\".\n\nHeartbeats keep the **session** alive, but `max.poll.interval.ms` is a separate check. The fix is to process faster, lower `max.poll.records`, or raise `max.poll.interval.ms`.",
+    "references": [
+      {
+        "title": "KafkaConsumer Javadoc: Detecting Consumer Failures",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html#detecting-consumer-failures-heading",
+        "kind": "official"
+      },
+      {
+        "title": "Consumer configs: max.poll.interval.ms",
+        "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_max.poll.interval.ms",
+        "kind": "official"
+      },
+      {
+        "title": "CommitFailedException Javadoc",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/CommitFailedException.html",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "cons-offsets-025",
+    "domain": "app-development",
+    "topics": [
+      "offsets-commits"
+    ],
+    "type": "single",
+    "stem": "A consumer commits with `commitAsync()` three times in a row (offsets 100, 200, 300) and then calls `commitSync()` in its shutdown hook. Which statement is guaranteed by the Javadoc?",
+    "options": [
+      {
+        "id": "a",
+        "text": "The async commits are sent in call order, their callbacks run in that order, and they complete before the later `commitSync()` returns."
+      },
+      {
+        "id": "b",
+        "text": "The broker may apply the three async commits in any order."
+      },
+      {
+        "id": "c",
+        "text": "`commitSync()` cancels any async commits that are still in flight."
+      },
+      {
+        "id": "d",
+        "text": "Async callbacks only run after `close()` has returned."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The `commitAsync(OffsetCommitCallback)` Javadoc: \"Offsets committed through multiple calls to this API are guaranteed to be sent in the same order as the invocations. Corresponding commit callbacks are also invoked in the same order. Additionally note that offsets committed through this API are guaranteed to complete before a subsequent call to `commitSync()` (and variants) returns.\"\n\nAsync commits are not reordered and `commitSync()` does not cancel them.",
+    "references": [
+      {
+        "title": "KafkaConsumer Javadoc: Manual Offset Control",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html#manual-offset-control-heading",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "likely",
+    "source": "original",
+    "kafkaVersionNote": "Quoted from the `commitAsync` method Javadoc in 4.4. The `commitSync()` Javadoc adds that callbacks of earlier async commits are only guaranteed to run before it completes when using the consumer group protocol, so the callback ordering detail may differ between protocols."
+  },
+  {
+    "id": "cons-poll-001",
+    "domain": "app-development",
+    "topics": [
+      "poll-liveness"
+    ],
+    "type": "single",
+    "stem": "What are the Kafka 4.4 defaults for a classic-protocol consumer's `session.timeout.ms`, `heartbeat.interval.ms` and `max.poll.interval.ms`?",
+    "options": [
+      {
+        "id": "a",
+        "text": "45 seconds, 3 seconds and 5 minutes"
+      },
+      {
+        "id": "b",
+        "text": "10 seconds, 3 seconds and 5 minutes"
+      },
+      {
+        "id": "c",
+        "text": "45 seconds, 15 seconds and 30 seconds"
+      },
+      {
+        "id": "d",
+        "text": "30 seconds, 10 seconds and 10 minutes"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "From the 4.4 consumer config reference: `session.timeout.ms` = `45000` (45 s), `heartbeat.interval.ms` = `3000` (3 s), `max.poll.interval.ms` = `300000` (5 min).\n\n`session.timeout.ms` used to default to 10 seconds; older study material may still say so.",
+    "references": [
+      {
+        "title": "Consumer configs: session.timeout.ms",
+        "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_session.timeout.ms",
+        "kind": "official"
+      },
+      {
+        "title": "Consumer configs: heartbeat.interval.ms",
+        "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_heartbeat.interval.ms",
+        "kind": "official"
+      },
+      {
+        "title": "Consumer configs: max.poll.interval.ms",
+        "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_max.poll.interval.ms",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original",
+    "kafkaVersionNote": "`session.timeout.ms` changed from 10 s to 45 s in Kafka 3.0 (KIP-735), not in 4.0. Under `group.protocol=consumer` the broker sets these instead (`group.consumer.session.timeout.ms` 45 s, `group.consumer.heartbeat.interval.ms` 5 s)."
+  },
+  {
+    "id": "cons-poll-002",
+    "domain": "app-development",
+    "topics": [
+      "poll-liveness"
+    ],
+    "type": "single",
+    "stem": "A classic-protocol consumer with default settings gets 500 records per poll. Processing a batch normally takes 2 minutes, but a slow downstream API makes one batch take 7 minutes. What happens?",
+    "options": [
+      {
+        "id": "a",
+        "text": "After 5 minutes without a `poll()`, the consumer leaves the group and its partitions are reassigned, even though heartbeats are still being sent."
+      },
+      {
+        "id": "b",
+        "text": "Nothing, because the background heartbeat thread keeps the consumer in the group as long as the process is alive."
+      },
+      {
+        "id": "c",
+        "text": "After 45 seconds the session times out, because heartbeats are only sent from `poll()`."
+      },
+      {
+        "id": "d",
+        "text": "The broker slows the consumer down until the batch is done."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "Two separate checks keep a classic consumer in the group:\n\n- **Heartbeats** go from a background thread. If none arrive for `session.timeout.ms` (45 s), the consumer is treated as dead. Heartbeats continue during processing, so this check does not fire here.\n- **`max.poll.interval.ms`** (default 5 min) catches a \"livelock\" where the consumer \"is continuing to send heartbeats, but no progress is being made\". If `poll()` is not called within it, \"the client will proactively leave the group\".\n\nA 7-minute batch breaks the second limit, so the partitions move to another member, and a later `commitSync()` throws `CommitFailedException`.",
+    "references": [
+      {
+        "title": "KafkaConsumer Javadoc: Detecting Consumer Failures",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html#detecting-consumer-failures-heading",
+        "kind": "official"
+      },
+      {
+        "title": "Consumer configs: max.poll.interval.ms",
+        "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_max.poll.interval.ms",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "cons-poll-003",
+    "domain": "app-development",
+    "topics": [
+      "poll-liveness"
+    ],
+    "type": "multi",
+    "stem": "Consumers in a classic group keep getting kicked out with \"poll interval exceeded\" messages because record processing is slow. Which changes address this directly? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "Lower `max.poll.records` so each batch is smaller and finishes sooner."
+      },
+      {
+        "id": "b",
+        "text": "Raise `max.poll.interval.ms` to allow more time between polls."
+      },
+      {
+        "id": "c",
+        "text": "Raise `session.timeout.ms`."
+      },
+      {
+        "id": "d",
+        "text": "Raise `heartbeat.interval.ms`."
+      },
+      {
+        "id": "e",
+        "text": "Raise `fetch.min.bytes`."
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "The Javadoc names two settings that control the poll loop: `max.poll.interval.ms` (\"give the consumer more time to handle a batch\") and `max.poll.records` (\"limit the total records returned from a single call to poll\"). The defaults are 300000 ms and 500 records.\n\n- `session.timeout.ms` and `heartbeat.interval.ms` govern the heartbeat check, which is not what is failing.\n- A larger `fetch.min.bytes` makes the broker wait for more data per fetch; it does not shorten processing.\n\nIf processing time is unpredictable, the Javadoc suggests moving processing to another thread and using `pause()`/`resume()`.",
+    "references": [
+      {
+        "title": "KafkaConsumer Javadoc: Detecting Consumer Failures",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html#detecting-consumer-failures-heading",
+        "kind": "official"
+      },
+      {
+        "title": "Consumer configs: max.poll.records",
+        "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_max.poll.records",
+        "kind": "official"
+      },
+      {
+        "title": "Consumer configs: max.poll.interval.ms",
+        "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_max.poll.interval.ms",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "cons-poll-004",
+    "domain": "app-development",
+    "topics": [
+      "poll-liveness"
+    ],
+    "type": "single",
+    "stem": "A classic-protocol consumer process is killed with `kill -9`, so it sends no leave-group request. With default settings, roughly how long before its partitions are reassigned?",
+    "options": [
+      {
+        "id": "a",
+        "text": "About 45 seconds, when `session.timeout.ms` expires on the coordinator."
+      },
+      {
+        "id": "b",
+        "text": "About 3 seconds, one `heartbeat.interval.ms`."
+      },
+      {
+        "id": "c",
+        "text": "About 5 minutes, when `max.poll.interval.ms` expires."
+      },
+      {
+        "id": "d",
+        "text": "Never, until an admin removes the member."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "A crashed process stops heartbeating. The coordinator removes it and starts a rebalance when no heartbeat arrives \"before the expiration of this session timeout\" (`session.timeout.ms`, default 45000).\n\n- `heartbeat.interval.ms` is how often heartbeats are sent, not how long the coordinator waits.\n- `max.poll.interval.ms` is checked by the client itself; a killed process cannot run that check. The broker detects the crash through the session timeout.\n- A clean `close()` of a dynamic member would leave the group at once.",
+    "references": [
+      {
+        "title": "Consumer configs: session.timeout.ms",
+        "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_session.timeout.ms",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "cons-poll-005",
+    "domain": "app-development",
+    "topics": [
+      "poll-liveness"
+    ],
+    "type": "single",
+    "stem": "What do the docs recommend for `heartbeat.interval.ms` relative to `session.timeout.ms` (classic protocol)?",
+    "options": [
+      {
+        "id": "a",
+        "text": "It must be lower than `session.timeout.ms` and usually no higher than one third of it."
+      },
+      {
+        "id": "b",
+        "text": "It must equal `session.timeout.ms`."
+      },
+      {
+        "id": "c",
+        "text": "It must be higher than `session.timeout.ms`, so the coordinator is never overloaded."
+      },
+      {
+        "id": "d",
+        "text": "It must be at least `max.poll.interval.ms`."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The `heartbeat.interval.ms` reference: \"the value must be set lower than `session.timeout.ms`, but typically should be set no higher than 1/3 of that value.\" The defaults (3 s and 45 s) follow this. Several heartbeats can then be missed before the session expires.",
+    "references": [
+      {
+        "title": "Consumer configs: heartbeat.interval.ms",
+        "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_heartbeat.interval.ms",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "cons-poll-006",
+    "domain": "app-development",
+    "topics": [
+      "poll-liveness"
+    ],
+    "type": "single",
+    "stem": "A consumer sets `max.poll.records=50`. How does this affect fetching from the broker?",
+    "options": [
+      {
+        "id": "a",
+        "text": "It does not change fetching: the consumer still fetches as usual, caches the records, and returns at most 50 per `poll()`."
+      },
+      {
+        "id": "b",
+        "text": "Each fetch request asks the broker for exactly 50 records."
+      },
+      {
+        "id": "c",
+        "text": "The broker stores records in batches of 50 for this consumer."
+      },
+      {
+        "id": "d",
+        "text": "It lowers `max.partition.fetch.bytes` to fit 50 records."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The `max.poll.records` reference (default `500`): \"Note, that `max.poll.records` does not impact the underlying fetching behavior. The consumer will cache the records from each fetch request and returns them incrementally from each poll.\" Fetch size is controlled by `fetch.min.bytes`, `fetch.max.bytes` and `max.partition.fetch.bytes`.",
+    "references": [
+      {
+        "title": "Consumer configs: max.poll.records",
+        "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_max.poll.records",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "cons-poll-007",
+    "domain": "app-development",
+    "topics": [
+      "poll-liveness"
+    ],
+    "type": "single",
+    "stem": "A consumer sets `fetch.min.bytes=100000` and leaves `fetch.max.wait.ms` at its default. The topic receives about 1 KB per second. How does the broker answer each fetch request?",
+    "options": [
+      {
+        "id": "a",
+        "text": "It waits up to 500 ms for 100,000 bytes to build up, then returns whatever it has (about 500 bytes)."
+      },
+      {
+        "id": "b",
+        "text": "It waits until 100,000 bytes are available, about 100 seconds."
+      },
+      {
+        "id": "c",
+        "text": "It answers at once with no data, because the minimum cannot be met."
+      },
+      {
+        "id": "d",
+        "text": "It returns an error saying `fetch.min.bytes` is too large."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`fetch.min.bytes` (default `1`) is how much data the broker tries to collect before answering. `fetch.max.wait.ms` (default `500`) is the maximum time the server will block before answering when there is not yet enough data to satisfy `fetch.min.bytes`. Whichever limit is reached first ends the wait, so at 1 KB/s the broker replies after 500 ms with about 500 bytes.\n\nRaising `fetch.min.bytes` improves throughput on busy topics at the cost of latency. It never makes the broker wait without limit.",
+    "references": [
+      {
+        "title": "Consumer configs: fetch.min.bytes",
+        "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_fetch.min.bytes",
+        "kind": "official"
+      },
+      {
+        "title": "Consumer configs: fetch.max.wait.ms",
+        "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_fetch.max.wait.ms",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "cons-poll-008",
+    "domain": "app-development",
+    "topics": [
+      "poll-liveness"
+    ],
+    "type": "multi",
+    "stem": "Which statements about `max.partition.fetch.bytes` and `fetch.max.bytes` are true? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "`max.partition.fetch.bytes` limits the data returned per partition and defaults to 1 MiB."
+      },
+      {
+        "id": "b",
+        "text": "If the first record batch in the first non-empty partition is larger than the limit, it is still returned so the consumer can make progress."
+      },
+      {
+        "id": "c",
+        "text": "`fetch.max.bytes` is an absolute limit; a batch larger than it can never be consumed."
+      },
+      {
+        "id": "d",
+        "text": "`max.poll.records` caps the bytes in each fetch response."
+      },
+      {
+        "id": "e",
+        "text": "`fetch.max.bytes` defaults to 1 MiB."
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "`max.partition.fetch.bytes` is \"the maximum amount of data per-partition the server will return\", default `1048576` (1 MiB). Both it and `fetch.max.bytes` (default `52428800`, 50 MiB) are soft: \"if the first record batch in the first non-empty partition of the fetch is larger than this limit, the batch will still be returned to ensure that the consumer can make progress.\" The docs say of `fetch.max.bytes`: \"this is not a absolute maximum\".\n\n`max.poll.records` counts records handed to the application, not bytes fetched.",
+    "references": [
+      {
+        "title": "Consumer configs: max.partition.fetch.bytes",
+        "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_max.partition.fetch.bytes",
+        "kind": "official"
+      },
+      {
+        "title": "Consumer configs: fetch.max.bytes",
+        "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_fetch.max.bytes",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "cons-poll-009",
+    "domain": "app-development",
+    "topics": [
+      "poll-liveness"
+    ],
+    "type": "multi",
+    "stem": "A developer shares one `KafkaConsumer` between a polling thread and a separate commit thread. Which statements are true? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "`KafkaConsumer` is not thread-safe; unsynchronized access from several threads raises `ConcurrentModificationException`."
+      },
+      {
+        "id": "b",
+        "text": "`wakeup()` is the one method that can safely be called from another thread."
+      },
+      {
+        "id": "c",
+        "text": "`KafkaConsumer` locks internally, so sharing it is safe as long as each thread reads different partitions."
+      },
+      {
+        "id": "d",
+        "text": "`commitSync()` is thread-safe because it blocks."
+      },
+      {
+        "id": "e",
+        "text": "The consumer starts one heartbeat thread per calling thread, so sharing it is supported."
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "The Javadoc: \"The Kafka consumer is NOT thread-safe. It is the responsibility of the user to ensure that multi-threaded access is properly synchronized. Un-synchronized access will result in `ConcurrentModificationException`. The only exception to this rule is `wakeup()`, which can safely be used from an external thread to interrupt an active operation.\"\n\nThe usual designs are one consumer per thread, or one polling thread that hands records to worker threads and does all the commits itself.",
+    "references": [
+      {
+        "title": "KafkaConsumer Javadoc: Multi-threaded Processing",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html#multi-threaded-processing-heading",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "cons-poll-010",
+    "domain": "app-development",
+    "topics": [
+      "poll-liveness"
+    ],
+    "type": "single",
+    "stem": "What is the standard way to shut down a consumer whose thread is blocked in `poll(Duration.ofSeconds(10))`, from a shutdown hook running on another thread?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Set a closed flag and call `consumer.wakeup()`; the polling thread catches `WakeupException` and calls `consumer.close()` in a `finally` block."
+      },
+      {
+        "id": "b",
+        "text": "Call `consumer.close()` directly from the shutdown hook thread."
+      },
+      {
+        "id": "c",
+        "text": "Interrupt the polling thread and ignore the result; the consumer closes itself."
+      },
+      {
+        "id": "d",
+        "text": "Wait for `max.poll.interval.ms` so the consumer leaves the group by itself."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "This is the Javadoc's pattern: `shutdown()` sets an `AtomicBoolean` and calls `consumer.wakeup()`; the poll loop catches `WakeupException` (rethrowing it if not closing) and calls `consumer.close()` in `finally`. `close()` commits offsets if auto-commit is on and leaves the group (for a dynamic member).\n\n- Calling `close()` from another thread breaks the single-thread rule.\n- The Javadoc discourages thread interrupts, as they \"may cause a clean shutdown of the consumer to be aborted\".\n- Waiting for `max.poll.interval.ms` is slow and skips the clean close.",
+    "references": [
+      {
+        "title": "KafkaConsumer Javadoc: Multi-threaded Processing",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html#multi-threaded-processing-heading",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "cons-poll-011",
+    "domain": "app-development",
+    "topics": [
+      "poll-liveness"
+    ],
+    "type": "single",
+    "stem": "`consumer.wakeup()` is called from another thread while the consumer thread is busy processing records, not inside any consumer method. What happens?",
+    "options": [
+      {
+        "id": "a",
+        "text": "The next call to a consumer method that can throw `WakeupException` (for example `poll()`) throws it."
+      },
+      {
+        "id": "b",
+        "text": "Nothing; the wakeup is lost because no call was blocking."
+      },
+      {
+        "id": "c",
+        "text": "The consumer thread is interrupted at once."
+      },
+      {
+        "id": "d",
+        "text": "The consumer closes itself and commits offsets."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The `wakeup()` Javadoc: \"The thread which is blocking in an operation will throw `WakeupException`. If no thread is blocking in a method which can throw `WakeupException`, the next call to such a method will raise it instead.\" So the shutdown signal is not lost.\n\nNote that `wakeup()` cannot interrupt `close()`.",
+    "references": [
+      {
+        "title": "KafkaConsumer Javadoc: Multi-threaded Processing",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html#multi-threaded-processing-heading",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "cons-poll-012",
+    "domain": "app-development",
+    "topics": [
+      "poll-liveness"
+    ],
+    "type": "multi",
+    "stem": "Which statements about `session.timeout.ms` are true for a Kafka 4.4 consumer? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "Under the classic protocol, it must fall within the broker's `group.min.session.timeout.ms` and `group.max.session.timeout.ms` (6 s and 30 min by default)."
+      },
+      {
+        "id": "b",
+        "text": "It is not supported with `group.protocol=consumer`, where the broker's `group.consumer.session.timeout.ms` applies."
+      },
+      {
+        "id": "c",
+        "text": "Heartbeats are only sent inside `poll()`, so slow processing makes the session expire."
+      },
+      {
+        "id": "d",
+        "text": "It defaults to 10 seconds."
+      },
+      {
+        "id": "e",
+        "text": "It also bounds the time between two `poll()` calls."
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "The `session.timeout.ms` reference says \"the value must be in the allowable range as configured in the broker configuration by `group.min.session.timeout.ms` and `group.max.session.timeout.ms`\" (defaults `6000` and `1800000`), and that the client setting \"is not supported when `group.protocol` is set to `consumer`\".\n\n- Heartbeats come from a background thread, which is why the separate `max.poll.interval.ms` exists to catch stuck processing.\n- The default is 45000 (since Kafka 3.0).\n- The time between polls is `max.poll.interval.ms`.",
+    "references": [
+      {
+        "title": "Consumer configs: session.timeout.ms",
+        "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_session.timeout.ms",
+        "kind": "official"
+      },
+      {
+        "title": "Broker configs: group.min.session.timeout.ms",
+        "url": "https://kafka.apache.org/44/configuration/broker-configs/#brokerconfigs_group.min.session.timeout.ms",
+        "kind": "official"
+      },
+      {
+        "title": "Broker configs: group.max.session.timeout.ms",
+        "url": "https://kafka.apache.org/44/configuration/broker-configs/#brokerconfigs_group.max.session.timeout.ms",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "cons-poll-013",
+    "domain": "app-development",
+    "topics": [
+      "poll-liveness"
+    ],
+    "type": "single",
+    "stem": "A consumer calls `poll(Duration.ofMillis(2000))` and no new records arrive in that time. What does `poll()` do?",
+    "options": [
+      {
+        "id": "a",
+        "text": "It waits up to 2 seconds and then returns an empty `ConsumerRecords`."
+      },
+      {
+        "id": "b",
+        "text": "It returns `null` straight away."
+      },
+      {
+        "id": "c",
+        "text": "It blocks until at least one record arrives."
+      },
+      {
+        "id": "d",
+        "text": "It throws a `TimeoutException`."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The `poll(Duration)` Javadoc: \"This method returns immediately if there are records available... Otherwise, it will await the passed timeout. If the timeout expires, an empty record set will be returned.\" It may block beyond the timeout only to run `ConsumerRebalanceListener` callbacks.",
+    "references": [
+      {
+        "title": "KafkaConsumer Javadoc",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "cons-poll-014",
+    "domain": "app-development",
+    "topics": [
+      "poll-liveness"
+    ],
+    "type": "single",
+    "stem": "Code written for an old Kafka client calls `consumer.poll(100)` with a `long`. What happens when it is compiled against the Kafka 4.x client?",
+    "options": [
+      {
+        "id": "a",
+        "text": "It does not compile: `poll(long)` was removed in Kafka 4.0, so use `poll(Duration)`."
+      },
+      {
+        "id": "b",
+        "text": "It compiles with a deprecation warning."
+      },
+      {
+        "id": "c",
+        "text": "It compiles and treats 100 as seconds."
+      },
+      {
+        "id": "d",
+        "text": "It compiles but always returns an empty result."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The 4.0 upgrade notes list under Consumer: \"The `poll(long)` method was removed from the consumer.\" Use `poll(Duration)`, for example `poll(Duration.ofMillis(100))`.",
+    "references": [
+      {
+        "title": "Kafka upgrade notes: Notable changes in 4.0.0",
+        "url": "https://kafka.apache.org/44/getting-started/upgrade/#notable-changes-in-400",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original",
+    "kafkaVersionNote": "Removed in Kafka 4.0. The same release also removed `committed(TopicPartition)` and `committed(TopicPartition, Duration)`; use the `Set` variants."
+  },
+  {
+    "id": "cons-poll-015",
+    "domain": "app-development",
+    "topics": [
+      "poll-liveness"
+    ],
+    "type": "single",
+    "stem": "A consumer polls on one thread and hands records to a worker pool whose processing time varies widely. Which approach does the Javadoc recommend to keep the consumer in the group without losing records?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Keep calling `poll()`, `pause()` the partitions with work in progress, disable auto-commit, and commit offsets only after the workers finish; then `resume()`."
+      },
+      {
+        "id": "b",
+        "text": "Stop calling `poll()` until the workers finish, and raise `session.timeout.ms`."
+      },
+      {
+        "id": "c",
+        "text": "Keep auto-commit on and call `poll()` as fast as possible."
+      },
+      {
+        "id": "d",
+        "text": "Call `unsubscribe()` while workers run and `subscribe()` again afterwards."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The Javadoc: for unpredictable processing times, \"move message processing to another thread, which allows the consumer to continue calling poll while the processor is still working.\" Then \"you must disable automatic commits and manually commit processed offsets for records only after the thread has finished handling them\", and \"you will need to pause the partition so that no new records are received from poll until after thread has finished\".\n\n`pause()` does not trigger a rebalance. Not polling breaks `max.poll.interval.ms`, auto-commit could commit unprocessed records, and unsubscribing causes rebalances.",
+    "references": [
+      {
+        "title": "KafkaConsumer Javadoc: Detecting Consumer Failures",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html#detecting-consumer-failures-heading",
+        "kind": "official"
+      },
+      {
+        "title": "KafkaConsumer Javadoc: Consumption Flow Control",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html#consumption-flow-control-heading",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "cons-poll-016",
+    "domain": "app-development",
+    "topics": [
+      "poll-liveness"
+    ],
+    "type": "single",
+    "stem": "With `group.protocol=consumer`, how often does a consumer heartbeat by default, and which setting controls it?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Every 5 seconds, set by the broker config `group.consumer.heartbeat.interval.ms`."
+      },
+      {
+        "id": "b",
+        "text": "Every 3 seconds, set by the client config `heartbeat.interval.ms`."
+      },
+      {
+        "id": "c",
+        "text": "Every 45 seconds, set by `group.consumer.session.timeout.ms`."
+      },
+      {
+        "id": "d",
+        "text": "Only on each `poll()` call."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The `heartbeat.interval.ms` reference: \"If `group.protocol` is set to `consumer`, this config is not supported, as the heartbeat interval is controlled by the broker with `group.consumer.heartbeat.interval.ms`.\" That broker config defaults to `5000`.\n\nThe client's `heartbeat.interval.ms` (default 3000) only applies to the classic protocol. 45 seconds is the session timeout.",
+    "references": [
+      {
+        "title": "Consumer configs: heartbeat.interval.ms",
+        "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_heartbeat.interval.ms",
+        "kind": "official"
+      },
+      {
+        "title": "Broker configs: group.consumer.heartbeat.interval.ms",
+        "url": "https://kafka.apache.org/44/configuration/broker-configs/#brokerconfigs_group.consumer.heartbeat.interval.ms",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original",
+    "kafkaVersionNote": "Applies to the KIP-848 consumer protocol, GA since Kafka 4.0."
+  },
+  {
+    "id": "cons-poll-017",
+    "domain": "app-development",
+    "topics": [
+      "poll-liveness",
+      "consumer-groups"
+    ],
+    "type": "single",
+    "stem": "A dynamic member (no `group.instance.id`) with `enable.auto.commit=true` calls `close()` during a normal shutdown. What does `close()` do?",
+    "options": [
+      {
+        "id": "a",
+        "text": "It commits the current offsets if it can, then leaves the group so the partitions are reassigned without waiting for the session timeout; by default it waits up to 30 seconds."
+      },
+      {
+        "id": "b",
+        "text": "It closes the network connections at once; the group notices after `session.timeout.ms`."
+      },
+      {
+        "id": "c",
+        "text": "It commits offsets but stays in the group until `max.poll.interval.ms` expires."
+      },
+      {
+        "id": "d",
+        "text": "It deletes the group's committed offsets."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The `close()` Javadoc: it closes \"with default leave group behavior, waiting for up to the default timeout of 30 seconds for any needed cleanup. If auto-commit is enabled, this will commit the current offsets if possible within the default timeout.\" The leave-group step applies to dynamic members, so the rebalance starts at once.\n\nWaiting for the session timeout is what happens after a crash, or for a static member. Closing never deletes committed offsets.",
+    "references": [
+      {
+        "title": "KafkaConsumer Javadoc",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original",
+    "kafkaVersionNote": "`close(Duration)` is deprecated since Kafka 4.1 in favour of `close(CloseOptions)`, which lets you choose the leave-group behaviour."
+  },
+  {
+    "id": "cons-poll-018",
+    "domain": "app-development",
+    "topics": [
+      "poll-liveness"
+    ],
+    "type": "multi",
+    "stem": "A classic consumer's processing thread is stuck in an endless retry loop, but its background heartbeats still reach the coordinator. Which statements are true? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "Once `max.poll.interval.ms` passes without a `poll()`, the client leaves the group so that another member can take its partitions."
+      },
+      {
+        "id": "b",
+        "text": "If the thread later calls `commitSync()`, it can get a `CommitFailedException`."
+      },
+      {
+        "id": "c",
+        "text": "Because heartbeats continue, the consumer keeps its partitions for as long as it is stuck."
+      },
+      {
+        "id": "d",
+        "text": "The coordinator detects the stall through `session.timeout.ms`."
+      },
+      {
+        "id": "e",
+        "text": "The broker stops sending data to the consumer, but leaves its assignment alone."
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "This is the \"livelock\" the Javadoc describes: the consumer \"is continuing to send heartbeats, but no progress is being made\". `max.poll.interval.ms` exists \"to prevent the consumer from holding onto its partitions indefinitely in this case\": if `poll()` is not called in time, \"the client will proactively leave the group\". A later commit then may fail with `CommitFailedException`, because \"only active members of the group are able to commit offsets\".\n\nHeartbeats are still arriving, so `session.timeout.ms` never fires here; that is why the separate poll limit exists.",
+    "references": [
+      {
+        "title": "KafkaConsumer Javadoc: Detecting Consumer Failures",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html#detecting-consumer-failures-heading",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "cons-poll-019",
+    "domain": "app-development",
+    "topics": [
+      "poll-liveness"
+    ],
+    "type": "single",
+    "stem": "A consumer leaves `fetch.min.bytes` and `fetch.max.wait.ms` at their defaults. What do the defaults mean for latency?",
+    "options": [
+      {
+        "id": "a",
+        "text": "The broker answers a fetch as soon as 1 byte is available, or after 500 ms if nothing arrives."
+      },
+      {
+        "id": "b",
+        "text": "The broker always waits 500 ms, so latency is at least 500 ms."
+      },
+      {
+        "id": "c",
+        "text": "The broker waits until 1 MiB is available."
+      },
+      {
+        "id": "d",
+        "text": "The broker waits for `linger.ms` before answering."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`fetch.min.bytes` defaults to `1`: \"fetch requests are answered as soon as that many byte(s) of data is available or the fetch request times out waiting for data to arrive.\" `fetch.max.wait.ms` defaults to `500`, the most the broker will hold an unsatisfied fetch. This \"long poll\" avoids busy-waiting while keeping latency low.\n\n1 MiB is the default for `max.partition.fetch.bytes`, and `linger.ms` is a producer setting.",
+    "references": [
+      {
+        "title": "Consumer configs: fetch.min.bytes",
+        "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_fetch.min.bytes",
+        "kind": "official"
+      },
+      {
+        "title": "Consumer configs: fetch.max.wait.ms",
+        "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_fetch.max.wait.ms",
+        "kind": "official"
+      },
+      {
+        "title": "Kafka design: Push vs. pull",
+        "url": "https://kafka.apache.org/44/design/design/#push-vs-pull",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "cons-poll-020",
+    "domain": "app-development",
+    "topics": [
+      "poll-liveness"
+    ],
+    "type": "single",
+    "stem": "A consumer calls `pause()` on two of its four assigned partitions while it works through a backlog. What happens?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`poll()` stops returning records from those two partitions until `resume()`, and no rebalance is triggered."
+      },
+      {
+        "id": "b",
+        "text": "The two partitions are given back to the group and assigned to other members."
+      },
+      {
+        "id": "c",
+        "text": "The consumer leaves the group until it calls `resume()`."
+      },
+      {
+        "id": "d",
+        "text": "Heartbeats stop for the paused partitions, so the session times out."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The `pause()` Javadoc: \"Future calls to `poll(Duration)` will not return any records from these partitions until they have been resumed using `resume(Collection)`... it does not cause a group rebalance when automatic assignment is used.\" You must keep calling `poll()` to stay within `max.poll.interval.ms`; pausing is what makes that safe while work is in progress.\n\nNote: with eager assignors the pause state is lost on the next rebalance, since all partitions are revoked; with cooperative assignors and the consumer protocol it is kept for partitions that stay assigned.",
+    "references": [
+      {
+        "title": "KafkaConsumer Javadoc: Consumption Flow Control",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html#consumption-flow-control-heading",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  }
+]

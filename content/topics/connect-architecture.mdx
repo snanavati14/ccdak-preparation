@@ -1,0 +1,45 @@
+Kafka Connect moves data between Kafka and other systems using connectors you configure rather than code. The exam asks about source vs sink connectors, standalone vs distributed workers, how tasks are spread across workers, and the REST API.
+
+## How it works
+
+- **Connectors** are logical jobs. A source connector writes from an external system into Kafka. A sink connector writes from Kafka into an external system.
+- A connector splits its job into **tasks**, which do the copying. `tasks.max` (default 1) is a ceiling: a connector may create fewer tasks if it can't split the work further.
+- **Workers** are the JVM processes that run connectors and tasks.
+- **Standalone** mode is one process, with source offsets kept in a local file (`offset.storage.file.filename`). It has no fault tolerance.
+- **Distributed** mode: workers that share a `group.id` form one cluster and keep state in three compacted topics:
+  - `config.storage.topic` (one partition)
+  - `offset.storage.topic` (many partitions, default 25)
+  - `status.storage.topic` (default 5 partitions)
+
+## Gotchas the exam loves
+
+- The REST API listens on HTTP port **8083** by default (`listeners=http://:8083`) and works in **both** modes.
+- `POST /connectors` with `{"name": ..., "config": {...}}` creates a connector. `PUT /connectors/{name}/config` creates the connector or updates its config.
+- `GET /connectors/{name}/status` shows the state, the worker and any error trace for the connector and each task.
+- `PUT .../pause` keeps resources allocated, `PUT .../stop` frees them, and `PUT .../resume` resumes either.
+- Restarts use **POST**: `POST /connectors/{name}/restart` restarts only the connector instance unless you add `?includeTasks=true`. `POST /connectors/{name}/tasks/{id}/restart` restarts one task.
+- A failed task does **not** trigger a rebalance and is not restarted automatically. These do trigger a rebalance:
+  - adding a connector
+  - changing a connector's config
+  - a worker joining or leaving
+- With the default `connect.protocol=sessioned`, a departed worker's tasks wait up to `scheduled.rebalance.max.delay.ms` (5 minutes) before being reassigned.
+- `group.id` must not clash with any consumer group ID.
+- Per-connector client overrides use `producer.override.` and `consumer.override.`.
+
+## Java sample
+
+```java
+// Create a connector through the REST API (distributed mode)
+HttpClient http = HttpClient.newHttpClient();
+String body = """
+  {"name": "file-sink",
+   "config": {"connector.class": "FileStreamSink", "tasks.max": "1",
+              "topics": "orders", "file": "/tmp/orders.txt"}}""";
+HttpRequest req = HttpRequest.newBuilder(URI.create("http://localhost:8083/connectors"))
+    .header("Content-Type", "application/json")
+    .POST(HttpRequest.BodyPublishers.ofString(body))
+    .build();
+System.out.println(http.send(req, HttpResponse.BodyHandlers.ofString()).body());
+```
+
+See the [Connect user guide](https://kafka.apache.org/44/kafka-connect/user-guide/#rest-api).

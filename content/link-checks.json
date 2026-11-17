@@ -1,0 +1,3544 @@
+{
+  "https://assets.confluent.io/m/26d0f06b432e68e9/original/20250414-DS-Certified_Developer_Apache_Kafka.pdf": {
+    "status": 200,
+    "ok": true,
+    "title": "",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://avro.apache.org/docs/1.12.0/specification/#aliases": {
+    "status": 200,
+    "ok": true,
+    "title": "Specification | Apache Avro",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://avro.apache.org/docs/1.12.0/specification/#data-serialization-and-deserialization": {
+    "status": 200,
+    "ok": true,
+    "title": "Specification | Apache Avro",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://avro.apache.org/docs/1.12.0/specification/#records": {
+    "status": 200,
+    "ok": true,
+    "title": "Specification | Apache Avro",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://avro.apache.org/docs/1.12.0/specification/#schema-resolution": {
+    "status": 200,
+    "ok": true,
+    "title": "Specification | Apache Avro",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://avro.apache.org/docs/1.12.0/specification/#single-object-encoding": {
+    "status": 200,
+    "ok": true,
+    "title": "Specification | Apache Avro",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://avro.apache.org/docs/1.12.0/specification/#unions": {
+    "status": 200,
+    "ok": true,
+    "title": "Specification | Apache Avro",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://cwiki.apache.org/confluence/display/KAFKA/KIP-223+-+Add+per-topic+min+lead+and+per-partition+lead+metrics+to+KafkaConsumer": {
+    "status": 200,
+    "ok": true,
+    "title": "KIP-223 - Add per-topic min lead and per-partition lead metrics to KafkaConsumer - Apache Kafka - Apache Software Foundation",
+    "anchorFound": null,
+    "lastVerified": "2026-11-17"
+  },
+  "https://cwiki.apache.org/confluence/display/KAFKA/KIP-392%3A+Allow+consumers+to+fetch+from+closest+replica": {
+    "status": 200,
+    "ok": true,
+    "title": "KIP-392: Allow consumers to fetch from closest replica - Apache Kafka - Apache Software Foundation",
+    "anchorFound": null,
+    "lastVerified": "2026-11-17"
+  },
+  "https://cwiki.apache.org/confluence/display/KAFKA/KIP-714%3A+Client+metrics+and+observability": {
+    "status": 200,
+    "ok": true,
+    "title": "KIP-714: Client metrics and observability - Apache Kafka - Apache Software Foundation",
+    "anchorFound": null,
+    "lastVerified": "2026-11-17"
+  },
+  "https://dev.to/sougat818/my-experience-getting-confluent-certification-for-apache-kafka-ccdak-582": {
+    "status": 200,
+    "ok": true,
+    "title": "My Experience Getting Confluent Certification for Apache Kafka [CCDAK] - DEV Community",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://developer.confluent.io/courses/apache-kafka/events/": {
+    "status": 200,
+    "ok": true,
+    "title": "What You&#x27;ll Learn in This Apache Kafka® 101 Course",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://developer.confluent.io/courses/architecture/get-started/": {
+    "status": 200,
+    "ok": true,
+    "title": "Apache Kafka Architecture Deep Dive",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://developer.confluent.io/courses/architecture/transactions/": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Transactional Support: How It Enables Exactly-Once Semantics",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://developer.confluent.io/courses/data-pipelines/kafka-data-ingestion-with-cdc/#ingest-data-from-databases-into-kafka-with-change-data-capture-cdc": {
+    "status": 200,
+    "ok": true,
+    "title": "Using CDC to Ingest Data into Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-17"
+  },
+  "https://developer.confluent.io/courses/data-pipelines/kafka-data-ingestion-with-cdc/#log-based-cdc": {
+    "status": 200,
+    "ok": true,
+    "title": "Using CDC to Ingest Data into Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-17"
+  },
+  "https://developer.confluent.io/courses/data-pipelines/kafka-data-ingestion-with-cdc/#query-based-cdc": {
+    "status": 200,
+    "ok": true,
+    "title": "Using CDC to Ingest Data into Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-17"
+  },
+  "https://developer.confluent.io/courses/event-design/intro/": {
+    "status": 200,
+    "ok": true,
+    "title": "Introduction to Designing Events and Event Streams",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://developer.confluent.io/courses/kafka-connect/intro/": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Connect Tutorial: How Connectors, Sinks &amp; Sources Work",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://developer.confluent.io/courses/kafka-streams/get-started/": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Streams: Basic Concepts, Architecture, and Examples",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://developer.confluent.io/courses/schema-registry/key-concepts/": {
+    "status": 200,
+    "ok": true,
+    "title": "Key Concepts of a Schema Registry",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://developer.confluent.io/courses/security/intro/": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Security Basics, A Complete Checklist",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/cloud/current/client-apps/testing.html#integration-testing": {
+    "status": 200,
+    "ok": true,
+    "title": "Test Confluent Cloud Clients &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-17"
+  },
+  "https://docs.confluent.io/cloud/current/client-apps/testing.html#schema-management-and-evolution": {
+    "status": 200,
+    "ok": true,
+    "title": "Test Confluent Cloud Clients &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-17"
+  },
+  "https://docs.confluent.io/cloud/current/client-apps/testing.html#unit-testing": {
+    "status": 200,
+    "ok": true,
+    "title": "Test Confluent Cloud Clients &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-17"
+  },
+  "https://docs.confluent.io/control-center/current/index.html": {
+    "status": 200,
+    "ok": true,
+    "title": "Confluent Control Center &#124; Confluent Documentation",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/control-center/current/overview.html": {
+    "status": 200,
+    "ok": true,
+    "title": "Control Center for Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/kafka/design/delivery-semantics.html": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Message Delivery Guarantees &#124; Confluent Documentation",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/kafka/operations-tools/kafka-tools.html#kafka-console-consumer-sh": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Command-Line Interface (CLI) Tools &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/kafka/operations-tools/kafka-tools.html#kafka-console-producer-sh": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Command-Line Interface (CLI) Tools &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-17"
+  },
+  "https://docs.confluent.io/kafka/operations-tools/kafka-tools.html#kafka-topics-sh": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Command-Line Interface (CLI) Tools &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/platform/current/clients/consumer.html#asynchronous-commits": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Consumer for Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/platform/current/clients/consumer.html#auto-commit-offsets": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Consumer for Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/platform/current/clients/consumer.html#consumer-groups": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Consumer for Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/platform/current/clients/consumer.html#dealing-with-commit-failures-and-rebalances": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Consumer for Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/platform/current/clients/consumer.html#offset-management-configuration": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Consumer for Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/platform/current/clients/consumer.html#size-a-consumer-group": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Consumer for Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/platform/current/clients/consumer.html#upgrade-to-cooperativestickyassignor": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Consumer for Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/platform/current/clients/producer.html#ak-producer-for-product": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Producer for Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/platform/current/connect/index.html": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Connect for Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/platform/current/connect/index.html#connectors": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Connect for Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/platform/current/connect/index.html#converters": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Connect for Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/platform/current/connect/index.html#dead-letter-queue": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Connect for Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/platform/current/connect/index.html#distributed-workers": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Connect for Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/platform/current/connect/index.html#standalone-workers": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Connect for Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/platform/current/connect/index.html#task-rebalancing": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Connect for Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/platform/current/connect/index.html#tasks": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Connect for Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/platform/current/connect/index.html#transforms": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Connect for Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/platform/current/connect/references/restapi.html#connector-plugins": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Connect REST Interface for Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-17"
+  },
+  "https://docs.confluent.io/platform/current/connect/references/restapi.html#connectors": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Connect REST Interface for Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/platform/current/connect/references/restapi.html#offsets": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Connect REST Interface for Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/platform/current/connect/references/restapi.html#post--connectors": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Connect REST Interface for Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/platform/current/connect/references/restapi.html#rest-api-task-restart": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Connect REST Interface for Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/platform/current/connect/security.html#externalize-secrets": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Connect Security Basics for Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-17"
+  },
+  "https://docs.confluent.io/platform/current/connect/userguide.html#configuring-key-and-value-converters": {
+    "status": 200,
+    "ok": true,
+    "title": "Get started with Kafka Connect for Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-17"
+  },
+  "https://docs.confluent.io/platform/current/connect/userguide.html#connect-internal-topics": {
+    "status": 200,
+    "ok": true,
+    "title": "Get started with Kafka Connect for Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-17"
+  },
+  "https://docs.confluent.io/platform/current/connect/userguide.html#json-without-sr": {
+    "status": 200,
+    "ok": true,
+    "title": "Get started with Kafka Connect for Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/platform/current/connect/userguide.html#operating-environment": {
+    "status": 200,
+    "ok": true,
+    "title": "Get started with Kafka Connect for Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-17"
+  },
+  "https://docs.confluent.io/platform/current/kafka-rest/api.html#crest-api-v2": {
+    "status": 200,
+    "ok": true,
+    "title": "API Reference for Confluent REST Proxy &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/platform/current/kafka-rest/index.html": {
+    "status": 200,
+    "ok": true,
+    "title": "Confluent REST Proxy for Apache Kafka on Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/platform/current/ksqldb/concepts/queries.html#persistent": {
+    "status": 200,
+    "ok": true,
+    "title": "Queries in ksqlDB for Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/platform/current/ksqldb/concepts/queries.html#pull": {
+    "status": 200,
+    "ok": true,
+    "title": "Queries in ksqlDB for Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/platform/current/ksqldb/concepts/queries.html#push": {
+    "status": 200,
+    "ok": true,
+    "title": "Queries in ksqlDB for Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/platform/current/ksqldb/concepts/streams.html": {
+    "status": 200,
+    "ok": true,
+    "title": "Streams &#124; Confluent Documentation",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/platform/current/ksqldb/concepts/tables.html": {
+    "status": 200,
+    "ok": true,
+    "title": "Tables &#124; Confluent Documentation",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/platform/current/ksqldb/operate-and-deploy/how-it-works.html#ksqldb-and-kstreams": {
+    "status": 200,
+    "ok": true,
+    "title": "Architecture of ksqlDB for Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/platform/current/ksqldb/overview.html": {
+    "status": 200,
+    "ok": true,
+    "title": "ksqlDB for Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/platform/current/schema-registry/connect.html#configuration-options": {
+    "status": 200,
+    "ok": true,
+    "title": "Integrate schemas from Kafka Connect in Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/platform/current/schema-registry/develop/api.html#register-a-new-schema-under-a-subject": {
+    "status": 200,
+    "ok": true,
+    "title": "Schema Registry API Reference for Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/platform/current/schema-registry/develop/api.html#test-compatibility-against-a-particular-schema-subject-version": {
+    "status": 200,
+    "ok": true,
+    "title": "Schema Registry API Reference for Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/platform/current/schema-registry/develop/api.html#test-schema-compatibility-against-all-schemas-under-a-subject": {
+    "status": 200,
+    "ok": true,
+    "title": "Schema Registry API Reference for Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/platform/current/schema-registry/develop/maven-plugin.html#schema-registry-test-compatibility": {
+    "status": 200,
+    "ok": true,
+    "title": "Schema Registry Maven Plugin for Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-17"
+  },
+  "https://docs.confluent.io/platform/current/schema-registry/develop/maven-plugin.html#schema-registry-test-local-compatibility": {
+    "status": 200,
+    "ok": true,
+    "title": "Schema Registry Maven Plugin for Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-17"
+  },
+  "https://docs.confluent.io/platform/current/schema-registry/develop/using.html#show-compatibility-requirements-in-effect-for-a-subject": {
+    "status": 200,
+    "ok": true,
+    "title": "Schema Registry API Usage Examples for Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/platform/current/schema-registry/develop/using.html#update-compatibility-requirements-globally": {
+    "status": 200,
+    "ok": true,
+    "title": "Schema Registry API Usage Examples for Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/platform/current/schema-registry/fundamentals/index.html#ak-backend": {
+    "status": 200,
+    "ok": true,
+    "title": "Schema Registry Concepts for Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/platform/current/schema-registry/fundamentals/index.html#how-it-works": {
+    "status": 200,
+    "ok": true,
+    "title": "Schema Registry Concepts for Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/platform/current/schema-registry/fundamentals/index.html#schema-id-allocation": {
+    "status": 200,
+    "ok": true,
+    "title": "Schema Registry Concepts for Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/platform/current/schema-registry/fundamentals/index.html#schemas-subjects-and-topics": {
+    "status": 200,
+    "ok": true,
+    "title": "Schema Registry Concepts for Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/platform/current/schema-registry/fundamentals/schema-evolution.html": {
+    "status": 200,
+    "ok": true,
+    "title": "Schema Evolution and Compatibility for Schema Registry on Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/platform/current/schema-registry/fundamentals/schema-evolution.html#avro-and-protobuf-compatibility": {
+    "status": 200,
+    "ok": true,
+    "title": "Schema Evolution and Compatibility for Schema Registry on Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/platform/current/schema-registry/fundamentals/schema-evolution.html#avro-protobuf-and-json-schema-have-different-compatibility-rules": {
+    "status": 200,
+    "ok": true,
+    "title": "Schema Evolution and Compatibility for Schema Registry on Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/platform/current/schema-registry/fundamentals/schema-evolution.html#backward-compatibility": {
+    "status": 200,
+    "ok": true,
+    "title": "Schema Evolution and Compatibility for Schema Registry on Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/platform/current/schema-registry/fundamentals/schema-evolution.html#forward-compatibility": {
+    "status": 200,
+    "ok": true,
+    "title": "Schema Evolution and Compatibility for Schema Registry on Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/platform/current/schema-registry/fundamentals/schema-evolution.html#full-compatibility": {
+    "status": 200,
+    "ok": true,
+    "title": "Schema Evolution and Compatibility for Schema Registry on Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/platform/current/schema-registry/fundamentals/schema-evolution.html#no-compatibility-checking": {
+    "status": 200,
+    "ok": true,
+    "title": "Schema Evolution and Compatibility for Schema Registry on Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/platform/current/schema-registry/fundamentals/schema-evolution.html#order-of-upgrading-clients": {
+    "status": 200,
+    "ok": true,
+    "title": "Schema Evolution and Compatibility for Schema Registry on Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/platform/current/schema-registry/fundamentals/schema-evolution.html#transitive-property": {
+    "status": 200,
+    "ok": true,
+    "title": "Schema Evolution and Compatibility for Schema Registry on Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/platform/current/schema-registry/fundamentals/schema-evolution.html#using-compatibility-types": {
+    "status": 200,
+    "ok": true,
+    "title": "Schema Evolution and Compatibility for Schema Registry on Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/platform/current/schema-registry/fundamentals/serdes-develop/index.html": {
+    "status": 200,
+    "ok": true,
+    "title": "Formats, Serializers, and Deserializers for Schema Registry on Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/platform/current/schema-registry/fundamentals/serdes-develop/index.html#configuration-details": {
+    "status": 200,
+    "ok": true,
+    "title": "Formats, Serializers, and Deserializers for Schema Registry on Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/platform/current/schema-registry/fundamentals/serdes-develop/index.html#handling-differences-between-preregistered-and-client-derived-schemas": {
+    "status": 200,
+    "ok": true,
+    "title": "Formats, Serializers, and Deserializers for Schema Registry on Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/platform/current/schema-registry/fundamentals/serdes-develop/index.html#how-the-naming-strategies-work": {
+    "status": 200,
+    "ok": true,
+    "title": "Formats, Serializers, and Deserializers for Schema Registry on Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/platform/current/schema-registry/fundamentals/serdes-develop/index.html#subject-name-strategies": {
+    "status": 200,
+    "ok": true,
+    "title": "Formats, Serializers, and Deserializers for Schema Registry on Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/platform/current/schema-registry/fundamentals/serdes-develop/index.html#subject-name-strategy": {
+    "status": 200,
+    "ok": true,
+    "title": "Formats, Serializers, and Deserializers for Schema Registry on Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/platform/current/schema-registry/fundamentals/serdes-develop/index.html#supported-formats": {
+    "status": 200,
+    "ok": true,
+    "title": "Formats, Serializers, and Deserializers for Schema Registry on Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/platform/current/schema-registry/fundamentals/serdes-develop/index.html#wire-format-schema-guid-in-header": {
+    "status": 200,
+    "ok": true,
+    "title": "Formats, Serializers, and Deserializers for Schema Registry on Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/platform/current/schema-registry/fundamentals/serdes-develop/index.html#wire-format-schema-id-in-the-payload-prefix": {
+    "status": 200,
+    "ok": true,
+    "title": "Formats, Serializers, and Deserializers for Schema Registry on Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/platform/current/schema-registry/fundamentals/serdes-develop/serdes-avro.html#avro-deserializer": {
+    "status": 200,
+    "ok": true,
+    "title": "Avro Schema Serializer and Deserializer for Schema Registry on Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/platform/current/schema-registry/fundamentals/serdes-develop/serdes-avro.html#avro-schema-compatibility-rules": {
+    "status": 200,
+    "ok": true,
+    "title": "Avro Schema Serializer and Deserializer for Schema Registry on Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/platform/current/schema-registry/fundamentals/serdes-develop/serdes-avro.html#avro-serializer": {
+    "status": 200,
+    "ok": true,
+    "title": "Avro Schema Serializer and Deserializer for Schema Registry on Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/platform/current/schema-registry/fundamentals/serdes-develop/serdes-avro.html#multiple-event-types-in-the-same-topic": {
+    "status": 200,
+    "ok": true,
+    "title": "Avro Schema Serializer and Deserializer for Schema Registry on Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/platform/current/schema-registry/fundamentals/serdes-develop/serdes-avro.html#using-avro-specific-records": {
+    "status": 200,
+    "ok": true,
+    "title": "Avro Schema Serializer and Deserializer for Schema Registry on Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/platform/current/schema-registry/fundamentals/serdes-develop/serdes-protobuf.html#protobuf-deserializer": {
+    "status": 200,
+    "ok": true,
+    "title": "Protobuf Schema Serializer and Deserializer for Schema Registry on Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/platform/current/schema-registry/index.html#cp-license": {
+    "status": 200,
+    "ok": true,
+    "title": "Schema Registry for Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/platform/current/schema-registry/installation/config.html#kafkastore-topic": {
+    "status": 200,
+    "ok": true,
+    "title": "Schema Registry Configuration Reference for Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/platform/current/schema-registry/installation/config.html#schema-compatibility-level": {
+    "status": 200,
+    "ok": true,
+    "title": "Schema Registry Configuration Reference for Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/platform/current/streams/concepts.html": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Streams Basics for Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/platform/current/streams/developer-guide/test-streams.html": {
+    "status": 200,
+    "ok": true,
+    "title": "Test Kafka Streams Code in Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://docs.confluent.io/platform/current/streams/developer-guide/test-streams.html#testing-a-streams-application": {
+    "status": 200,
+    "ok": true,
+    "title": "Test Kafka Streams Code in Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-17"
+  },
+  "https://docs.confluent.io/platform/current/streams/developer-guide/test-streams.html#testing-stream-time-suppressions": {
+    "status": 200,
+    "ok": true,
+    "title": "Test Kafka Streams Code in Confluent Platform &#124; Confluent Documentation",
+    "anchorFound": true,
+    "lastVerified": "2026-11-17"
+  },
+  "https://forum.confluent.io/t/ccdak-preparation-tips/10715": {
+    "status": 200,
+    "ok": true,
+    "title": "CCDAK Preparation Tips - Certification and Training - Confluent Community",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://forum.confluent.io/t/training-required-for-success-exam/825": {
+    "status": 200,
+    "ok": true,
+    "title": "Training required for success exam - Certification and Training - Confluent Community",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://github.com/apache/kafka/blob/4.4.0/clients/src/main/java/org/apache/kafka/clients/consumer/MockConsumer.java": {
+    "status": 200,
+    "ok": true,
+    "title": "kafka/clients/src/main/java/org/apache/kafka/clients/consumer/MockConsumer.java at 4.4.0 · apache/kafka · GitHub",
+    "anchorFound": null,
+    "lastVerified": "2026-11-17"
+  },
+  "https://github.com/apache/kafka/blob/4.4.0/clients/src/main/java/org/apache/kafka/clients/producer/MockProducer.java": {
+    "status": 200,
+    "ok": true,
+    "title": "kafka/clients/src/main/java/org/apache/kafka/clients/producer/MockProducer.java at 4.4.0 · apache/kafka · GitHub",
+    "anchorFound": null,
+    "lastVerified": "2026-11-17"
+  },
+  "https://github.com/confluentinc/schema-registry/blob/master/client/src/main/java/io/confluent/kafka/schemaregistry/testutil/MockSchemaRegistry.java": {
+    "status": 200,
+    "ok": true,
+    "title": "schema-registry/client/src/main/java/io/confluent/kafka/schemaregistry/testutil/MockSchemaRegistry.java at master · confluentinc/schema-registry · GitHub",
+    "anchorFound": null,
+    "lastVerified": "2026-11-17"
+  },
+  "https://github.com/confluentinc/schema-registry/blob/master/schema-serializer/src/main/java/io/confluent/kafka/serializers/AbstractKafkaSchemaSerDeConfig.java": {
+    "status": 200,
+    "ok": true,
+    "title": "schema-registry/schema-serializer/src/main/java/io/confluent/kafka/serializers/AbstractKafkaSchemaSerDeConfig.java at master · confluentinc/schema-registry · GitHub",
+    "anchorFound": null,
+    "lastVerified": "2026-11-17"
+  },
+  "https://github.com/danielsobrado/CCDAK-Exam-Questions": {
+    "status": 200,
+    "ok": true,
+    "title": "GitHub - danielsobrado/CCDAK-Exam-Questions: Confluent Kafka questions to practice for CCDAK · GitHub",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://github.com/vaquarkhan/CCDAK-Exam-Practice-Test-2": {
+    "status": 200,
+    "ok": true,
+    "title": "GitHub - vaquarkhan/CCDAK-Exam-Practice-Test-2: Complete high-quality practice tests of 50 questions each will help you master your Confluent Certified Developer for Apache Kafka (CCDAK) exam: These practice exams will help you assess and ensure that you are fully prepared for the final examination. Any question you might fail will contain an explanation to understand the correct answer You will need to work on acquiring knowledge on Apache Kafka using the courses from the Apache Kafka Series Topics Covered in the Practice Exams: Apache Kafka Fundamentals: Brokers, Topics, Zookeeper, Producers, Consumers, Configurations, Security Kafka Extended APIs: Kafka Connect &amp; Kafka Streams Confluent Components: Confluent Schema Registry, Confluent REST Proxy, KSQL Are you ready to assess yourself and practice the Confluent Certified Developer for Apache Kafka (CCDAK) exam? See you in the course! Note: these are not exam dumps. The questions&#39; main goal is to assess your Apache Kafka &amp; Confluent Ecosystem. What you’ll learn Practice for the CCDAK exam with practice exams of 50 questions each Consolidate and validate the learning from the Apache Kafka Series courses · GitHub",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://java.testcontainers.org/modules/kafka/": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Module - Testcontainers for Java",
+    "anchorFound": null,
+    "lastVerified": "2026-11-17"
+  },
+  "https://kafka.apache.org/44/configuration/broker-configs/#brokerconfigs_auto.create.topics.enable": {
+    "status": 200,
+    "ok": true,
+    "title": "Broker Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/broker-configs/#brokerconfigs_auto.leader.rebalance.enable": {
+    "status": 200,
+    "ok": true,
+    "title": "Broker Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/broker-configs/#brokerconfigs_broker.rack": {
+    "status": 200,
+    "ok": true,
+    "title": "Broker Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/broker-configs/#brokerconfigs_default.replication.factor": {
+    "status": 200,
+    "ok": true,
+    "title": "Broker Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/broker-configs/#brokerconfigs_group.consumer.assignors": {
+    "status": 200,
+    "ok": true,
+    "title": "Broker Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/broker-configs/#brokerconfigs_group.consumer.heartbeat.interval.ms": {
+    "status": 200,
+    "ok": true,
+    "title": "Broker Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/broker-configs/#brokerconfigs_group.consumer.session.timeout.ms": {
+    "status": 200,
+    "ok": true,
+    "title": "Broker Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/broker-configs/#brokerconfigs_group.coordinator.rebalance.protocols": {
+    "status": 200,
+    "ok": true,
+    "title": "Broker Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/broker-configs/#brokerconfigs_group.max.session.timeout.ms": {
+    "status": 200,
+    "ok": true,
+    "title": "Broker Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/broker-configs/#brokerconfigs_group.min.session.timeout.ms": {
+    "status": 200,
+    "ok": true,
+    "title": "Broker Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/broker-configs/#brokerconfigs_log.retention.check.interval.ms": {
+    "status": 200,
+    "ok": true,
+    "title": "Broker Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/broker-configs/#brokerconfigs_log.retention.hours": {
+    "status": 200,
+    "ok": true,
+    "title": "Broker Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/broker-configs/#brokerconfigs_message.max.bytes": {
+    "status": 200,
+    "ok": true,
+    "title": "Broker Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/broker-configs/#brokerconfigs_min.insync.replicas": {
+    "status": 200,
+    "ok": true,
+    "title": "Broker Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/broker-configs/#brokerconfigs_num.partitions": {
+    "status": 200,
+    "ok": true,
+    "title": "Broker Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/broker-configs/#brokerconfigs_offsets.retention.minutes": {
+    "status": 200,
+    "ok": true,
+    "title": "Broker Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/broker-configs/#brokerconfigs_offsets.topic.replication.factor": {
+    "status": 200,
+    "ok": true,
+    "title": "Broker Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/broker-configs/#brokerconfigs_process.roles": {
+    "status": 200,
+    "ok": true,
+    "title": "Broker Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/broker-configs/#brokerconfigs_replica.fetch.max.bytes": {
+    "status": 200,
+    "ok": true,
+    "title": "Broker Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/broker-configs/#brokerconfigs_replica.lag.time.max.ms": {
+    "status": 200,
+    "ok": true,
+    "title": "Broker Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/broker-configs/#brokerconfigs_replica.selector.class": {
+    "status": 200,
+    "ok": true,
+    "title": "Broker Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-17"
+  },
+  "https://kafka.apache.org/44/configuration/broker-configs/#brokerconfigs_telemetry.max.bytes": {
+    "status": 200,
+    "ok": true,
+    "title": "Broker Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-17"
+  },
+  "https://kafka.apache.org/44/configuration/broker-configs/#brokerconfigs_transaction.max.timeout.ms": {
+    "status": 200,
+    "ok": true,
+    "title": "Broker Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/broker-configs/#brokerconfigs_transaction.state.log.min.isr": {
+    "status": 200,
+    "ok": true,
+    "title": "Broker Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/broker-configs/#brokerconfigs_transaction.state.log.replication.factor": {
+    "status": 200,
+    "ok": true,
+    "title": "Broker Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/broker-configs/#brokerconfigs_unclean.leader.election.enable": {
+    "status": 200,
+    "ok": true,
+    "title": "Broker Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/configuration-providers/#envvarconfigprovider": {
+    "status": 200,
+    "ok": true,
+    "title": "Configuration Providers | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-17"
+  },
+  "https://kafka.apache.org/44/configuration/configuration-providers/#example-referencing-files": {
+    "status": 200,
+    "ok": true,
+    "title": "Configuration Providers | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-17"
+  },
+  "https://kafka.apache.org/44/configuration/consumer-configs/": {
+    "status": 200,
+    "ok": true,
+    "title": "Consumer and Share Consumer Configs | Apache Kafka",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_allow.auto.create.topics": {
+    "status": 200,
+    "ok": true,
+    "title": "Consumer and Share Consumer Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_auto.commit.interval.ms": {
+    "status": 200,
+    "ok": true,
+    "title": "Consumer and Share Consumer Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_auto.offset.reset": {
+    "status": 200,
+    "ok": true,
+    "title": "Consumer and Share Consumer Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_bootstrap.servers": {
+    "status": 200,
+    "ok": true,
+    "title": "Consumer and Share Consumer Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-17"
+  },
+  "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_client.id": {
+    "status": 200,
+    "ok": true,
+    "title": "Consumer and Share Consumer Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-17"
+  },
+  "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_client.rack": {
+    "status": 200,
+    "ok": true,
+    "title": "Consumer and Share Consumer Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_default.api.timeout.ms": {
+    "status": 200,
+    "ok": true,
+    "title": "Consumer and Share Consumer Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_enable.auto.commit": {
+    "status": 200,
+    "ok": true,
+    "title": "Consumer and Share Consumer Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_enable.metrics.push": {
+    "status": 200,
+    "ok": true,
+    "title": "Consumer and Share Consumer Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-17"
+  },
+  "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_fetch.max.bytes": {
+    "status": 200,
+    "ok": true,
+    "title": "Consumer and Share Consumer Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_fetch.max.wait.ms": {
+    "status": 200,
+    "ok": true,
+    "title": "Consumer and Share Consumer Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_fetch.min.bytes": {
+    "status": 200,
+    "ok": true,
+    "title": "Consumer and Share Consumer Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_group.id": {
+    "status": 200,
+    "ok": true,
+    "title": "Consumer and Share Consumer Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_group.instance.id": {
+    "status": 200,
+    "ok": true,
+    "title": "Consumer and Share Consumer Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_group.protocol": {
+    "status": 200,
+    "ok": true,
+    "title": "Consumer and Share Consumer Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_group.remote.assignor": {
+    "status": 200,
+    "ok": true,
+    "title": "Consumer and Share Consumer Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_heartbeat.interval.ms": {
+    "status": 200,
+    "ok": true,
+    "title": "Consumer and Share Consumer Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_isolation.level": {
+    "status": 200,
+    "ok": true,
+    "title": "Consumer and Share Consumer Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_key.deserializer": {
+    "status": 200,
+    "ok": true,
+    "title": "Consumer and Share Consumer Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_max.partition.fetch.bytes": {
+    "status": 200,
+    "ok": true,
+    "title": "Consumer and Share Consumer Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_max.poll.interval.ms": {
+    "status": 200,
+    "ok": true,
+    "title": "Consumer and Share Consumer Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_max.poll.records": {
+    "status": 200,
+    "ok": true,
+    "title": "Consumer and Share Consumer Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_metric.reporters": {
+    "status": 200,
+    "ok": true,
+    "title": "Consumer and Share Consumer Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-17"
+  },
+  "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_partition.assignment.strategy": {
+    "status": 200,
+    "ok": true,
+    "title": "Consumer and Share Consumer Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_session.timeout.ms": {
+    "status": 200,
+    "ok": true,
+    "title": "Consumer and Share Consumer Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_value.deserializer": {
+    "status": 200,
+    "ok": true,
+    "title": "Consumer and Share Consumer Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/kafka-connect-configs/": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Connect Configs | Apache Kafka",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/kafka-connect-configs/#connectconfigs_config.providers": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Connect Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-17"
+  },
+  "https://kafka.apache.org/44/configuration/kafka-connect-configs/#connectconfigs_config.storage.replication.factor": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Connect Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/kafka-connect-configs/#connectconfigs_config.storage.topic": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Connect Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/kafka-connect-configs/#connectconfigs_connect.protocol": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Connect Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/kafka-connect-configs/#connectconfigs_connector.client.config.override.policy": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Connect Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/kafka-connect-configs/#connectconfigs_exactly.once.source.support": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Connect Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-17"
+  },
+  "https://kafka.apache.org/44/configuration/kafka-connect-configs/#connectconfigs_group.id": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Connect Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/kafka-connect-configs/#connectconfigs_key.converter": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Connect Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/kafka-connect-configs/#connectconfigs_listeners": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Connect Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/kafka-connect-configs/#connectconfigs_offset.flush.interval.ms": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Connect Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/kafka-connect-configs/#connectconfigs_offset.storage.partitions": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Connect Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/kafka-connect-configs/#connectconfigs_offset.storage.topic": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Connect Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/kafka-connect-configs/#connectconfigs_plugin.path": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Connect Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/kafka-connect-configs/#connectconfigs_scheduled.rebalance.max.delay.ms": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Connect Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/kafka-connect-configs/#connectconfigs_status.storage.topic": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Connect Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/kafka-connect-configs/#connectconfigs_value.converter": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Connect Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/kafka-connect-configs/#sinkconnectorconfigs_errors.deadletterqueue.context.headers.enable": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Connect Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/kafka-connect-configs/#sinkconnectorconfigs_errors.deadletterqueue.topic.name": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Connect Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/kafka-connect-configs/#sinkconnectorconfigs_errors.log.enable": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Connect Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/kafka-connect-configs/#sinkconnectorconfigs_errors.retry.timeout": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Connect Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/kafka-connect-configs/#sinkconnectorconfigs_errors.tolerance": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Connect Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/kafka-connect-configs/#sinkconnectorconfigs_tasks.max": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Connect Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/kafka-connect-configs/#sinkconnectorconfigs_transforms": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Connect Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/kafka-connect-configs/#sinkconnectorconfigs_value.converter": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Connect Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/kafka-connect-configs/#sourceconnectorconfigs_exactly.once.support": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Connect Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-17"
+  },
+  "https://kafka.apache.org/44/configuration/kafka-connect-configs/#sourceconnectorconfigs_tasks.max": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Connect Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/kafka-streams-configs/": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Streams Configs | Apache Kafka",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/kafka-streams-configs/#streamsconfigs_acceptable.recovery.lag": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Streams Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/kafka-streams-configs/#streamsconfigs_application.id": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Streams Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/kafka-streams-configs/#streamsconfigs_application.server": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Streams Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/kafka-streams-configs/#streamsconfigs_bootstrap.servers": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Streams Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/kafka-streams-configs/#streamsconfigs_commit.interval.ms": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Streams Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/kafka-streams-configs/#streamsconfigs_default.dsl.store": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Streams Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/kafka-streams-configs/#streamsconfigs_default.key.serde": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Streams Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/kafka-streams-configs/#streamsconfigs_default.value.serde": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Streams Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/kafka-streams-configs/#streamsconfigs_deserialization.exception.handler": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Streams Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-17"
+  },
+  "https://kafka.apache.org/44/configuration/kafka-streams-configs/#streamsconfigs_metrics.recording.level": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Streams Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-17"
+  },
+  "https://kafka.apache.org/44/configuration/kafka-streams-configs/#streamsconfigs_num.standby.replicas": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Streams Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/kafka-streams-configs/#streamsconfigs_num.stream.threads": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Streams Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/kafka-streams-configs/#streamsconfigs_processing.exception.handler": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Streams Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-17"
+  },
+  "https://kafka.apache.org/44/configuration/kafka-streams-configs/#streamsconfigs_processing.guarantee": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Streams Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/kafka-streams-configs/#streamsconfigs_repartition.purge.interval.ms": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Streams Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/kafka-streams-configs/#streamsconfigs_replication.factor": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Streams Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/kafka-streams-configs/#streamsconfigs_state.dir": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Streams Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/kafka-streams-configs/#streamsconfigs_statestore.cache.max.bytes": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Streams Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/producer-configs/": {
+    "status": 200,
+    "ok": true,
+    "title": "Producer Configs | Apache Kafka",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_acks": {
+    "status": 200,
+    "ok": true,
+    "title": "Producer Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_batch.size": {
+    "status": 200,
+    "ok": true,
+    "title": "Producer Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_bootstrap.servers": {
+    "status": 200,
+    "ok": true,
+    "title": "Producer Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_buffer.memory": {
+    "status": 200,
+    "ok": true,
+    "title": "Producer Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_client.id": {
+    "status": 200,
+    "ok": true,
+    "title": "Producer Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_compression.type": {
+    "status": 200,
+    "ok": true,
+    "title": "Producer Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_config.providers": {
+    "status": 200,
+    "ok": true,
+    "title": "Producer Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-17"
+  },
+  "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_delivery.timeout.ms": {
+    "status": 200,
+    "ok": true,
+    "title": "Producer Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_enable.idempotence": {
+    "status": 200,
+    "ok": true,
+    "title": "Producer Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_enable.metrics.push": {
+    "status": 200,
+    "ok": true,
+    "title": "Producer Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-17"
+  },
+  "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_key.serializer": {
+    "status": 200,
+    "ok": true,
+    "title": "Producer Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_linger.ms": {
+    "status": 200,
+    "ok": true,
+    "title": "Producer Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_max.block.ms": {
+    "status": 200,
+    "ok": true,
+    "title": "Producer Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_max.in.flight.requests.per.connection": {
+    "status": 200,
+    "ok": true,
+    "title": "Producer Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_max.request.size": {
+    "status": 200,
+    "ok": true,
+    "title": "Producer Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_metrics.recording.level": {
+    "status": 200,
+    "ok": true,
+    "title": "Producer Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-17"
+  },
+  "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_partitioner.adaptive.partitioning.enable": {
+    "status": 200,
+    "ok": true,
+    "title": "Producer Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_partitioner.class": {
+    "status": 200,
+    "ok": true,
+    "title": "Producer Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_partitioner.ignore.keys": {
+    "status": 200,
+    "ok": true,
+    "title": "Producer Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_request.timeout.ms": {
+    "status": 200,
+    "ok": true,
+    "title": "Producer Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_retries": {
+    "status": 200,
+    "ok": true,
+    "title": "Producer Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_retry.backoff.max.ms": {
+    "status": 200,
+    "ok": true,
+    "title": "Producer Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_retry.backoff.ms": {
+    "status": 200,
+    "ok": true,
+    "title": "Producer Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_sasl.jaas.config": {
+    "status": 200,
+    "ok": true,
+    "title": "Producer Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_sasl.mechanism": {
+    "status": 200,
+    "ok": true,
+    "title": "Producer Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_security.protocol": {
+    "status": 200,
+    "ok": true,
+    "title": "Producer Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_ssl.endpoint.identification.algorithm": {
+    "status": 200,
+    "ok": true,
+    "title": "Producer Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_ssl.keystore.location": {
+    "status": 200,
+    "ok": true,
+    "title": "Producer Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_ssl.truststore.location": {
+    "status": 200,
+    "ok": true,
+    "title": "Producer Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_transaction.timeout.ms": {
+    "status": 200,
+    "ok": true,
+    "title": "Producer Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_transactional.id": {
+    "status": 200,
+    "ok": true,
+    "title": "Producer Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_value.serializer": {
+    "status": 200,
+    "ok": true,
+    "title": "Producer Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/topic-configs/": {
+    "status": 200,
+    "ok": true,
+    "title": "Topic Configs | Apache Kafka",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_cleanup.policy": {
+    "status": 200,
+    "ok": true,
+    "title": "Topic Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_compression.type": {
+    "status": 200,
+    "ok": true,
+    "title": "Topic Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_delete.retention.ms": {
+    "status": 200,
+    "ok": true,
+    "title": "Topic Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_local.retention.ms": {
+    "status": 200,
+    "ok": true,
+    "title": "Topic Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-17"
+  },
+  "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_max.compaction.lag.ms": {
+    "status": 200,
+    "ok": true,
+    "title": "Topic Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_max.message.bytes": {
+    "status": 200,
+    "ok": true,
+    "title": "Topic Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_message.timestamp.after.max.ms": {
+    "status": 200,
+    "ok": true,
+    "title": "Topic Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-17"
+  },
+  "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_message.timestamp.before.max.ms": {
+    "status": 200,
+    "ok": true,
+    "title": "Topic Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-17"
+  },
+  "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_message.timestamp.type": {
+    "status": 200,
+    "ok": true,
+    "title": "Topic Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_min.cleanable.dirty.ratio": {
+    "status": 200,
+    "ok": true,
+    "title": "Topic Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_min.compaction.lag.ms": {
+    "status": 200,
+    "ok": true,
+    "title": "Topic Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_min.insync.replicas": {
+    "status": 200,
+    "ok": true,
+    "title": "Topic Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_retention.bytes": {
+    "status": 200,
+    "ok": true,
+    "title": "Topic Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_retention.ms": {
+    "status": 200,
+    "ok": true,
+    "title": "Topic Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_segment.bytes": {
+    "status": 200,
+    "ok": true,
+    "title": "Topic Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_segment.ms": {
+    "status": 200,
+    "ok": true,
+    "title": "Topic Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_unclean.leader.election.enable": {
+    "status": 200,
+    "ok": true,
+    "title": "Topic Configs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/design/design/": {
+    "status": 200,
+    "ok": true,
+    "title": "Design | Apache Kafka",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/design/design/#availability-and-durability-guarantees": {
+    "status": 200,
+    "ok": true,
+    "title": "Design | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/design/design/#configuring-the-log-cleaner": {
+    "status": 200,
+    "ok": true,
+    "title": "Design | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/design/design/#consumer-position": {
+    "status": 200,
+    "ok": true,
+    "title": "Design | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/design/design/#dont-fear-the-filesystem": {
+    "status": 200,
+    "ok": true,
+    "title": "Design | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-17"
+  },
+  "https://kafka.apache.org/44/design/design/#efficiency": {
+    "status": 200,
+    "ok": true,
+    "title": "Design | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-17"
+  },
+  "https://kafka.apache.org/44/design/design/#end-to-end-batch-compression": {
+    "status": 200,
+    "ok": true,
+    "title": "Design | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/design/design/#log-compaction": {
+    "status": 200,
+    "ok": true,
+    "title": "Design | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/design/design/#log-compaction-basics": {
+    "status": 200,
+    "ok": true,
+    "title": "Design | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/design/design/#message-delivery-semantics": {
+    "status": 200,
+    "ok": true,
+    "title": "Design | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/design/design/#push-vs-pull": {
+    "status": 200,
+    "ok": true,
+    "title": "Design | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/design/design/#replica-management": {
+    "status": 200,
+    "ok": true,
+    "title": "Design | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/design/design/#replicated-logs-quorums-isrs-and-state-machines-oh-my": {
+    "status": 200,
+    "ok": true,
+    "title": "Design | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/design/design/#replication": {
+    "status": 200,
+    "ok": true,
+    "title": "Design | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/design/design/#static-membership": {
+    "status": 200,
+    "ok": true,
+    "title": "Design | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/design/design/#unclean-leader-election-what-if-they-all-die": {
+    "status": 200,
+    "ok": true,
+    "title": "Design | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/design/design/#using-transactions": {
+    "status": 200,
+    "ok": true,
+    "title": "Design | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/design/design/#what-guarantees-does-log-compaction-provide": {
+    "status": 200,
+    "ok": true,
+    "title": "Design | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/getting-started/compatibility/#clientbroker-forward-compatibility": {
+    "status": 200,
+    "ok": true,
+    "title": "Compatibility | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-17"
+  },
+  "https://kafka.apache.org/44/getting-started/introduction/#main-concepts-and-terminology": {
+    "status": 200,
+    "ok": true,
+    "title": "Introduction | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-17"
+  },
+  "https://kafka.apache.org/44/getting-started/quickstart/#step-3-create-a-topic-to-store-your-events": {
+    "status": 200,
+    "ok": true,
+    "title": "Quick Start | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/getting-started/upgrade/": {
+    "status": 200,
+    "ok": true,
+    "title": "Upgrading | Apache Kafka",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/getting-started/upgrade/#notable-changes-in-400": {
+    "status": 200,
+    "ok": true,
+    "title": "Upgrading | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/getting-started/upgrade/#notable-changes-in-410": {
+    "status": 200,
+    "ok": true,
+    "title": "Upgrading | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/getting-started/upgrade/#notable-changes-in-420": {
+    "status": 200,
+    "ok": true,
+    "title": "Upgrading | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/implementation/log/": {
+    "status": 200,
+    "ok": true,
+    "title": "Log | Apache Kafka",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/implementation/log/#deletes": {
+    "status": 200,
+    "ok": true,
+    "title": "Log | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/implementation/message-format/#record-header": {
+    "status": 200,
+    "ok": true,
+    "title": "Message Format | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-17"
+  },
+  "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/admin/Admin.html": {
+    "status": 200,
+    "ok": true,
+    "title": "Admin (kafka 4.4.0 API)",
+    "anchorFound": null,
+    "lastVerified": "2026-11-17"
+  },
+  "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/admin/Admin.html#bootstrap-and-balancing-heading": {
+    "status": 200,
+    "ok": true,
+    "title": "Admin (kafka 4.4.0 API)",
+    "anchorFound": true,
+    "lastVerified": "2026-11-17"
+  },
+  "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/admin/CreateTopicsResult.html": {
+    "status": 200,
+    "ok": true,
+    "title": "CreateTopicsResult (kafka 4.4.0 API)",
+    "anchorFound": null,
+    "lastVerified": "2026-11-17"
+  },
+  "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/admin/DescribeClusterResult.html": {
+    "status": 200,
+    "ok": true,
+    "title": "DescribeClusterResult (kafka 4.4.0 API)",
+    "anchorFound": null,
+    "lastVerified": "2026-11-17"
+  },
+  "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/admin/DescribeTopicsResult.html": {
+    "status": 200,
+    "ok": true,
+    "title": "DescribeTopicsResult (kafka 4.4.0 API)",
+    "anchorFound": null,
+    "lastVerified": "2026-11-17"
+  },
+  "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/admin/ListConsumerGroupOffsetsResult.html": {
+    "status": 200,
+    "ok": true,
+    "title": "ListConsumerGroupOffsetsResult (kafka 4.4.0 API)",
+    "anchorFound": null,
+    "lastVerified": "2026-11-17"
+  },
+  "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/admin/NewTopic.html": {
+    "status": 200,
+    "ok": true,
+    "title": "NewTopic (kafka 4.4.0 API)",
+    "anchorFound": null,
+    "lastVerified": "2026-11-17"
+  },
+  "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/admin/OffsetSpec.html": {
+    "status": 200,
+    "ok": true,
+    "title": "OffsetSpec (kafka 4.4.0 API)",
+    "anchorFound": null,
+    "lastVerified": "2026-11-17"
+  },
+  "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/CommitFailedException.html": {
+    "status": 200,
+    "ok": true,
+    "title": "CommitFailedException (kafka 4.4.0 API)",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/ConsumerRebalanceListener.html": {
+    "status": 200,
+    "ok": true,
+    "title": "ConsumerRebalanceListener (kafka 4.4.0 API)",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/ConsumerRecord.html": {
+    "status": 200,
+    "ok": true,
+    "title": "ConsumerRecord (kafka 4.4.0 API)",
+    "anchorFound": null,
+    "lastVerified": "2026-11-17"
+  },
+  "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/CooperativeStickyAssignor.html": {
+    "status": 200,
+    "ok": true,
+    "title": "CooperativeStickyAssignor (kafka 4.4.0 API)",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html": {
+    "status": 200,
+    "ok": true,
+    "title": "KafkaConsumer (kafka 4.4.0 API)",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html#consumer-groups-and-topic-subscriptions-heading": {
+    "status": 200,
+    "ok": true,
+    "title": "KafkaConsumer (kafka 4.4.0 API)",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html#consumption-flow-control-heading": {
+    "status": 200,
+    "ok": true,
+    "title": "KafkaConsumer (kafka 4.4.0 API)",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html#controlling-the-consumer-s-position-heading": {
+    "status": 200,
+    "ok": true,
+    "title": "KafkaConsumer (kafka 4.4.0 API)",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html#detecting-consumer-failures-heading": {
+    "status": 200,
+    "ok": true,
+    "title": "KafkaConsumer (kafka 4.4.0 API)",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html#endOffsets%28java.util.Collection%29": {
+    "status": 200,
+    "ok": true,
+    "title": "KafkaConsumer (kafka 4.4.0 API)",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html#groupMetadata%28%29": {
+    "status": 200,
+    "ok": true,
+    "title": "KafkaConsumer (kafka 4.4.0 API)",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html#manual-offset-control-heading": {
+    "status": 200,
+    "ok": true,
+    "title": "KafkaConsumer (kafka 4.4.0 API)",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html#manual-partition-assignment-heading": {
+    "status": 200,
+    "ok": true,
+    "title": "KafkaConsumer (kafka 4.4.0 API)",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html#multi-threaded-processing-heading": {
+    "status": 200,
+    "ok": true,
+    "title": "KafkaConsumer (kafka 4.4.0 API)",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html#offsets-and-consumer-position-heading": {
+    "status": 200,
+    "ok": true,
+    "title": "KafkaConsumer (kafka 4.4.0 API)",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html#reading-transactional-messages-heading": {
+    "status": 200,
+    "ok": true,
+    "title": "KafkaConsumer (kafka 4.4.0 API)",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html#storing-offsets-outside-kafka-heading": {
+    "status": 200,
+    "ok": true,
+    "title": "KafkaConsumer (kafka 4.4.0 API)",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/MockConsumer.html": {
+    "status": 200,
+    "ok": true,
+    "title": "MockConsumer (kafka 4.4.0 API)",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/NoOffsetForPartitionException.html": {
+    "status": 200,
+    "ok": true,
+    "title": "NoOffsetForPartitionException (kafka 4.4.0 API)",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/RangeAssignor.html": {
+    "status": 200,
+    "ok": true,
+    "title": "RangeAssignor (kafka 4.4.0 API)",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/RoundRobinAssignor.html": {
+    "status": 200,
+    "ok": true,
+    "title": "RoundRobinAssignor (kafka 4.4.0 API)",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/producer/BufferExhaustedException.html": {
+    "status": 200,
+    "ok": true,
+    "title": "BufferExhaustedException (kafka 4.4.0 API)",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/producer/Callback.html#onCompletion%28org.apache.kafka.clients.producer.RecordMetadata,java.lang.Exception%29": {
+    "status": 200,
+    "ok": true,
+    "title": "Callback (kafka 4.4.0 API)",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/producer/KafkaProducer.html": {
+    "status": 200,
+    "ok": true,
+    "title": "KafkaProducer (kafka 4.4.0 API)",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/producer/KafkaProducer.html#beginTransaction%28%29": {
+    "status": 200,
+    "ok": true,
+    "title": "KafkaProducer (kafka 4.4.0 API)",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/producer/KafkaProducer.html#class-description": {
+    "status": 200,
+    "ok": true,
+    "title": "KafkaProducer (kafka 4.4.0 API)",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/producer/KafkaProducer.html#commitTransaction%28%29": {
+    "status": 200,
+    "ok": true,
+    "title": "KafkaProducer (kafka 4.4.0 API)",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/producer/KafkaProducer.html#flush%28%29": {
+    "status": 200,
+    "ok": true,
+    "title": "KafkaProducer (kafka 4.4.0 API)",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/producer/KafkaProducer.html#initTransactions%28%29": {
+    "status": 200,
+    "ok": true,
+    "title": "KafkaProducer (kafka 4.4.0 API)",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/producer/KafkaProducer.html#send%28org.apache.kafka.clients.producer.ProducerRecord,org.apache.kafka.clients.producer.Callback%29": {
+    "status": 200,
+    "ok": true,
+    "title": "KafkaProducer (kafka 4.4.0 API)",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/producer/KafkaProducer.html#sendOffsetsToTransaction%28java.util.Map,org.apache.kafka.clients.consumer.ConsumerGroupMetadata%29": {
+    "status": 200,
+    "ok": true,
+    "title": "KafkaProducer (kafka 4.4.0 API)",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/producer/MockProducer.html": {
+    "status": 200,
+    "ok": true,
+    "title": "MockProducer (kafka 4.4.0 API)",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/producer/Partitioner.html": {
+    "status": 200,
+    "ok": true,
+    "title": "Partitioner (kafka 4.4.0 API)",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/producer/ProducerRecord.html": {
+    "status": 200,
+    "ok": true,
+    "title": "ProducerRecord (kafka 4.4.0 API)",
+    "anchorFound": null,
+    "lastVerified": "2026-11-17"
+  },
+  "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/producer/RecordMetadata.html": {
+    "status": 200,
+    "ok": true,
+    "title": "RecordMetadata (kafka 4.4.0 API)",
+    "anchorFound": null,
+    "lastVerified": "2026-11-17"
+  },
+  "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/producer/RoundRobinPartitioner.html": {
+    "status": 200,
+    "ok": true,
+    "title": "RoundRobinPartitioner (kafka 4.4.0 API)",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/javadoc/org/apache/kafka/common/errors/NotEnoughReplicasAfterAppendException.html": {
+    "status": 200,
+    "ok": true,
+    "title": "NotEnoughReplicasAfterAppendException (kafka 4.4.0 API)",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/javadoc/org/apache/kafka/common/errors/NotEnoughReplicasException.html": {
+    "status": 200,
+    "ok": true,
+    "title": "NotEnoughReplicasException (kafka 4.4.0 API)",
+    "anchorFound": null,
+    "lastVerified": "2026-11-17"
+  },
+  "https://kafka.apache.org/44/javadoc/org/apache/kafka/common/errors/OutOfOrderSequenceException.html": {
+    "status": 200,
+    "ok": true,
+    "title": "OutOfOrderSequenceException (kafka 4.4.0 API)",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/javadoc/org/apache/kafka/common/errors/ProducerFencedException.html": {
+    "status": 200,
+    "ok": true,
+    "title": "ProducerFencedException (kafka 4.4.0 API)",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/javadoc/org/apache/kafka/common/errors/RecordDeserializationException.html": {
+    "status": 200,
+    "ok": true,
+    "title": "RecordDeserializationException (kafka 4.4.0 API)",
+    "anchorFound": null,
+    "lastVerified": "2026-11-17"
+  },
+  "https://kafka.apache.org/44/javadoc/org/apache/kafka/common/errors/SaslAuthenticationException.html": {
+    "status": 200,
+    "ok": true,
+    "title": "SaslAuthenticationException (kafka 4.4.0 API)",
+    "anchorFound": null,
+    "lastVerified": "2026-11-17"
+  },
+  "https://kafka.apache.org/44/javadoc/org/apache/kafka/common/errors/TopicExistsException.html": {
+    "status": 200,
+    "ok": true,
+    "title": "TopicExistsException (kafka 4.4.0 API)",
+    "anchorFound": null,
+    "lastVerified": "2026-11-17"
+  },
+  "https://kafka.apache.org/44/javadoc/org/apache/kafka/common/header/Headers.html": {
+    "status": 200,
+    "ok": true,
+    "title": "Headers (kafka 4.4.0 API)",
+    "anchorFound": null,
+    "lastVerified": "2026-11-17"
+  },
+  "https://kafka.apache.org/44/javadoc/org/apache/kafka/common/KafkaFuture.html": {
+    "status": 200,
+    "ok": true,
+    "title": "KafkaFuture (kafka 4.4.0 API)",
+    "anchorFound": null,
+    "lastVerified": "2026-11-17"
+  },
+  "https://kafka.apache.org/44/javadoc/org/apache/kafka/common/serialization/package-summary.html": {
+    "status": 200,
+    "ok": true,
+    "title": "org.apache.kafka.common.serialization (kafka 4.4.0 API)",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/javadoc/org/apache/kafka/common/serialization/Serializer.html": {
+    "status": 200,
+    "ok": true,
+    "title": "Serializer (kafka 4.4.0 API)",
+    "anchorFound": null,
+    "lastVerified": "2026-11-17"
+  },
+  "https://kafka.apache.org/44/javadoc/org/apache/kafka/streams/errors/StreamsUncaughtExceptionHandler.StreamThreadExceptionResponse.html": {
+    "status": 200,
+    "ok": true,
+    "title": "StreamsUncaughtExceptionHandler.StreamThreadExceptionResponse (kafka 4.4.0 API)",
+    "anchorFound": null,
+    "lastVerified": "2026-11-17"
+  },
+  "https://kafka.apache.org/44/javadoc/org/apache/kafka/streams/processor/api/MockProcessorContext.html": {
+    "status": 200,
+    "ok": true,
+    "title": "MockProcessorContext (kafka 4.4.0 API)",
+    "anchorFound": null,
+    "lastVerified": "2026-11-17"
+  },
+  "https://kafka.apache.org/44/javadoc/org/apache/kafka/streams/processor/MockProcessorContext.html": {
+    "status": 200,
+    "ok": true,
+    "title": "MockProcessorContext (kafka 4.4.0 API)",
+    "anchorFound": null,
+    "lastVerified": "2026-11-17"
+  },
+  "https://kafka.apache.org/44/javadoc/org/apache/kafka/streams/TestInputTopic.html": {
+    "status": 200,
+    "ok": true,
+    "title": "TestInputTopic (kafka 4.4.0 API)",
+    "anchorFound": null,
+    "lastVerified": "2026-11-17"
+  },
+  "https://kafka.apache.org/44/javadoc/org/apache/kafka/streams/TestOutputTopic.html": {
+    "status": 200,
+    "ok": true,
+    "title": "TestOutputTopic (kafka 4.4.0 API)",
+    "anchorFound": null,
+    "lastVerified": "2026-11-17"
+  },
+  "https://kafka.apache.org/44/javadoc/org/apache/kafka/streams/TopologyTestDriver.html": {
+    "status": 200,
+    "ok": true,
+    "title": "TopologyTestDriver (kafka 4.4.0 API)",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/javadoc/org/apache/kafka/streams/TopologyTestDriver.html#driver-setup-heading": {
+    "status": 200,
+    "ok": true,
+    "title": "TopologyTestDriver (kafka 4.4.0 API)",
+    "anchorFound": true,
+    "lastVerified": "2026-11-17"
+  },
+  "https://kafka.apache.org/44/javadoc/org/apache/kafka/streams/TopologyTestDriver.html#processing-messages-heading": {
+    "status": 200,
+    "ok": true,
+    "title": "TopologyTestDriver (kafka 4.4.0 API)",
+    "anchorFound": true,
+    "lastVerified": "2026-11-17"
+  },
+  "https://kafka.apache.org/44/javadoc/org/apache/kafka/streams/TopologyTestDriver.html#processor-state-heading": {
+    "status": 200,
+    "ok": true,
+    "title": "TopologyTestDriver (kafka 4.4.0 API)",
+    "anchorFound": true,
+    "lastVerified": "2026-11-17"
+  },
+  "https://kafka.apache.org/44/kafka-connect/connector-development-guide/#resuming-from-previous-offsets": {
+    "status": 200,
+    "ok": true,
+    "title": "Connector Development Guide | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-17"
+  },
+  "https://kafka.apache.org/44/kafka-connect/user-guide/": {
+    "status": 200,
+    "ok": true,
+    "title": "User Guide | Apache Kafka",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/kafka-connect/user-guide/#configuring-connectors": {
+    "status": 200,
+    "ok": true,
+    "title": "User Guide | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/kafka-connect/user-guide/#error-reporting-in-connect": {
+    "status": 200,
+    "ok": true,
+    "title": "User Guide | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/kafka-connect/user-guide/#included-transformations": {
+    "status": 200,
+    "ok": true,
+    "title": "User Guide | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/kafka-connect/user-guide/#rest-api": {
+    "status": 200,
+    "ok": true,
+    "title": "User Guide | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/kafka-connect/user-guide/#running-kafka-connect": {
+    "status": 200,
+    "ok": true,
+    "title": "User Guide | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/kafka-connect/user-guide/#source-connectors": {
+    "status": 200,
+    "ok": true,
+    "title": "User Guide | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-17"
+  },
+  "https://kafka.apache.org/44/kafka-connect/user-guide/#transformations": {
+    "status": 200,
+    "ok": true,
+    "title": "User Guide | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/operations/basic-kafka-operations/": {
+    "status": 200,
+    "ok": true,
+    "title": "Basic Kafka Operations | Apache Kafka",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/operations/basic-kafka-operations/#adding-and-removing-topics": {
+    "status": 200,
+    "ok": true,
+    "title": "Basic Kafka Operations | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/operations/basic-kafka-operations/#checking-consumer-position": {
+    "status": 200,
+    "ok": true,
+    "title": "Basic Kafka Operations | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/operations/basic-kafka-operations/#increasing-replication-factor": {
+    "status": 200,
+    "ok": true,
+    "title": "Basic Kafka Operations | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/operations/basic-kafka-operations/#managing-consumer-groups": {
+    "status": 200,
+    "ok": true,
+    "title": "Basic Kafka Operations | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/operations/basic-kafka-operations/#modifying-topics": {
+    "status": 200,
+    "ok": true,
+    "title": "Basic Kafka Operations | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/operations/consumer-rebalance-protocol/": {
+    "status": 200,
+    "ok": true,
+    "title": "Consumer Rebalance Protocol | Apache Kafka",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/operations/consumer-rebalance-protocol/#consumer": {
+    "status": 200,
+    "ok": true,
+    "title": "Consumer Rebalance Protocol | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/operations/consumer-rebalance-protocol/#evolution-timeline": {
+    "status": 200,
+    "ok": true,
+    "title": "Consumer Rebalance Protocol | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/operations/consumer-rebalance-protocol/#server": {
+    "status": 200,
+    "ok": true,
+    "title": "Consumer Rebalance Protocol | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/operations/consumer-rebalance-protocol/#upgrade--downgrade": {
+    "status": 200,
+    "ok": true,
+    "title": "Consumer Rebalance Protocol | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/operations/eligible-leader-replicas/#overview": {
+    "status": 200,
+    "ok": true,
+    "title": "Eligible Leader Replicas | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/operations/kraft/#controllers": {
+    "status": 200,
+    "ok": true,
+    "title": "KRaft | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/operations/kraft/#deploying-considerations": {
+    "status": 200,
+    "ok": true,
+    "title": "KRaft | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/operations/kraft/#dump-log-tool": {
+    "status": 200,
+    "ok": true,
+    "title": "KRaft | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/operations/kraft/#process-roles": {
+    "status": 200,
+    "ok": true,
+    "title": "KRaft | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/operations/kraft/#zookeeper-to-kraft-migration": {
+    "status": 200,
+    "ok": true,
+    "title": "KRaft | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/operations/monitoring/": {
+    "status": 200,
+    "ok": true,
+    "title": "Monitoring | Apache Kafka",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/operations/monitoring/#connect-monitoring": {
+    "status": 200,
+    "ok": true,
+    "title": "Monitoring | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/operations/monitoring/#consumer-fetch-metrics": {
+    "status": 200,
+    "ok": true,
+    "title": "Monitoring | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/operations/monitoring/#consumer-group-metrics": {
+    "status": 200,
+    "ok": true,
+    "title": "Monitoring | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-17"
+  },
+  "https://kafka.apache.org/44/operations/monitoring/#consumer-monitoring": {
+    "status": 200,
+    "ok": true,
+    "title": "Monitoring | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-17"
+  },
+  "https://kafka.apache.org/44/operations/monitoring/#producer-monitoring": {
+    "status": 200,
+    "ok": true,
+    "title": "Monitoring | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-17"
+  },
+  "https://kafka.apache.org/44/operations/monitoring/#producer-sender-metrics": {
+    "status": 200,
+    "ok": true,
+    "title": "Monitoring | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/operations/monitoring/#security-considerations-for-remote-monitoring-using-jmx": {
+    "status": 200,
+    "ok": true,
+    "title": "Monitoring | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-17"
+  },
+  "https://kafka.apache.org/44/operations/monitoring/#streams-monitoring": {
+    "status": 200,
+    "ok": true,
+    "title": "Monitoring | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-17"
+  },
+  "https://kafka.apache.org/44/operations/monitoring/#task-metrics": {
+    "status": 200,
+    "ok": true,
+    "title": "Monitoring | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-17"
+  },
+  "https://kafka.apache.org/44/operations/tiered-storage/#limitations": {
+    "status": 200,
+    "ok": true,
+    "title": "Tiered Storage | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-17"
+  },
+  "https://kafka.apache.org/44/operations/tiered-storage/#quick-start-example": {
+    "status": 200,
+    "ok": true,
+    "title": "Tiered Storage | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-17"
+  },
+  "https://kafka.apache.org/44/operations/transaction-protocol/": {
+    "status": 200,
+    "ok": true,
+    "title": "Transaction Protocol | Apache Kafka",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/operations/transaction-protocol/#overview": {
+    "status": 200,
+    "ok": true,
+    "title": "Transaction Protocol | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/security/authentication-using-sasl/": {
+    "status": 200,
+    "ok": true,
+    "title": "Authentication using SASL | Apache Kafka",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/security/authentication-using-sasl/#authentication-using-saslscram": {
+    "status": 200,
+    "ok": true,
+    "title": "Authentication using SASL | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/security/authentication-using-sasl/#jaas-configuration-for-kafka-clients": {
+    "status": 200,
+    "ok": true,
+    "title": "Authentication using SASL | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/security/authentication-using-sasl/#sasl-configuration": {
+    "status": 200,
+    "ok": true,
+    "title": "Authentication using SASL | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/security/authentication-using-sasl/#sasl-configuration-for-kafka-clients": {
+    "status": 200,
+    "ok": true,
+    "title": "Authentication using SASL | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/security/authentication-using-sasl/#sasl-mechanisms": {
+    "status": 200,
+    "ok": true,
+    "title": "Authentication using SASL | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/security/authentication-using-sasl/#use-of-saslplain-in-production": {
+    "status": 200,
+    "ok": true,
+    "title": "Authentication using SASL | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/security/authorization-and-acls/": {
+    "status": 200,
+    "ok": true,
+    "title": "Authorization and ACLs | Apache Kafka",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/security/authorization-and-acls/#command-line-interface": {
+    "status": 200,
+    "ok": true,
+    "title": "Authorization and ACLs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/security/authorization-and-acls/#operations-and-resources-on-protocols": {
+    "status": 200,
+    "ok": true,
+    "title": "Authorization and ACLs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/security/authorization-and-acls/#resources-in-kafka": {
+    "status": 200,
+    "ok": true,
+    "title": "Authorization and ACLs | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/security/encryption-and-authentication-using-ssl/#configuring-kafka-clients": {
+    "status": 200,
+    "ok": true,
+    "title": "Encryption and Authentication using SSL | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/security/encryption-and-authentication-using-ssl/#host-name-verification": {
+    "status": 200,
+    "ok": true,
+    "title": "Encryption and Authentication using SSL | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/streams/architecture/#fault-tolerance": {
+    "status": 200,
+    "ok": true,
+    "title": "Architecture | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/streams/architecture/#stream-partitions-and-tasks": {
+    "status": 200,
+    "ok": true,
+    "title": "Architecture | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/streams/architecture/#threading-model": {
+    "status": 200,
+    "ok": true,
+    "title": "Architecture | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/streams/core-concepts/": {
+    "status": 200,
+    "ok": true,
+    "title": "Core Concepts | Apache Kafka",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/streams/core-concepts/#aggregations": {
+    "status": 200,
+    "ok": true,
+    "title": "Core Concepts | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/streams/core-concepts/#processing-guarantees": {
+    "status": 200,
+    "ok": true,
+    "title": "Core Concepts | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/streams/core-concepts/#time": {
+    "status": 200,
+    "ok": true,
+    "title": "Core Concepts | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/streams/core-concepts/#windowing": {
+    "status": 200,
+    "ok": true,
+    "title": "Core Concepts | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/streams/developer-guide/config-streams/#applicationid": {
+    "status": 200,
+    "ok": true,
+    "title": "Configuring a Streams Application | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/streams/developer-guide/config-streams/#default-values": {
+    "status": 200,
+    "ok": true,
+    "title": "Configuring a Streams Application | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/streams/developer-guide/config-streams/#deserializationexceptionhandler-deprecated-defaultdeserializationexceptionhandler": {
+    "status": 200,
+    "ok": true,
+    "title": "Configuring a Streams Application | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-17"
+  },
+  "https://kafka.apache.org/44/streams/developer-guide/config-streams/#numstandbyreplicas-1": {
+    "status": 200,
+    "ok": true,
+    "title": "Configuring a Streams Application | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/streams/developer-guide/config-streams/#parameters-controlled-by-kafka-streams": {
+    "status": 200,
+    "ok": true,
+    "title": "Configuring a Streams Application | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/streams/developer-guide/config-streams/#processingexceptionhandler": {
+    "status": 200,
+    "ok": true,
+    "title": "Configuring a Streams Application | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-17"
+  },
+  "https://kafka.apache.org/44/streams/developer-guide/config-streams/#processingguarantee": {
+    "status": 200,
+    "ok": true,
+    "title": "Configuring a Streams Application | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/streams/developer-guide/config-streams/#productionexceptionhandler-deprecated-defaultproductionexceptionhandler": {
+    "status": 200,
+    "ok": true,
+    "title": "Configuring a Streams Application | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-17"
+  },
+  "https://kafka.apache.org/44/streams/developer-guide/config-streams/#replicationfactor": {
+    "status": 200,
+    "ok": true,
+    "title": "Configuring a Streams Application | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/streams/developer-guide/config-streams/#rocksdbconfigsetter": {
+    "status": 200,
+    "ok": true,
+    "title": "Configuring a Streams Application | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/streams/developer-guide/config-streams/#statedir": {
+    "status": 200,
+    "ok": true,
+    "title": "Configuring a Streams Application | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/streams/developer-guide/dsl-api/": {
+    "status": 200,
+    "ok": true,
+    "title": "Streams DSL | Apache Kafka",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/streams/developer-guide/dsl-api/#aggregating": {
+    "status": 200,
+    "ok": true,
+    "title": "Streams DSL | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/streams/developer-guide/dsl-api/#applying-processors": {
+    "status": 200,
+    "ok": true,
+    "title": "Streams DSL | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/streams/developer-guide/dsl-api/#globalktable": {
+    "status": 200,
+    "ok": true,
+    "title": "Streams DSL | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/streams/developer-guide/dsl-api/#hopping-time-windows": {
+    "status": 200,
+    "ok": true,
+    "title": "Streams DSL | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/streams/developer-guide/dsl-api/#join-co-partitioning-requirements": {
+    "status": 200,
+    "ok": true,
+    "title": "Streams DSL | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/streams/developer-guide/dsl-api/#joining": {
+    "status": 200,
+    "ok": true,
+    "title": "Streams DSL | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/streams/developer-guide/dsl-api/#kstream": {
+    "status": 200,
+    "ok": true,
+    "title": "Streams DSL | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/streams/developer-guide/dsl-api/#kstream-globalktable-join": {
+    "status": 200,
+    "ok": true,
+    "title": "Streams DSL | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/streams/developer-guide/dsl-api/#kstream-kstream-join": {
+    "status": 200,
+    "ok": true,
+    "title": "Streams DSL | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/streams/developer-guide/dsl-api/#kstream-ktable-join": {
+    "status": 200,
+    "ok": true,
+    "title": "Streams DSL | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/streams/developer-guide/dsl-api/#ktable": {
+    "status": 200,
+    "ok": true,
+    "title": "Streams DSL | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/streams/developer-guide/dsl-api/#ktable-ktable-foreign-key-join": {
+    "status": 200,
+    "ok": true,
+    "title": "Streams DSL | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/streams/developer-guide/dsl-api/#session-windows": {
+    "status": 200,
+    "ok": true,
+    "title": "Streams DSL | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/streams/developer-guide/dsl-api/#sliding-time-windows": {
+    "status": 200,
+    "ok": true,
+    "title": "Streams DSL | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/streams/developer-guide/dsl-api/#stateful-transformations": {
+    "status": 200,
+    "ok": true,
+    "title": "Streams DSL | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/streams/developer-guide/dsl-api/#stateless-transformations": {
+    "status": 200,
+    "ok": true,
+    "title": "Streams DSL | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/streams/developer-guide/dsl-api/#tumbling-time-windows": {
+    "status": 200,
+    "ok": true,
+    "title": "Streams DSL | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/streams/developer-guide/dsl-api/#window-final-results": {
+    "status": 200,
+    "ok": true,
+    "title": "Streams DSL | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/streams/developer-guide/dsl-api/#windowing": {
+    "status": 200,
+    "ok": true,
+    "title": "Streams DSL | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/streams/developer-guide/dsl-topology-naming/#changing-names": {
+    "status": 200,
+    "ok": true,
+    "title": "Naming Operators in a Streams DSL application | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/streams/developer-guide/interactive-queries/#discovering-and-accessing-application-instances-and-their-local-state-stores": {
+    "status": 200,
+    "ok": true,
+    "title": "Interactive Queries | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-17"
+  },
+  "https://kafka.apache.org/44/streams/developer-guide/interactive-queries/#exposing-the-rpc-endpoints-of-your-application": {
+    "status": 200,
+    "ok": true,
+    "title": "Interactive Queries | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-17"
+  },
+  "https://kafka.apache.org/44/streams/developer-guide/interactive-queries/#querying-local-state-stores-for-an-app-instance": {
+    "status": 200,
+    "ok": true,
+    "title": "Interactive Queries | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-17"
+  },
+  "https://kafka.apache.org/44/streams/developer-guide/interactive-queries/#querying-remote-state-stores-for-the-entire-app": {
+    "status": 200,
+    "ok": true,
+    "title": "Interactive Queries | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/streams/developer-guide/manage-topics/#internal-topics": {
+    "status": 200,
+    "ok": true,
+    "title": "Managing Streams Application Topics | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/streams/developer-guide/memory-mgmt/#record-caches-in-the-dsl": {
+    "status": 200,
+    "ok": true,
+    "title": "Memory Management | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/streams/developer-guide/processor-api/#defining-a-stream-processor": {
+    "status": 200,
+    "ok": true,
+    "title": "Processor API | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/streams/developer-guide/processor-api/#fault-tolerant-state-stores": {
+    "status": 200,
+    "ok": true,
+    "title": "Processor API | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/streams/developer-guide/processor-api/#overview": {
+    "status": 200,
+    "ok": true,
+    "title": "Processor API | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/streams/developer-guide/running-app/#uncaught-exception-handler": {
+    "status": 200,
+    "ok": true,
+    "title": "Running Streams Applications | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-17"
+  },
+  "https://kafka.apache.org/44/streams/developer-guide/testing/": {
+    "status": 200,
+    "ok": true,
+    "title": "Testing a Streams Application | Apache Kafka",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/streams/developer-guide/testing/#testing-a-streams-application": {
+    "status": 200,
+    "ok": true,
+    "title": "Testing a Streams Application | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/streams/developer-guide/testing/#unit-testing-processors": {
+    "status": 200,
+    "ok": true,
+    "title": "Testing a Streams Application | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/streams/upgrade-guide/": {
+    "status": 200,
+    "ok": true,
+    "title": "Upgrade Guide | Apache Kafka",
+    "anchorFound": null,
+    "lastVerified": "2026-11-17"
+  },
+  "https://kafka.apache.org/44/streams/upgrade-guide/#streams-api-changes-in-280": {
+    "status": 200,
+    "ok": true,
+    "title": "Upgrade Guide | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-17"
+  },
+  "https://kafka.apache.org/44/streams/upgrade-guide/#streams-api-changes-in-300": {
+    "status": 200,
+    "ok": true,
+    "title": "Upgrade Guide | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://kafka.apache.org/44/streams/upgrade-guide/#streams-api-changes-in-400": {
+    "status": 200,
+    "ok": true,
+    "title": "Upgrade Guide | Apache Kafka",
+    "anchorFound": true,
+    "lastVerified": "2026-11-05"
+  },
+  "https://open-exam-prep.com/practice/confluent-kafka": {
+    "status": 200,
+    "ok": true,
+    "title": "Free Practice Questions for Confluent Kafka Developer | OpenExamPrep",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://radupana.hashnode.dev/confluent-certified-developer-for-apache-kafka-ccdak-study-guide": {
+    "status": 200,
+    "ok": true,
+    "title": "CCDAK Study Guide: Pass Your Certification",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://rmoff.net/2019/11/22/common-mistakes-made-when-configuring-multiple-kafka-connect-workers/": {
+    "status": 200,
+    "ok": true,
+    "title": "Common mistakes made when configuring multiple Kafka Connect workers",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://strimzi.io/blog/2021/12/17/kafka-segment-retention/": {
+    "status": 200,
+    "ok": true,
+    "title": "Deep dive into Apache Kafka storage internals: segments, rolling and retention",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://training.confluent.io/learn/courses/1072/confluent-certified-developer-exam-preparation-guide": {
+    "status": 200,
+    "ok": true,
+    "title": "Loading",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://training.confluent.io/learn/courses/1102/confluent-certified-developer-for-apache-kafka-r": {
+    "status": 200,
+    "ok": true,
+    "title": "Loading",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://www.conduktor.io/kafka/kafka-producer-acks-deep-dive": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka acks: Producer Acks Explained | Conduktor",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://www.confluent.io/blog/apache-kafka-message-compression/": {
+    "status": 200,
+    "ok": true,
+    "title": "Apache Kafka Message Compression",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://www.confluent.io/blog/apache-kafka-producer-improvements-sticky-partitioner/": {
+    "status": 200,
+    "ok": true,
+    "title": "Apache Kafka Producer Improvements: Sticky Partitioner",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://www.confluent.io/blog/apache-kafka-security-authorization-authentication-encryption/": {
+    "status": 200,
+    "ok": true,
+    "title": "Apache Kafka Security 101 | Confluent",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://www.confluent.io/blog/avro-kafka-data/": {
+    "status": 200,
+    "ok": true,
+    "title": "Why Avro for Kafka Data? | Confluent",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://www.confluent.io/blog/crossing-streams-joins-apache-kafka/": {
+    "status": 200,
+    "ok": true,
+    "title": "Crossing the Streams – Joins in Apache Kafka | Confluent",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://www.confluent.io/blog/error-handling-patterns-in-kafka/": {
+    "status": 200,
+    "ok": true,
+    "title": "Error Handling Patterns in Kafka",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://www.confluent.io/blog/exactly-once-semantics-are-possible-heres-how-apache-kafka-does-it/": {
+    "status": 200,
+    "ok": true,
+    "title": "Exactly-once Semantics is Possible: Here&#x27;s How Apache Kafka Does it",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://www.confluent.io/blog/hands-free-kafka-replication-a-lesson-in-operational-simplicity/": {
+    "status": 200,
+    "ok": true,
+    "title": "Hands-Free Kafka Replication: A Lesson in Operational Simplicity | Confluent",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://www.confluent.io/blog/how-choose-number-topics-partitions-kafka-cluster/": {
+    "status": 200,
+    "ok": true,
+    "title": "How to Choose the Number of Topics/Partitions in a Kafka Cluster? | Confluent",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://www.confluent.io/blog/how-to-tune-rocksdb-kafka-streams-state-stores-performance/": {
+    "status": 200,
+    "ok": true,
+    "title": "Performance Tuning RocksDB for Kafka Streams’ State Stores",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://www.confluent.io/blog/kafka-connect-deep-dive-converters-serialization-explained/": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Connect Deep Dive – Converters and Serialization Explained | Confluent",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://www.confluent.io/blog/kafka-connect-deep-dive-error-handling-dead-letter-queues/": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Connect Deep Dive – Error Handling and Dead Letter Queues | Confluent",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://www.confluent.io/blog/kafka-consumer-multi-threaded-messaging/": {
+    "status": 200,
+    "ok": true,
+    "title": "Multi-Threaded Messaging with the Apache Kafka Consumer",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://www.confluent.io/blog/kafka-listeners-explained/": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Listeners – Explained | Confluent",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://www.confluent.io/blog/kafka-streams-take-on-watermarks-and-triggers/": {
+    "status": 200,
+    "ok": true,
+    "title": "Kafka Streams&#x27; Take on Watermarks and Triggers | Confluent",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://www.confluent.io/blog/kip-848-consumer-rebalance-protocol/": {
+    "status": 200,
+    "ok": true,
+    "title": "KIP-848: A New Consumer Rebalance Protocol for Apache Kafka® 4.0",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://www.confluent.io/blog/latest-apache-kafka-release/": {
+    "status": 200,
+    "ok": true,
+    "title": "Apache Kafka 4.0 Release: Default KRaft, Queues, Faster Rebalances",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://www.confluent.io/blog/put-several-event-types-kafka-topic/": {
+    "status": 200,
+    "ok": true,
+    "title": "Should You Put Several Event Types in the Same Kafka Topic? | Confluent",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://www.confluent.io/blog/schema-registry-kafka-stream-processing-yes-virginia-you-really-need-one/": {
+    "status": 200,
+    "ok": true,
+    "title": "Yes, Virginia, You Really Do Need a Schema Registry | Confluent",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://www.confluent.io/blog/transactions-apache-kafka/": {
+    "status": 200,
+    "ok": true,
+    "title": "Transactions in Apache Kafka | Confluent",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://www.confluent.io/certification/": {
+    "status": 200,
+    "ok": true,
+    "title": "Confluent Certification for Apache Kafka | Confluent",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  },
+  "https://www.confluent.io/learn/change-data-capture/#change-data-capture-and-apache-kafka": {
+    "status": 200,
+    "ok": true,
+    "title": "What Is Change Data Capture (CDC)? | Confluent",
+    "anchorFound": true,
+    "lastVerified": "2026-11-17"
+  },
+  "https://www.confluent.io/learn/change-data-capture/#change-data-capture-patterns-and-methods": {
+    "status": 200,
+    "ok": true,
+    "title": "What Is Change Data Capture (CDC)? | Confluent",
+    "anchorFound": true,
+    "lastVerified": "2026-11-17"
+  },
+  "https://www.confluent.io/learn/change-data-capture/#how-does-change-data-capture-work": {
+    "status": 200,
+    "ok": true,
+    "title": "What Is Change Data Capture (CDC)? | Confluent",
+    "anchorFound": true,
+    "lastVerified": "2026-11-17"
+  },
+  "https://www.confluent.io/resources/ebook/kafka-the-definitive-guide/": {
+    "status": 200,
+    "ok": true,
+    "title": "Apache Kafka: The Definitive Guide",
+    "anchorFound": null,
+    "lastVerified": "2026-11-05"
+  }
+}

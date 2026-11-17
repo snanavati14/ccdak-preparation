@@ -1,0 +1,89 @@
+Joins and windows are the stateful core of Kafka Streams, and the exam tests the exact rules: which joins need a window, which side triggers output, when co-partitioning is required, and when a late record is dropped. All time here is **stream time**, taken from record timestamps, not the wall clock.
+
+## How it works
+
+**Join types.**
+
+| Join | Windowed? | Inner / left / outer | Co-partitioning | What triggers output |
+|---|---|---|---|---|
+| `KStream`-`KStream` | always (`JoinWindows`) | yes / yes / yes | required | records on either side |
+| `KStream`-`KTable` | no | yes / yes / no | required | stream records only |
+| `KStream`-`GlobalKTable` | no | yes / yes / no | not required | stream records only |
+| `KTable`-`KTable` (primary key) | no | yes / yes / yes | required | updates on either side |
+| `KTable`-`KTable` foreign key | no | yes / yes / no | not required | updates on either side |
+
+A stream-stream join must be windowed, or the buffer of records waiting for a match would grow forever. Two records join if they have the same key and their timestamps are within the `JoinWindows` time difference. In a stream-table join, a table update only changes the lookup state, and earlier stream records are not re-joined. A `GlobalKTable` join maps the stream record to a lookup key with a `KeyValueMapper`, so it can join on a value field. A foreign-key join extracts the right table's key from each left record; one right-side update refreshes every left row that points to it.
+
+**Co-partitioning** means both inputs have the same number of partitions and are written with the same partitioning strategy. Streams checks the partition counts during partition assignment and throws an exception if they differ. It cannot check the partitioner. Fix a mismatch with `repartition(Repartitioned.numberOfPartitions(n))`.
+
+**Window types.**
+
+<Figure caption="Tumbling and hopping windows are fixed and aligned to the epoch; sliding windows follow record timestamps; session windows grow with activity and close after an inactivity gap.">
+<svg viewBox="0 0 600 250" role="img" aria-label="Window types on a time axis">
+  <line x1="110" y1="230" x2="590" y2="230" stroke="currentColor" />
+  <text x="110" y="246" fontSize="13" fill="currentColor">0</text>
+  <text x="270" y="246" fontSize="13" fill="currentColor">5</text>
+  <text x="430" y="246" fontSize="13" fill="currentColor">10</text>
+  <text x="560" y="246" fontSize="13" fill="currentColor">time</text>
+  <text x="5" y="30" fontSize="13" fill="currentColor">Tumbling 5</text>
+  <rect className="accent" x="110" y="15" width="160" height="22" fill="none" stroke="currentColor" />
+  <rect x="270" y="15" width="160" height="22" fill="none" stroke="currentColor" />
+  <rect x="430" y="15" width="150" height="22" fill="none" stroke="currentColor" />
+  <text x="5" y="72" fontSize="13" fill="currentColor">Hopping 5/2</text>
+  <rect x="110" y="52" width="160" height="14" fill="none" stroke="currentColor" />
+  <rect x="174" y="68" width="160" height="14" fill="none" stroke="currentColor" />
+  <rect x="238" y="84" width="160" height="14" fill="none" stroke="currentColor" />
+  <text x="5" y="130" fontSize="13" fill="currentColor">Sliding</text>
+  <rect x="150" y="117" width="160" height="18" fill="none" stroke="currentColor" />
+  <rect x="215" y="139" width="160" height="18" fill="none" stroke="currentColor" />
+  <text x="5" y="195" fontSize="13" fill="currentColor">Session</text>
+  <rect x="130" y="180" width="110" height="22" fill="none" stroke="currentColor" />
+  <rect x="400" y="180" width="60" height="22" fill="none" stroke="currentColor" />
+  <text x="255" y="196" fontSize="13" fill="currentColor">gap: no records</text>
+</svg>
+</Figure>
+
+- **Tumbling**: `TimeWindows.ofSizeWithNoGrace(size)` or `ofSizeAndGrace(size, grace)`. Fixed size, no overlap, aligned to the epoch, `[start, end)`. Each record falls into exactly one window.
+- **Hopping**: the same with `.advanceBy(advance)`. Windows overlap, so a record falls into size / advance windows.
+- **Sliding**: `SlidingWindows.ofTimeDifferenceAndGrace(diff, grace)`. Aligned to record timestamps, both bounds inclusive. Used for aggregations; `JoinWindows` are sliding windows too.
+- **Session**: `SessionWindows.ofInactivityGapWithNoGrace(gap)`. Per-key windows of varying size. A record that bridges two sessions merges them.
+
+Windowed aggregations return `KTable<Windowed<K>, V>`.
+
+**Grace and late records.** A window closes when stream time passes `window end + grace`. A record for a closed window is dropped. Until then, results are updated and emitted continuously. `suppress(Suppressed.untilWindowCloses(...))` holds the updates back and emits one final result per window when it closes. Because closing depends on stream time, nothing comes out until a newer record arrives.
+
+## Gotchas the exam loves
+
+- A stream-table join is triggered by the stream side only; a late-arriving table record does not produce output for earlier stream records.
+- No outer join for `KStream`-`KTable`, `KStream`-`GlobalKTable` or foreign-key joins. `KTable`-`GlobalKTable` joins don't exist.
+- Output timestamp: stream-stream and table-table use `max(left, right)`; stream-table uses the stream record's timestamp.
+- Window boundaries: tumbling and hopping are `[start, end)`; a record exactly at 12:10 belongs to `[12:10, 12:15)`.
+- With the `JoinWindows.ofTimeDifference...` builders, left and outer stream-stream joins emit `(left, null)` only after the window plus grace has passed.
+- `ofSizeWithNoGrace` means grace = 0. There is no implicit 24-hour grace any more.
+- Window stores keep windows for at least one day by default (`Materialized#withRetention`), and their changelogs use `delete,compact`.
+- `suppress` is not allowed on versioned tables.
+- `max.task.idle.ms` (default 0) controls how long a task waits for data from all its inputs before processing, which affects out-of-order results in joins and merges.
+
+## Java sample
+
+```java
+KStream<String, Order> orders = builder.stream("orders");
+KTable<String, Customer> customers = builder.table("customers");
+
+// Stream-table enrichment: only orders trigger output.
+KStream<String, EnrichedOrder> enriched =
+    orders.leftJoin(customers, (order, customer) -> new EnrichedOrder(order, customer));
+
+// Final hourly count per customer, emitted once per window.
+enriched.groupByKey()
+        .windowedBy(TimeWindows.ofSizeAndGrace(Duration.ofHours(1), Duration.ofMinutes(10)))
+        .count()
+        .suppress(Suppressed.untilWindowCloses(Suppressed.BufferConfig.unbounded()))
+        .toStream()
+        .to("hourly-order-counts",
+            Produced.with(WindowedSerdes.timeWindowedSerdeFrom(String.class, 3_600_000L), Serdes.Long()));
+```
+
+## Version notes
+
+<Note>Kafka Streams 3.0 (KIP-633) made grace periods explicit with `ofSizeAndGrace` / `ofSizeWithNoGrace`, dropped the implicit 24-hour grace, and stopped emitting spurious left/outer stream-stream join results. The old `of(...)` builders were removed in 4.0. Kafka 4.0 also added a foreign-key extractor that can read both key and value (KIP-1104).</Note>

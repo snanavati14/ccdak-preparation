@@ -1,0 +1,62 @@
+The `Admin` client is the programmatic twin of `kafka-topics`, `kafka-configs` and `kafka-consumer-groups`. Applications use it to create topics at startup, read and change configs, and inspect or reset consumer group offsets. The exam tests the shape of the API more than any single method: everything is asynchronous and every call returns futures.
+
+## How it works
+
+- **Create it once, share it.** `Admin.create(props)` needs only `bootstrap.servers` (plus security settings). An `Admin` instance is thread safe, and it is `AutoCloseable`, so use try-with-resources or close it on shutdown.
+- **Batch in, futures out.** Each operation takes a collection of items and returns an `XxxResult`. `values()` (or a per-item method such as `topicNameValues()`) gives one `KafkaFuture` per item; `all()` gives one future that succeeds only if every item succeeded.
+- **Blocking is your choice.** The call returns at once. Call `get()` on a future to wait; a failure surfaces as an `ExecutionException` whose `getCause()` is the real Kafka exception.
+- **Routing is handled for you.** `bootstrap.servers` is only for discovery. `createTopics` goes to the controller, `describeTopics` can go to any broker, and transient errors such as "not the controller" are retried transparently.
+
+| Task | Method | Result |
+|---|---|---|
+| Create topics | `createTopics(Collection<NewTopic>)` | `CreateTopicsResult` |
+| Partitions, leaders, ISR | `describeTopics(...)` | `allTopicNames()` |
+| Grow partition count | `createPartitions(...)` | `CreatePartitionsResult` |
+| Read configs | `describeConfigs(Collection<ConfigResource>)` | `Config` per resource |
+| Change configs | `incrementalAlterConfigs(Map<ConfigResource, Collection<AlterConfigOp>>)` | `AlterConfigsResult` |
+| Brokers and controller | `describeCluster()` | `nodes()`, `controller()`, `clusterId()` |
+| Committed offsets | `listConsumerGroupOffsets(groupId)` | `partitionsToOffsetAndMetadata()` |
+| Log-end or earliest offsets | `listOffsets(Map<TopicPartition, OffsetSpec>)` | `OffsetSpec.latest()`, `earliest()`, `forTimestamp(ts)` |
+| Reset offsets | `alterConsumerGroupOffsets(groupId, Map<TopicPartition, OffsetAndMetadata>)` | group must be empty |
+
+## Gotchas the exam loves
+
+- `createTopics` is not transactional. In a batch, some topics can be created while others fail; `all()` then fails, but the topics that succeeded stay.
+- Creating a topic that already exists fails that topic's future with `TopicExistsException` (wrapped in `ExecutionException`). An idempotent "ensure topic" step catches it and carries on.
+- `new NewTopic(name, Optional.empty(), Optional.empty())` uses the broker's `num.partitions` and `default.replication.factor`.
+- After `createTopics` succeeds, it can take a few seconds before every broker knows the topic; `listTopics()` and `describeTopics()` may not show it yet.
+- `alterConsumerGroupOffsets` succeeds only when the group is empty, so stop the consumers first.
+- Consumer lag from the Admin API is log-end offset (`listOffsets` with `OffsetSpec.latest()`) minus committed offset (`listConsumerGroupOffsets`).
+- `alterConfigs` was removed from `Admin` in Kafka 4.0. Use `incrementalAlterConfigs` with `AlterConfigOp.OpType.SET`, `DELETE`, `APPEND` or `SUBTRACT`.
+- `KafkaFuture` callbacks (`thenApply`, `whenComplete`) run on the Admin client's single I/O thread. Don't block in them.
+
+## Java sample
+
+```java
+Properties props = new Properties();
+props.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, "b1:9092,b2:9092");
+
+try (Admin admin = Admin.create(props)) {
+    NewTopic orders = new NewTopic("orders", 6, (short) 3)
+        .configs(Map.of(TopicConfig.RETENTION_MS_CONFIG, "604800000"));
+    try {
+        admin.createTopics(List.of(orders)).all().get();
+    } catch (ExecutionException e) {
+        if (!(e.getCause() instanceof TopicExistsException)) throw e;
+    }
+
+    ConfigResource topic = new ConfigResource(ConfigResource.Type.TOPIC, "orders");
+    AlterConfigOp op = new AlterConfigOp(
+        new ConfigEntry(TopicConfig.MIN_IN_SYNC_REPLICAS_CONFIG, "2"), AlterConfigOp.OpType.SET);
+    admin.incrementalAlterConfigs(Map.of(topic, List.of(op))).all().get();
+
+    Map<TopicPartition, OffsetAndMetadata> committed =
+        admin.listConsumerGroupOffsets("billing").partitionsToOffsetAndMetadata().get();
+}
+```
+
+## Version notes
+
+<Note>
+Kafka 4.0 removed `Admin.alterConfigs`; `incrementalAlterConfigs` is the only way to change configs from the Admin client. See the [4.0 upgrade notes](https://kafka.apache.org/44/getting-started/upgrade/#notable-changes-in-400) and the [`Admin` Javadoc](https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/admin/Admin.html).
+</Note>

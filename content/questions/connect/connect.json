@@ -1,0 +1,1799 @@
+[
+  {
+    "id": "conn-mode-001",
+    "domain": "connect",
+    "topics": [
+      "connect-architecture"
+    ],
+    "type": "single",
+    "stem": "A team runs Kafka Connect with `connect-standalone.sh` on one host to ship web server logs into Kafka. Which statement about this deployment is correct?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Source connector offsets are kept in a local file named by `offset.storage.file.filename`, and there is no fault tolerance if the process dies."
+      },
+      {
+        "id": "b",
+        "text": "Source connector offsets are written to the topic named by `offset.storage.topic`, so another standalone worker can take over automatically."
+      },
+      {
+        "id": "c",
+        "text": "Several standalone workers that share the same `group.id` split the connector's tasks between them."
+      },
+      {
+        "id": "d",
+        "text": "Standalone workers have no REST API, so connectors can only be added on the command line."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "In standalone mode all work runs in a single process. The setting specific to standalone mode is `offset.storage.file.filename`, the file that stores source connector offsets. The Apache docs say this mode is simpler to set up but \"does not benefit from some of the features of Kafka Connect such as fault tolerance\".\n\n- `offset.storage.topic`, `config.storage.topic`, `status.storage.topic` and `group.id` are distributed-mode settings.\n- Workers only coordinate through `group.id` in distributed mode; standalone workers never share work.\n- The REST API is available in both modes. A standalone worker can be started with no connector files and given connectors over REST.",
+    "references": [
+      {
+        "title": "Kafka Connect user guide: Running Kafka Connect",
+        "url": "https://kafka.apache.org/44/kafka-connect/user-guide/#running-kafka-connect",
+        "kind": "official"
+      },
+      {
+        "title": "Confluent: Standalone workers",
+        "url": "https://docs.confluent.io/platform/current/connect/index.html#standalone-workers",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "conn-mode-002",
+    "domain": "connect",
+    "topics": [
+      "connect-architecture"
+    ],
+    "type": "multi",
+    "stem": "You are converting a standalone Connect deployment into a distributed Connect cluster. Which worker settings must you now set that standalone mode did not need? (Choose three.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "`group.id`"
+      },
+      {
+        "id": "b",
+        "text": "`config.storage.topic`"
+      },
+      {
+        "id": "c",
+        "text": "`offset.storage.topic`"
+      },
+      {
+        "id": "d",
+        "text": "`offset.storage.file.filename`"
+      },
+      {
+        "id": "e",
+        "text": "`bootstrap.servers`"
+      },
+      {
+        "id": "f",
+        "text": "`value.converter`"
+      }
+    ],
+    "correct": [
+      "a",
+      "b",
+      "c"
+    ],
+    "explanation": "The Apache user guide lists the settings that are \"critical to set before starting your cluster\" in distributed mode: `group.id`, `config.storage.topic`, `offset.storage.topic` and `status.storage.topic`. In distributed mode Connect stores offsets, configs and statuses in Kafka topics.\n\n- `offset.storage.file.filename` is the standalone setting that distributed mode replaces.\n- `bootstrap.servers`, `key.converter` and `value.converter` are required by all workers, standalone and distributed alike, so they are not new.",
+    "references": [
+      {
+        "title": "Kafka Connect user guide: Running Kafka Connect",
+        "url": "https://kafka.apache.org/44/kafka-connect/user-guide/#running-kafka-connect",
+        "kind": "official"
+      },
+      {
+        "title": "Kafka Connect configs: group.id",
+        "url": "https://kafka.apache.org/44/configuration/kafka-connect-configs/#connectconfigs_group.id",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "conn-internal-003",
+    "domain": "connect",
+    "topics": [
+      "connect-architecture"
+    ],
+    "type": "single",
+    "stem": "An administrator creates the Connect internal topics by hand before starting a distributed cluster. How should the topic named by `config.storage.topic` be created?",
+    "options": [
+      {
+        "id": "a",
+        "text": "One partition, replicated, with `cleanup.policy=compact`"
+      },
+      {
+        "id": "b",
+        "text": "Many partitions, replicated, with `cleanup.policy=compact`"
+      },
+      {
+        "id": "c",
+        "text": "One partition, replicated, with `cleanup.policy=delete` and a short `retention.ms`"
+      },
+      {
+        "id": "d",
+        "text": "Twenty-five partitions, replication factor 1, with `cleanup.policy=delete`"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The Apache user guide says the config storage topic \"should have a single partition, be replicated, and be configured for compaction\". A single partition keeps all connector and task configurations in one total order.\n\n- Many compacted partitions is the advice for `offset.storage.topic` (its default `offset.storage.partitions` is 25).\n- `cleanup.policy=delete` would eventually delete connector configurations; all three internal topics should be compacted.\n- Replication factor 1 loses the configs with a single broker; the default `config.storage.replication.factor` is 3.",
+    "references": [
+      {
+        "title": "Kafka Connect user guide: Running Kafka Connect",
+        "url": "https://kafka.apache.org/44/kafka-connect/user-guide/#running-kafka-connect",
+        "kind": "official"
+      },
+      {
+        "title": "Kafka Connect configs: config.storage.replication.factor",
+        "url": "https://kafka.apache.org/44/configuration/kafka-connect-configs/#connectconfigs_config.storage.replication.factor",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "conn-internal-004",
+    "domain": "connect",
+    "topics": [
+      "connect-architecture"
+    ],
+    "type": "multi",
+    "stem": "Which statements about the three internal topics of a distributed Connect cluster are correct? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "All three should be configured with `cleanup.policy=compact`."
+      },
+      {
+        "id": "b",
+        "text": "The offset storage topic should have many partitions; `offset.storage.partitions` defaults to 25."
+      },
+      {
+        "id": "c",
+        "text": "The status storage topic must have exactly one partition."
+      },
+      {
+        "id": "d",
+        "text": "They should use `cleanup.policy=delete` so that old configurations and statuses expire."
+      },
+      {
+        "id": "e",
+        "text": "If they are missing, the workers refuse to start until an administrator creates them."
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "The user guide says each internal topic should be replicated and configured for compaction. The offset topic \"should have many partitions\" (`offset.storage.partitions` default 25), the config topic should have a single partition, and the status topic \"can have multiple partitions\" (`status.storage.partitions` default 5).\n\n- The status topic is not limited to one partition; that rule applies to the config topic.\n- `delete` would throw away configurations and offsets that Connect still needs.\n- If the topics don't exist, Connect creates them automatically with the configured or default partition counts and replication factors. Creating them by hand is recommended, not required.",
+    "references": [
+      {
+        "title": "Kafka Connect user guide: Running Kafka Connect",
+        "url": "https://kafka.apache.org/44/kafka-connect/user-guide/#running-kafka-connect",
+        "kind": "official"
+      },
+      {
+        "title": "Kafka Connect configs: offset.storage.partitions",
+        "url": "https://kafka.apache.org/44/configuration/kafka-connect-configs/#connectconfigs_offset.storage.partitions",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "conn-groupid-005",
+    "domain": "connect",
+    "topics": [
+      "connect-architecture"
+    ],
+    "type": "single",
+    "stem": "Which statement about the Connect worker setting `group.id` is correct?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Workers that share a `group.id` form one Connect cluster, and the value must not clash with any consumer group ID."
+      },
+      {
+        "id": "b",
+        "text": "Each worker in a cluster needs its own unique `group.id`."
+      },
+      {
+        "id": "c",
+        "text": "It is the consumer group that every sink connector's tasks join."
+      },
+      {
+        "id": "d",
+        "text": "It is only used in standalone mode to name the offset file."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`group.id` is \"a unique string that identifies the Connect cluster group this worker belongs to\". The user guide adds that it \"must not conflict with consumer group IDs\". All workers with the same `group.id` coordinate as one cluster and share connectors and tasks.\n\n- Giving each worker its own `group.id` would create one-worker clusters.\n- Sink tasks consume in their own consumer group, separate from the worker group.\n- Standalone mode has no `group.id`; its offsets go to `offset.storage.file.filename`.",
+    "references": [
+      {
+        "title": "Kafka Connect user guide: Running Kafka Connect",
+        "url": "https://kafka.apache.org/44/kafka-connect/user-guide/#running-kafka-connect",
+        "kind": "official"
+      },
+      {
+        "title": "Confluent: Distributed workers",
+        "url": "https://docs.confluent.io/platform/current/connect/index.html#distributed-workers",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "conn-tasks-006",
+    "domain": "connect",
+    "topics": [
+      "connect-architecture"
+    ],
+    "type": "single",
+    "stem": "A source connector copies three database tables and its implementation gives each task at least one whole table. It is deployed with `tasks.max=8`. How many tasks will it run?",
+    "options": [
+      {
+        "id": "a",
+        "text": "At most 3: a connector may create fewer tasks than `tasks.max` when it cannot split the work further."
+      },
+      {
+        "id": "b",
+        "text": "Exactly 8, with 5 tasks idle."
+      },
+      {
+        "id": "c",
+        "text": "Exactly 1, because source connectors always run a single task."
+      },
+      {
+        "id": "d",
+        "text": "The connector fails to start because `tasks.max` exceeds the number of tables."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`tasks.max` is \"the maximum number of tasks that should be created for this connector. The connector may create fewer tasks if it cannot achieve this level of parallelism.\" With three tables and a whole table per task, at most three tasks have work.\n\n- `tasks.max` is a ceiling, not a target; the connector decides how many task configs to return.\n- Source connectors can run many tasks; there is no single-task rule.\n- Creating fewer tasks than the maximum is normal. What fails (by default) is a connector that tries to create more than `tasks.max`.",
+    "references": [
+      {
+        "title": "Kafka Connect user guide: Configuring Connectors",
+        "url": "https://kafka.apache.org/44/kafka-connect/user-guide/#configuring-connectors",
+        "kind": "official"
+      },
+      {
+        "title": "Kafka Connect configs: tasks.max",
+        "url": "https://kafka.apache.org/44/configuration/kafka-connect-configs/#sourceconnectorconfigs_tasks.max",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "conn-tasks-007",
+    "domain": "connect",
+    "topics": [
+      "connect-architecture"
+    ],
+    "type": "single",
+    "stem": "A sink connector reads one topic with 4 partitions. It runs with `tasks.max=10` on a Connect cluster of 3 workers. At most how many of its tasks can be reading data at the same time?",
+    "options": [
+      {
+        "id": "a",
+        "text": "4"
+      },
+      {
+        "id": "b",
+        "text": "3"
+      },
+      {
+        "id": "c",
+        "text": "10"
+      },
+      {
+        "id": "d",
+        "text": "12"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "Sink tasks read from Kafka with consumers in a consumer group, and within a group each partition is assigned to only one consumer. With 4 partitions, at most 4 tasks can have partitions at once; any extra tasks sit idle.\n\n- 3 is the worker count. One worker can run several tasks, so the worker count doesn't cap parallelism.\n- 10 is only the ceiling from `tasks.max`.\n- 12 doesn't correspond to any limit.",
+    "references": [
+      {
+        "title": "Confluent: Kafka Connect tasks",
+        "url": "https://docs.confluent.io/platform/current/connect/index.html#tasks",
+        "kind": "official"
+      },
+      {
+        "title": "Kafka Connect configs: tasks.max",
+        "url": "https://kafka.apache.org/44/configuration/kafka-connect-configs/#sinkconnectorconfigs_tasks.max",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "likely",
+    "source": "original"
+  },
+  {
+    "id": "conn-tasks-008",
+    "domain": "connect",
+    "topics": [
+      "connect-architecture"
+    ],
+    "type": "multi",
+    "stem": "Which statements about connectors, tasks and workers are correct? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "A connector instance breaks its job into tasks, and the tasks do the actual copying of data."
+      },
+      {
+        "id": "b",
+        "text": "Workers are the processes that run connectors and tasks."
+      },
+      {
+        "id": "c",
+        "text": "Each task keeps its own offsets in local state, so a moved task must replay from the start."
+      },
+      {
+        "id": "d",
+        "text": "A worker can run only one task at a time."
+      },
+      {
+        "id": "e",
+        "text": "`tasks.max` defaults to 10."
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "In Confluent's description, each connector instance \"coordinates a set of tasks that copy data\", and connectors and tasks are \"logical units of work\" that run in processes called workers.\n\n- Tasks store no state themselves. Connect keeps offsets in Kafka (or in a file in standalone mode), so a task can be restarted or moved to another worker.\n- A worker runs many connectors and tasks.\n- `tasks.max` defaults to 1.",
+    "references": [
+      {
+        "title": "Confluent: Kafka Connect concepts",
+        "url": "https://docs.confluent.io/platform/current/connect/index.html#tasks",
+        "kind": "official"
+      },
+      {
+        "title": "Kafka Connect configs: tasks.max",
+        "url": "https://kafka.apache.org/44/configuration/kafka-connect-configs/#sinkconnectorconfigs_tasks.max",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "conn-rebalance-009",
+    "domain": "connect",
+    "topics": [
+      "connect-architecture"
+    ],
+    "type": "multi",
+    "stem": "In a distributed Connect cluster, which events cause connectors and tasks to be rebalanced across the workers? (Choose three.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "A new connector is submitted."
+      },
+      {
+        "id": "b",
+        "text": "A worker leaves the cluster or fails."
+      },
+      {
+        "id": "c",
+        "text": "A connector's configuration is changed."
+      },
+      {
+        "id": "d",
+        "text": "A single task fails with an exception."
+      },
+      {
+        "id": "e",
+        "text": "A client calls `GET /connectors/{name}/status`."
+      }
+    ],
+    "correct": [
+      "a",
+      "b",
+      "c"
+    ],
+    "explanation": "Per Confluent's task rebalancing section, workers rebalance when a connector is first submitted, when connectors increase or decrease their task count, when a connector's configuration changes, and when a worker fails.\n\n- \"When a task fails, no rebalance occurs\", because Connect treats a task failure as an exceptional case. You restart the task through the REST API.\n- A status request only reads state.",
+    "references": [
+      {
+        "title": "Confluent: Task rebalancing",
+        "url": "https://docs.confluent.io/platform/current/connect/index.html#task-rebalancing",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "conn-taskfail-010",
+    "domain": "connect",
+    "topics": [
+      "connect-architecture"
+    ],
+    "type": "single",
+    "stem": "`GET /connectors/jdbc-sink/status` shows task 2 as `FAILED` with a stack trace, while the connector and the other tasks are `RUNNING`. What will Connect do on its own?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Nothing: the task stays failed until someone restarts it, for example with `POST /connectors/jdbc-sink/tasks/2/restart`."
+      },
+      {
+        "id": "b",
+        "text": "Rebalance the cluster so that another worker restarts task 2."
+      },
+      {
+        "id": "c",
+        "text": "Restart task 2 automatically with exponential backoff until it succeeds."
+      },
+      {
+        "id": "d",
+        "text": "Fail the whole connector and stop the remaining tasks."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "Confluent's docs state: \"When a task fails, no rebalance occurs... As such, the framework does not restart failed tasks; restart them using the REST API.\" The endpoint `POST /connectors/{name}/tasks/{taskId}/restart` restarts one task.\n\n- No rebalance happens for a task failure, only for worker or configuration changes.\n- There is no automatic task restart. `errors.retry.timeout` only retries failed operations inside a running task; it does not revive a failed task.\n- The other tasks keep running.",
+    "references": [
+      {
+        "title": "Confluent: Task rebalancing",
+        "url": "https://docs.confluent.io/platform/current/connect/index.html#task-rebalancing",
+        "kind": "official"
+      },
+      {
+        "title": "Kafka Connect user guide: REST API",
+        "url": "https://kafka.apache.org/44/kafka-connect/user-guide/#rest-api",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "conn-rebalance-011",
+    "domain": "connect",
+    "topics": [
+      "connect-architecture"
+    ],
+    "type": "single",
+    "stem": "A distributed Connect cluster uses the default `connect.protocol` and `scheduled.rebalance.max.delay.ms`. One worker is restarted for patching and comes back after 2 minutes. What happens to the connectors and tasks it was running?",
+    "options": [
+      {
+        "id": "a",
+        "text": "They stay unassigned while the cluster waits up to 5 minutes for the worker, and are given back to it when it rejoins."
+      },
+      {
+        "id": "b",
+        "text": "They are immediately moved to the remaining workers, and every connector in the cluster is stopped and restarted."
+      },
+      {
+        "id": "c",
+        "text": "They keep running on the restarting worker's JVM until it shuts down."
+      },
+      {
+        "id": "d",
+        "text": "They are lost and must be recreated with `POST /connectors`."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The default `connect.protocol` is `sessioned`, which uses incremental cooperative rebalancing. `scheduled.rebalance.max.delay.ms` (default 300000, 5 minutes) is \"the maximum delay that is scheduled in order to wait for the return of one or more departed workers before rebalancing and reassigning their connectors and tasks... During this period the connectors and tasks of the departed workers remain unassigned\".\n\n- Stopping every connector on each rebalance describes the old `eager` protocol, not the default.\n- Nothing runs on a worker while it is down.\n- Connector configurations live in the config topic, so nothing has to be recreated.",
+    "references": [
+      {
+        "title": "Kafka Connect configs: scheduled.rebalance.max.delay.ms",
+        "url": "https://kafka.apache.org/44/configuration/kafka-connect-configs/#connectconfigs_scheduled.rebalance.max.delay.ms",
+        "kind": "official"
+      },
+      {
+        "title": "Kafka Connect configs: connect.protocol",
+        "url": "https://kafka.apache.org/44/configuration/kafka-connect-configs/#connectconfigs_connect.protocol",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "conn-rest-012",
+    "domain": "connect",
+    "topics": [
+      "connect-architecture"
+    ],
+    "type": "single",
+    "stem": "A distributed Connect worker has no `listeners` setting. Where does its REST API listen?",
+    "options": [
+      {
+        "id": "a",
+        "text": "HTTP on port 8083"
+      },
+      {
+        "id": "b",
+        "text": "HTTP on port 8081"
+      },
+      {
+        "id": "c",
+        "text": "HTTPS on port 8443"
+      },
+      {
+        "id": "d",
+        "text": "Nowhere; the REST API is off unless `listeners` is set."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "\"By default, if no listeners are specified, the REST server runs on port 8083 using the HTTP protocol.\" The `listeners` default is `http://:8083`.\n\n- 8081 is the usual Schema Registry port.\n- HTTPS needs an explicit `https://` listener plus SSL settings.\n- The REST API is always on, in both standalone and distributed mode.",
+    "references": [
+      {
+        "title": "Kafka Connect configs: listeners",
+        "url": "https://kafka.apache.org/44/configuration/kafka-connect-configs/#connectconfigs_listeners",
+        "kind": "official"
+      },
+      {
+        "title": "Kafka Connect user guide: REST API",
+        "url": "https://kafka.apache.org/44/kafka-connect/user-guide/#rest-api",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "conn-rest-013",
+    "domain": "connect",
+    "topics": [
+      "connect-architecture"
+    ],
+    "type": "single",
+    "stem": "How do you create a new connector on a running distributed Connect cluster?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Send `POST /connectors` with a JSON body containing `name` and a `config` object."
+      },
+      {
+        "id": "b",
+        "text": "Restart one worker with the connector's properties file as an extra command-line argument."
+      },
+      {
+        "id": "c",
+        "text": "Send `PUT /connectors` with the connector's properties file as the body."
+      },
+      {
+        "id": "d",
+        "text": "Write the connector configuration directly to the topic named by `config.storage.topic`."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`POST /connectors` creates a new connector; \"the request body should be a JSON object containing a string name field and an object config field\". The user guide notes that \"in distributed mode the connector configurations are not passed on the command line. Instead, use the REST API\".\n\n- Passing connector property files on the command line only works for `connect-standalone.sh`.\n- There is no `PUT /connectors` endpoint.\n- The config topic is internal; writing to it directly bypasses validation and the leader.",
+    "references": [
+      {
+        "title": "Kafka Connect user guide: REST API",
+        "url": "https://kafka.apache.org/44/kafka-connect/user-guide/#rest-api",
+        "kind": "official"
+      },
+      {
+        "title": "Confluent: Connect REST API, POST /connectors",
+        "url": "https://docs.confluent.io/platform/current/connect/references/restapi.html#post--connectors",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "conn-rest-014",
+    "domain": "connect",
+    "topics": [
+      "connect-architecture"
+    ],
+    "type": "multi",
+    "stem": "A deployment script must create a connector named `s3-sink` if it doesn't exist and update it if it does. Which REST calls can create the connector when it is missing? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "`POST /connectors` with body `{\"name\": \"s3-sink\", \"config\": {...}}`"
+      },
+      {
+        "id": "b",
+        "text": "`PUT /connectors/s3-sink/config` with the configuration map as the body"
+      },
+      {
+        "id": "c",
+        "text": "`PUT /connectors/s3-sink/resume`"
+      },
+      {
+        "id": "d",
+        "text": "`POST /connectors/s3-sink/restart`"
+      },
+      {
+        "id": "e",
+        "text": "`GET /connectors/s3-sink/config`"
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "`POST /connectors` creates a connector (and returns 409 Conflict if it already exists). `PUT /connectors/{name}/config` will \"create a new connector using the given configuration, or update the configuration for an existing connector\", which makes it the idempotent choice for deploy scripts. Its body is the config map itself, not wrapped in `{\"config\": ...}`.\n\n- `resume` and `restart` act on an existing connector.\n- `GET .../config` only reads.",
+    "references": [
+      {
+        "title": "Confluent: Connect REST API",
+        "url": "https://docs.confluent.io/platform/current/connect/references/restapi.html#connectors",
+        "kind": "official"
+      },
+      {
+        "title": "Kafka Connect user guide: REST API",
+        "url": "https://kafka.apache.org/44/kafka-connect/user-guide/#rest-api",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "conn-rest-015",
+    "domain": "connect",
+    "topics": [
+      "connect-architecture"
+    ],
+    "type": "single",
+    "stem": "Which REST call shows whether a connector and each of its tasks are running, paused or failed, which worker each runs on, and the error trace for a failure?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`GET /connectors/{name}/status`"
+      },
+      {
+        "id": "b",
+        "text": "`GET /connectors/{name}/config`"
+      },
+      {
+        "id": "c",
+        "text": "`GET /connectors/{name}/tasks`"
+      },
+      {
+        "id": "d",
+        "text": "`GET /connector-plugins`"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`GET /connectors/{name}/status` returns \"current status of the connector, including if it is running, failed, paused, etc., which worker it is assigned to, error information if it has failed, and the state of all its tasks\".\n\n- `GET .../config` returns the configuration only.\n- `GET .../tasks` lists the tasks and their configurations, not their state.\n- `GET /connector-plugins` lists installed plugins.",
+    "references": [
+      {
+        "title": "Kafka Connect user guide: REST API",
+        "url": "https://kafka.apache.org/44/kafka-connect/user-guide/#rest-api",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "conn-rest-016",
+    "domain": "connect",
+    "topics": [
+      "connect-architecture"
+    ],
+    "type": "single",
+    "stem": "A downstream database is down for maintenance. You want a sink connector to stop processing for a while, keep its task resources allocated, and pick up quickly afterwards. Which call should you make?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`PUT /connectors/{name}/pause`, then `PUT /connectors/{name}/resume` afterwards"
+      },
+      {
+        "id": "b",
+        "text": "`PUT /connectors/{name}/stop`, then `PUT /connectors/{name}/resume` afterwards"
+      },
+      {
+        "id": "c",
+        "text": "`DELETE /connectors/{name}`, then `POST /connectors` afterwards"
+      },
+      {
+        "id": "d",
+        "text": "`POST /connectors/{name}/pause`, then `POST /connectors/{name}/resume` afterwards"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`PUT /connectors/{name}/pause` stops message processing while \"any resources claimed by its tasks are left allocated, which allows the connector to begin processing data quickly once it is resumed\". `PUT /connectors/{name}/resume` resumes a paused or stopped connector.\n\n- `PUT .../stop` shuts the tasks down and frees their resources: more efficient, but slower to restart.\n- `DELETE` removes the connector and its configuration.\n- Pause and resume use `PUT`, not `POST`.",
+    "references": [
+      {
+        "title": "Kafka Connect user guide: REST API",
+        "url": "https://kafka.apache.org/44/kafka-connect/user-guide/#rest-api",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "conn-rest-017",
+    "domain": "connect",
+    "topics": [
+      "connect-architecture"
+    ],
+    "type": "multi",
+    "stem": "Which of these are valid Connect REST requests for restarting things? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "`POST /connectors/{name}/restart?includeTasks=true&onlyFailed=true`"
+      },
+      {
+        "id": "b",
+        "text": "`POST /connectors/{name}/tasks/{taskId}/restart`"
+      },
+      {
+        "id": "c",
+        "text": "`PUT /connectors/{name}/restart`"
+      },
+      {
+        "id": "d",
+        "text": "`PUT /connectors/{name}/tasks/{taskId}/restart`"
+      },
+      {
+        "id": "e",
+        "text": "`GET /connectors/{name}/restart`"
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "Restarts use `POST`:\n\n- `POST /connectors/{name}/restart` restarts the connector, and with `includeTasks=true` its tasks too; `onlyFailed=true` limits it to instances in the `FAILED` state.\n- `POST /connectors/{name}/tasks/{taskId}/restart` restarts one task.\n\n`PUT` is used for `pause`, `resume`, `stop` and `config`, not for restart, and a `GET` never changes state.",
+    "references": [
+      {
+        "title": "Kafka Connect user guide: REST API",
+        "url": "https://kafka.apache.org/44/kafka-connect/user-guide/#rest-api",
+        "kind": "official"
+      },
+      {
+        "title": "Confluent: Connect REST API, task restart",
+        "url": "https://docs.confluent.io/platform/current/connect/references/restapi.html#rest-api-task-restart",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "conn-rest-018",
+    "domain": "connect",
+    "topics": [
+      "connect-architecture"
+    ],
+    "type": "single",
+    "stem": "Two of a connector's tasks have failed. An operator runs `POST /connectors/orders-sink/restart` with no query parameters. What gets restarted?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Only the connector instance; the failed tasks stay failed."
+      },
+      {
+        "id": "b",
+        "text": "The connector instance and all of its tasks."
+      },
+      {
+        "id": "c",
+        "text": "Only the two failed tasks."
+      },
+      {
+        "id": "d",
+        "text": "Every connector on the worker that handles the request."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`includeTasks` and `onlyFailed` both default to `false`. With `includeTasks=false`, only the connector instance is restarted, \"preserving the same behavior as earlier versions\". To restart the failed tasks, use `?includeTasks=true&onlyFailed=true`, or restart each task with `POST /connectors/{name}/tasks/{taskId}/restart`.\n\n- Restarting the connector and all tasks needs `includeTasks=true`.\n- Restarting only failed tasks needs both parameters set to `true`.\n- The call is scoped to one connector.",
+    "references": [
+      {
+        "title": "Kafka Connect user guide: REST API",
+        "url": "https://kafka.apache.org/44/kafka-connect/user-guide/#rest-api",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "conn-rest-019",
+    "domain": "connect",
+    "topics": [
+      "connect-architecture"
+    ],
+    "type": "single",
+    "stem": "You want to reset a source connector's offsets with `DELETE /connectors/{name}/offsets`. What must be true first?",
+    "options": [
+      {
+        "id": "a",
+        "text": "The connector must exist and be in the `STOPPED` state, reached with `PUT /connectors/{name}/stop`."
+      },
+      {
+        "id": "b",
+        "text": "The connector must be `PAUSED` with `PUT /connectors/{name}/pause`."
+      },
+      {
+        "id": "c",
+        "text": "The connector must be deleted first, because offsets are removed with it."
+      },
+      {
+        "id": "d",
+        "text": "The Connect cluster must run in standalone mode."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "For the offsets endpoints, \"the connector must exist and must be in the stopped state (see PUT /connectors/{name}/stop)\". Pausing is not enough: a paused connector keeps its tasks allocated.\n\n- Deleting the connector removes its configuration; the offsets endpoints act on an existing connector.\n- The offsets endpoints are part of the normal REST API, not specific to standalone mode.",
+    "references": [
+      {
+        "title": "Kafka Connect user guide: REST API",
+        "url": "https://kafka.apache.org/44/kafka-connect/user-guide/#rest-api",
+        "kind": "official"
+      },
+      {
+        "title": "Confluent: Connect REST API, offsets",
+        "url": "https://docs.confluent.io/platform/current/connect/references/restapi.html#offsets",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original",
+    "kafkaVersionNote": "The offsets management endpoints (KIP-875) are a newer addition to Connect; older Connect versions have no supported way to reset connector offsets over REST."
+  },
+  {
+    "id": "conn-rest-020",
+    "domain": "connect",
+    "topics": [
+      "connect-architecture"
+    ],
+    "type": "single",
+    "stem": "A standalone Connect worker was started with only its worker properties file and no connector files. How can you add a connector to it now?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Use the REST API, for example `POST /connectors`; it is available in standalone mode too."
+      },
+      {
+        "id": "b",
+        "text": "You can't; standalone workers only load connectors from command-line files, so you must restart it."
+      },
+      {
+        "id": "c",
+        "text": "Write the connector config into the file named by `offset.storage.file.filename`."
+      },
+      {
+        "id": "d",
+        "text": "Start a second standalone worker with the same `group.id` and the connector file."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The user guide says the REST API \"is available in both standalone and distributed mode\", and that you can \"choose not to specify any connector configuration files on the command line, and instead use the REST API to create connectors at runtime after your standalone worker starts\".\n\n- No restart is needed.\n- The offsets file stores source offsets, not configurations.\n- Standalone workers don't form groups.",
+    "references": [
+      {
+        "title": "Kafka Connect user guide: Running Kafka Connect",
+        "url": "https://kafka.apache.org/44/kafka-connect/user-guide/#running-kafka-connect",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "conn-config-021",
+    "domain": "connect",
+    "topics": [
+      "connect-architecture"
+    ],
+    "type": "single",
+    "stem": "Connect workers in a cluster have `consumer.max.poll.records=500` in the worker config. One sink connector needs `max.poll.records=50` for its own consumers only. What do you add to that connector's configuration?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`consumer.override.max.poll.records=50`"
+      },
+      {
+        "id": "b",
+        "text": "`consumer.max.poll.records=50`"
+      },
+      {
+        "id": "c",
+        "text": "`max.poll.records=50`"
+      },
+      {
+        "id": "d",
+        "text": "`sink.consumer.max.poll.records=50`"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The worker config uses the `producer.` and `consumer.` prefixes for the clients used by source and sink tasks. Per connector, \"client configuration overrides can be configured individually per connector by using the prefixes `producer.override.` and `consumer.override.`\". The worker setting `connector.client.config.override.policy` decides which overrides are allowed; its default, `All`, allows any client property.\n\n- `consumer.` is the worker-level prefix, not the per-connector one.\n- Without the `consumer.override.` prefix, the setting is not treated as a consumer override.\n- `sink.consumer.` is not a real prefix.",
+    "references": [
+      {
+        "title": "Kafka Connect user guide: Running Kafka Connect",
+        "url": "https://kafka.apache.org/44/kafka-connect/user-guide/#running-kafka-connect",
+        "kind": "official"
+      },
+      {
+        "title": "Kafka Connect configs: connector.client.config.override.policy",
+        "url": "https://kafka.apache.org/44/configuration/kafka-connect-configs/#connectconfigs_connector.client.config.override.policy",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "conn-conv-022",
+    "domain": "connect",
+    "topics": [
+      "connect-converters-errors"
+    ],
+    "type": "single",
+    "stem": "In Kafka Connect, which component turns the Connect data format into the bytes stored in Kafka (and back again)?",
+    "options": [
+      {
+        "id": "a",
+        "text": "The converter set by `key.converter` and `value.converter`"
+      },
+      {
+        "id": "b",
+        "text": "A single message transform listed in `transforms`"
+      },
+      {
+        "id": "c",
+        "text": "The connector's task class"
+      },
+      {
+        "id": "d",
+        "text": "The worker's REST server"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "A converter is the class \"used to convert between Kafka Connect format and the serialized form that is written to Kafka\". Because it is independent of connectors, \"it allows any connector to work with any serialization format\". Examples are `JsonConverter`, `AvroConverter` and `StringConverter`.\n\n- Transforms change records inside the Connect data format; they never deal with bytes.\n- Tasks talk to the external system and produce or receive Connect records.\n- The REST server manages connectors; it doesn't touch data.",
+    "references": [
+      {
+        "title": "Kafka Connect configs: value.converter",
+        "url": "https://kafka.apache.org/44/configuration/kafka-connect-configs/#connectconfigs_value.converter",
+        "kind": "official"
+      },
+      {
+        "title": "Confluent: Converters",
+        "url": "https://docs.confluent.io/platform/current/connect/index.html#converters",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "conn-smt-023",
+    "domain": "connect",
+    "topics": [
+      "connect-converters-errors"
+    ],
+    "type": "single",
+    "stem": "A source connector has `transforms=MakeMap,InsertSource`. In which order are the transformations applied to each record?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`MakeMap` first, then `InsertSource`, the order they appear in `transforms`"
+      },
+      {
+        "id": "b",
+        "text": "`InsertSource` first, because aliases are applied in reverse order"
+      },
+      {
+        "id": "c",
+        "text": "In alphabetical order of the transformation class names"
+      },
+      {
+        "id": "d",
+        "text": "In parallel, with the results merged"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`transforms` is the \"list of aliases for the transformation, specifying the order in which the transformations will be applied\". Each alias is configured with `transforms.<alias>.type` and its own settings. The output of one transform is the input of the next, so order matters; here `HoistField` (`MakeMap`) wraps the line in a map before `InsertField` (`InsertSource`) adds a field to it.",
+    "references": [
+      {
+        "title": "Kafka Connect user guide: Transformations",
+        "url": "https://kafka.apache.org/44/kafka-connect/user-guide/#transformations",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "conn-conv-024",
+    "domain": "connect",
+    "topics": [
+      "connect-converters-errors"
+    ],
+    "type": "multi",
+    "stem": "Which statements about the order of converters and single message transforms (SMTs) are correct? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "For a source connector, records pass through the SMTs before the converter writes them to Kafka."
+      },
+      {
+        "id": "b",
+        "text": "For a sink connector, the converter turns the Kafka bytes into a sink record before the SMTs run."
+      },
+      {
+        "id": "c",
+        "text": "For a source connector, the converter runs first and the SMTs operate on the serialized bytes."
+      },
+      {
+        "id": "d",
+        "text": "For a sink connector, SMTs run on the raw bytes before the converter."
+      },
+      {
+        "id": "e",
+        "text": "Converters and SMTs run in the external system, outside the Connect worker."
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "From Confluent's transforms section:\n\n- Source: the connector produces a source record, each transform in the chain modifies it, and \"the final updated source record is converted to the binary form and written to Kafka\".\n- Sink: \"Kafka Connect reads messages from Kafka and converts the binary representation to a sink record\", then passes it through the transforms, and the final record goes to the sink connector.\n\nSMTs always work on Connect records, never on serialized bytes, and both converters and transforms run inside the worker.",
+    "references": [
+      {
+        "title": "Confluent: Transforms",
+        "url": "https://docs.confluent.io/platform/current/connect/index.html#transforms",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "conn-conv-025",
+    "domain": "connect",
+    "topics": [
+      "connect-converters-errors"
+    ],
+    "type": "single",
+    "stem": "A sink connector uses `value.converter=org.apache.kafka.connect.json.JsonConverter` with `value.converter.schemas.enable=true`. What does the converter expect each record value to be?",
+    "options": [
+      {
+        "id": "a",
+        "text": "A JSON envelope that holds both a schema and the payload"
+      },
+      {
+        "id": "b",
+        "text": "Plain JSON with no schema; the schema is looked up in Schema Registry"
+      },
+      {
+        "id": "c",
+        "text": "Avro binary with a schema ID prefix"
+      },
+      {
+        "id": "d",
+        "text": "Any UTF-8 string, which is passed through unchanged"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "With `schemas.enable` set to true, the converter does not treat the value as plain JSON, \"but rather as a composite JSON object containing both an internal schema and the data\". For a sink connector it extracts the schema and data from that object. \"This implementation never uses Schema Registry.\"\n\n- Plain JSON without the envelope is what `schemas.enable=false` expects.\n- Avro with a schema ID is what `AvroConverter` handles.\n- Passing strings through is `StringConverter`.\n\nData written by a plain JSON producer will fail to convert under `schemas.enable=true`, a common cause of sink task failures.",
+    "references": [
+      {
+        "title": "Confluent: JSON without Schema Registry",
+        "url": "https://docs.confluent.io/platform/current/connect/userguide.html#json-without-sr",
+        "kind": "official"
+      },
+      {
+        "title": "Kafka Connect user guide: Transformations",
+        "url": "https://kafka.apache.org/44/kafka-connect/user-guide/#transformations",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original",
+    "kafkaVersionNote": "Sources disagree on the default for schemas.enable: Confluent's user guide calls false the default, while the sample worker files shipped with Apache Kafka set it to true. Set it explicitly rather than relying on a default."
+  },
+  {
+    "id": "conn-conv-026",
+    "domain": "connect",
+    "topics": [
+      "connect-converters-errors"
+    ],
+    "type": "single",
+    "stem": "A sink connector is configured with `value.converter=io.confluent.connect.avro.AvroConverter`, but a producer writes plain JSON values to its topic. No `errors.*` settings are configured. What happens?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Conversion of the first JSON record fails and the task fails immediately."
+      },
+      {
+        "id": "b",
+        "text": "The JSON record is skipped and written to a dead letter queue topic automatically."
+      },
+      {
+        "id": "c",
+        "text": "The converter falls back to `JsonConverter` for that record."
+      },
+      {
+        "id": "d",
+        "text": "The record is passed to the sink as raw bytes."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "Confluent gives this exact case as an example of an invalid record: data \"serialized in JSON format, but the sink connector configuration is expecting Avro format\". With the default `errors.tolerance=none`, \"an error or invalid record causes the connector task to immediately fail\".\n\n- No DLQ exists unless `errors.deadletterqueue.topic.name` is set, and records are only routed there with `errors.tolerance=all`.\n- Converters don't fall back to another format.\n- The converter cannot pass undecodable data through.",
+    "references": [
+      {
+        "title": "Confluent: Dead letter queue",
+        "url": "https://docs.confluent.io/platform/current/connect/index.html#dead-letter-queue",
+        "kind": "official"
+      },
+      {
+        "title": "Kafka Connect configs: errors.tolerance",
+        "url": "https://kafka.apache.org/44/configuration/kafka-connect-configs/#sinkconnectorconfigs_errors.tolerance",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "conn-conv-027",
+    "domain": "connect",
+    "topics": [
+      "connect-converters-errors"
+    ],
+    "type": "multi",
+    "stem": "Which converters need a Schema Registry (configured with `value.converter.schema.registry.url`)? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "`io.confluent.connect.avro.AvroConverter`"
+      },
+      {
+        "id": "b",
+        "text": "`io.confluent.connect.protobuf.ProtobufConverter`"
+      },
+      {
+        "id": "c",
+        "text": "`org.apache.kafka.connect.json.JsonConverter`"
+      },
+      {
+        "id": "d",
+        "text": "`org.apache.kafka.connect.storage.StringConverter`"
+      },
+      {
+        "id": "e",
+        "text": "`org.apache.kafka.connect.converters.ByteArrayConverter`"
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "Confluent lists `AvroConverter`, `ProtobufConverter` and `JsonSchemaConverter` as \"use with Schema Registry\".\n\n- `JsonConverter` is \"without Schema Registry\"; with `schemas.enable=true` it embeds the schema in each message instead.\n- `StringConverter` is a \"simple string format\".\n- `ByteArrayConverter` is a \"pass-through option that does no conversion\".",
+    "references": [
+      {
+        "title": "Confluent: Converters",
+        "url": "https://docs.confluent.io/platform/current/connect/index.html#converters",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "conn-conv-028",
+    "domain": "connect",
+    "topics": [
+      "connect-converters-errors"
+    ],
+    "type": "single",
+    "stem": "Workers use `value.converter=io.confluent.connect.avro.AvroConverter`. One connector on the cluster reads plain text lines and should write them as strings. What is the right fix?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Set `value.converter=org.apache.kafka.connect.storage.StringConverter` in that connector's configuration."
+      },
+      {
+        "id": "b",
+        "text": "Change the worker's `value.converter` and restart all workers."
+      },
+      {
+        "id": "c",
+        "text": "Add an SMT that serializes the value to a string."
+      },
+      {
+        "id": "d",
+        "text": "Run that connector on a separate Connect cluster; converters cannot differ between connectors."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`key.converter` and `value.converter` are optional connector settings that \"override the default key converter set by the worker\" (and value converter). This changes the format for one connector only.\n\n- Changing the worker default would affect every connector.\n- SMTs run on Connect records; serialization is the converter's job.\n- A separate cluster is unnecessary.",
+    "references": [
+      {
+        "title": "Kafka Connect user guide: Configuring Connectors",
+        "url": "https://kafka.apache.org/44/kafka-connect/user-guide/#configuring-connectors",
+        "kind": "official"
+      },
+      {
+        "title": "Kafka Connect configs: value.converter",
+        "url": "https://kafka.apache.org/44/configuration/kafka-connect-configs/#sinkconnectorconfigs_value.converter",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "conn-smt-029",
+    "domain": "connect",
+    "topics": [
+      "connect-converters-errors"
+    ],
+    "type": "single",
+    "stem": "Which job is a poor fit for a single message transform?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Aggregating order events per customer over a 5-minute window before writing to the sink"
+      },
+      {
+        "id": "b",
+        "text": "Renaming a field in each record"
+      },
+      {
+        "id": "c",
+        "text": "Routing records to a different topic based on a regular expression"
+      },
+      {
+        "id": "d",
+        "text": "Adding a static field that records which connector produced the data"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "SMTs make \"simple and lightweight modifications to individual messages\": a transform \"accepts one record as an input and outputs a modified record\". Confluent recommends ksqlDB or Kafka Streams for \"more complex transformations and operations that apply to many messages\". Windowed aggregation needs state across records, so it doesn't belong in an SMT.\n\nThe other three are one-record-at-a-time changes that built-in SMTs already do: `ReplaceField`, `RegexRouter` and `InsertField`.",
+    "references": [
+      {
+        "title": "Confluent: Transforms",
+        "url": "https://docs.confluent.io/platform/current/connect/index.html#transforms",
+        "kind": "official"
+      },
+      {
+        "title": "Kafka Connect user guide: Transformations",
+        "url": "https://kafka.apache.org/44/kafka-connect/user-guide/#transformations",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "conn-smt-030",
+    "domain": "connect",
+    "topics": [
+      "connect-converters-errors"
+    ],
+    "type": "multi",
+    "stem": "Which descriptions of built-in Kafka Connect transformations are correct? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "`RegexRouter` changes a record's topic based on the original topic, a regular expression and a replacement string."
+      },
+      {
+        "id": "b",
+        "text": "`InsertField` adds a field using static data or record metadata."
+      },
+      {
+        "id": "c",
+        "text": "`Filter` aggregates records with the same key."
+      },
+      {
+        "id": "d",
+        "text": "`ValueToKey` replaces the record value with the record key."
+      },
+      {
+        "id": "e",
+        "text": "`Cast` encrypts selected fields."
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "From the list of included transformations:\n\n- `RegexRouter`: \"modify the topic of a record based on original topic, replacement string and a regular expression\".\n- `InsertField`: \"Add a field using either static data or record metadata\".\n\nThe distractors are wrong:\n\n- `Filter` drops records, usually together with a predicate. It doesn't aggregate.\n- `ValueToKey` does the reverse: it replaces the key with fields taken from the value.\n- `Cast` changes field types.",
+    "references": [
+      {
+        "title": "Kafka Connect user guide: Included transformations",
+        "url": "https://kafka.apache.org/44/kafka-connect/user-guide/#included-transformations",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "conn-smt-031",
+    "domain": "connect",
+    "topics": [
+      "connect-converters-errors"
+    ],
+    "type": "single",
+    "stem": "A connector config contains `transforms=route` and `transforms.route.regex=orders-(.*)`, but the connector fails validation. What is most likely missing?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`transforms.route.type`, the fully qualified class name of the transformation"
+      },
+      {
+        "id": "b",
+        "text": "`transforms.route.enabled=true`"
+      },
+      {
+        "id": "c",
+        "text": "`transforms.order=route`"
+      },
+      {
+        "id": "d",
+        "text": "`route.class`"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "Every alias in `transforms` needs `transforms.$alias.type`, the \"fully qualified class name for the transformation\", for example `org.apache.kafka.connect.transforms.RegexRouter`. Transformation-specific settings such as `regex` and `replacement` follow as `transforms.$alias.<config>`.\n\n`enabled`, `transforms.order` and `route.class` are not Connect settings; order comes from the `transforms` list itself.",
+    "references": [
+      {
+        "title": "Kafka Connect user guide: Transformations",
+        "url": "https://kafka.apache.org/44/kafka-connect/user-guide/#transformations",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "conn-err-032",
+    "domain": "connect",
+    "topics": [
+      "connect-converters-errors"
+    ],
+    "type": "single",
+    "stem": "A connector has no `errors.*` settings. One record makes a transformation throw an exception. What happens?",
+    "options": [
+      {
+        "id": "a",
+        "text": "The task fails immediately (fail-fast), because `errors.tolerance` defaults to `none`."
+      },
+      {
+        "id": "b",
+        "text": "The record is skipped and logged, because `errors.tolerance` defaults to `all`."
+      },
+      {
+        "id": "c",
+        "text": "The record is retried forever, because `errors.retry.timeout` defaults to `-1`."
+      },
+      {
+        "id": "d",
+        "text": "The record is written to a default dead letter queue topic."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "By default \"connectors exhibit 'fail fast' behavior immediately upon an error\". The defaults are `errors.tolerance=none`, `errors.retry.timeout=0` (no retries), `errors.log.enable=false` and an empty `errors.deadletterqueue.topic.name` (no DLQ).\n\n- `all` is opt-in.\n- `-1` means infinite retries but is not the default.\n- No DLQ exists unless you name one.",
+    "references": [
+      {
+        "title": "Kafka Connect user guide: Error Reporting in Connect",
+        "url": "https://kafka.apache.org/44/kafka-connect/user-guide/#error-reporting-in-connect",
+        "kind": "official"
+      },
+      {
+        "title": "Kafka Connect configs: errors.tolerance",
+        "url": "https://kafka.apache.org/44/configuration/kafka-connect-configs/#sinkconnectorconfigs_errors.tolerance",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "conn-err-033",
+    "domain": "connect",
+    "topics": [
+      "connect-converters-errors"
+    ],
+    "type": "multi",
+    "stem": "A sink connector must keep running when it meets records it cannot convert, park those records in a topic called `orders-dlq`, and record why each one failed on the parked record itself. Which settings do you add? (Choose three.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "`errors.tolerance=all`"
+      },
+      {
+        "id": "b",
+        "text": "`errors.deadletterqueue.topic.name=orders-dlq`"
+      },
+      {
+        "id": "c",
+        "text": "`errors.deadletterqueue.context.headers.enable=true`"
+      },
+      {
+        "id": "d",
+        "text": "`errors.retry.timeout=-1`"
+      },
+      {
+        "id": "e",
+        "text": "`errors.tolerance=none`"
+      },
+      {
+        "id": "f",
+        "text": "`errors.log.include.messages=true`"
+      }
+    ],
+    "correct": [
+      "a",
+      "b",
+      "c"
+    ],
+    "explanation": "- `errors.tolerance=all` skips problem records instead of failing the task.\n- `errors.deadletterqueue.topic.name` names the DLQ topic. It is empty by default, meaning no DLQ.\n- `errors.deadletterqueue.context.headers.enable=true` adds headers with the error context to each DLQ record. It defaults to `false`.\n\nThe distractors:\n\n- `errors.retry.timeout=-1` retries a failed operation forever, which doesn't help with records that can never convert and doesn't route anything.\n- `none` is the fail-fast default.\n- `errors.log.include.messages` affects the application log, not the DLQ records.",
+    "references": [
+      {
+        "title": "Kafka Connect configs: errors.deadletterqueue.context.headers.enable",
+        "url": "https://kafka.apache.org/44/configuration/kafka-connect-configs/#sinkconnectorconfigs_errors.deadletterqueue.context.headers.enable",
+        "kind": "official"
+      },
+      {
+        "title": "Kafka Connect user guide: Error Reporting in Connect",
+        "url": "https://kafka.apache.org/44/kafka-connect/user-guide/#error-reporting-in-connect",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "conn-err-034",
+    "domain": "connect",
+    "topics": [
+      "connect-converters-errors"
+    ],
+    "type": "single",
+    "stem": "A developer wants to send bad records from a source connector to a dead letter queue topic. Which statement is correct?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Dead letter queues are only available for sink connectors; for a source connector, use `errors.tolerance` and `errors.log.enable` instead."
+      },
+      {
+        "id": "b",
+        "text": "Set `errors.deadletterqueue.topic.name` on the source connector, exactly as for a sink."
+      },
+      {
+        "id": "c",
+        "text": "Set `errors.deadletterqueue.topic.name` on the worker so that all source connectors share it."
+      },
+      {
+        "id": "d",
+        "text": "Source connectors write failed records to `status.storage.topic`."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "Confluent says \"Dead Letter Queues (DLQs) are only applicable for sink connectors\", and in the Apache config reference the `errors.deadletterqueue.*` settings appear only among the sink connector configs. They describe messages that fail \"when processed by this sink connector, or its transformations or converters\". Source connectors can still tolerate errors (`errors.tolerance=all`) and log them (`errors.log.enable=true`).\n\n- It isn't a worker setting either.\n- The status topic holds connector and task states, not records.",
+    "references": [
+      {
+        "title": "Kafka Connect configs: errors.deadletterqueue.topic.name",
+        "url": "https://kafka.apache.org/44/configuration/kafka-connect-configs/#sinkconnectorconfigs_errors.deadletterqueue.topic.name",
+        "kind": "official"
+      },
+      {
+        "title": "Confluent: Dead letter queue",
+        "url": "https://docs.confluent.io/platform/current/connect/index.html#dead-letter-queue",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "conn-err-035",
+    "domain": "connect",
+    "topics": [
+      "connect-converters-errors"
+    ],
+    "type": "single",
+    "stem": "A sink connector runs with `errors.tolerance=all`, but no DLQ and `errors.log.enable=false`. Some records fail to convert. How would you notice?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Only through Connect's task error metrics (such as `total-records-skipped`) or by comparing record counts; the records are dropped silently."
+      },
+      {
+        "id": "b",
+        "text": "The task's status changes to `FAILED` with the error trace."
+      },
+      {
+        "id": "c",
+        "text": "Each failure is logged at ERROR level in the worker log anyway."
+      },
+      {
+        "id": "d",
+        "text": "Connect writes the failed records to `<connector-name>-errors` automatically."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "With `errors.tolerance=all`, \"Connect ignores all errors or invalid records and processing continues. Connect writes no errors to the worker log. To determine if records are failing, you must use internal metrics, or count the number of records at the source and compare\". Connect's `task-error-metrics` include `total-records-skipped`, `total-record-errors` and `total-errors-logged`.\n\n- The task keeps running, so its status doesn't change to `FAILED`.\n- With `errors.log.enable=false`, tolerated errors are not logged.\n- No DLQ topic is created unless named.",
+    "references": [
+      {
+        "title": "Confluent: Dead letter queue",
+        "url": "https://docs.confluent.io/platform/current/connect/index.html#dead-letter-queue",
+        "kind": "official"
+      },
+      {
+        "title": "Apache Kafka monitoring: Connect monitoring",
+        "url": "https://kafka.apache.org/44/operations/monitoring/#connect-monitoring",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "conn-err-036",
+    "domain": "connect",
+    "topics": [
+      "connect-converters-errors"
+    ],
+    "type": "single",
+    "stem": "With `errors.deadletterqueue.context.headers.enable=true`, how can you tell the error-context headers apart from the record's original headers in the DLQ topic?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Their keys start with `__connect.errors.`"
+      },
+      {
+        "id": "b",
+        "text": "They are stored in a separate topic named `<dlq>-headers`."
+      },
+      {
+        "id": "c",
+        "text": "They replace the original headers, which are dropped."
+      },
+      {
+        "id": "d",
+        "text": "Their keys start with `dlq.`"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "\"To avoid clashing with headers from the original record, all error context header keys... will start with `__connect.errors.`\" The original headers are kept alongside them, and the default for this setting is `false`.",
+    "references": [
+      {
+        "title": "Kafka Connect configs: errors.deadletterqueue.context.headers.enable",
+        "url": "https://kafka.apache.org/44/configuration/kafka-connect-configs/#sinkconnectorconfigs_errors.deadletterqueue.context.headers.enable",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "conn-err-037",
+    "domain": "connect",
+    "topics": [
+      "connect-converters-errors"
+    ],
+    "type": "multi",
+    "stem": "Which statements about Connect error logging are correct? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "`errors.log.enable` defaults to `false`, so by default only errors that are not tolerated are reported."
+      },
+      {
+        "id": "b",
+        "text": "`errors.log.include.messages=true` can write record keys, values and headers to the log, which may expose sensitive data."
+      },
+      {
+        "id": "c",
+        "text": "`errors.log.enable=true` also writes the failed records to a dead letter queue topic."
+      },
+      {
+        "id": "d",
+        "text": "`errors.log.include.messages` defaults to `true`."
+      },
+      {
+        "id": "e",
+        "text": "Error logging only works in standalone mode."
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "- `errors.log.enable`: \"This is 'false' by default, so that only errors that are not tolerated are reported.\"\n- `errors.log.include.messages` adds the record to the log; for source records that includes \"the key and value (and their schemas), all headers\". The user guide warns \"this may log sensitive information\". It defaults to `false`.\n\nLogging and the DLQ are separate features (`errors.deadletterqueue.topic.name`), and both work in either mode.",
+    "references": [
+      {
+        "title": "Kafka Connect configs: errors.log.enable",
+        "url": "https://kafka.apache.org/44/configuration/kafka-connect-configs/#sinkconnectorconfigs_errors.log.enable",
+        "kind": "official"
+      },
+      {
+        "title": "Kafka Connect user guide: Error Reporting in Connect",
+        "url": "https://kafka.apache.org/44/kafka-connect/user-guide/#error-reporting-in-connect",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "conn-err-038",
+    "domain": "connect",
+    "topics": [
+      "connect-converters-errors"
+    ],
+    "type": "single",
+    "stem": "A sink connector sometimes hits short network blips when writing. You want Connect to retry a failed operation for up to 10 minutes before treating it as an error. Which setting do you use?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`errors.retry.timeout=600000`"
+      },
+      {
+        "id": "b",
+        "text": "`errors.tolerance=all`"
+      },
+      {
+        "id": "c",
+        "text": "`errors.retry.timeout=-1`"
+      },
+      {
+        "id": "d",
+        "text": "`tasks.max=10`"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`errors.retry.timeout` is \"the maximum duration in milliseconds that a failed operation will be reattempted. The default is 0, which means no retries will be attempted. Use -1 for infinite retries.\" `errors.retry.delay.max.ms` (default 60000) caps the wait between attempts.\n\n- `errors.tolerance=all` skips records instead of retrying.\n- `-1` retries forever, not for 10 minutes.\n- `tasks.max` controls parallelism.",
+    "references": [
+      {
+        "title": "Kafka Connect configs: errors.retry.timeout",
+        "url": "https://kafka.apache.org/44/configuration/kafka-connect-configs/#sinkconnectorconfigs_errors.retry.timeout",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "conn-type-039",
+    "domain": "connect",
+    "topics": [
+      "connect-architecture"
+    ],
+    "type": "single",
+    "stem": "A team needs to copy rows from a PostgreSQL table into a Kafka topic, and copy another Kafka topic into Elasticsearch. Which connector types do they need?",
+    "options": [
+      {
+        "id": "a",
+        "text": "A source connector for PostgreSQL to Kafka, and a sink connector for Kafka to Elasticsearch"
+      },
+      {
+        "id": "b",
+        "text": "A sink connector for PostgreSQL to Kafka, and a source connector for Kafka to Elasticsearch"
+      },
+      {
+        "id": "c",
+        "text": "Two source connectors, because both systems hold data"
+      },
+      {
+        "id": "d",
+        "text": "One connector, because a single connector can read and write in both directions"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "Source connectors ingest data from external systems into Kafka topics. Sink connectors \"deliver data from Kafka topics to secondary indexes, such as Elasticsearch, or batch systems\". Direction is always named from Kafka's point of view: into Kafka is source, out of Kafka is sink. A connector moves data in one direction only.",
+    "references": [
+      {
+        "title": "Confluent: Connectors",
+        "url": "https://docs.confluent.io/platform/current/connect/index.html#connectors",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  }
+]

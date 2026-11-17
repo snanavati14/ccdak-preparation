@@ -1,0 +1,95 @@
+A consumer stays in its group by passing two separate checks: it must keep heartbeating, and it must keep calling `poll()`. Mixing the two up is the most common exam trap in this area. Fetch settings then decide how much data each `poll()` has to work with and how long the broker waits to send it.
+
+## How it works
+
+With the classic protocol, heartbeats come from a background thread every `heartbeat.interval.ms` (default 3 s). If the coordinator gets none for `session.timeout.ms` (default 45 s), it treats the member as dead and rebalances. That catches crashes and network loss.
+
+A consumer can heartbeat happily while its processing thread is stuck. To catch that "livelock", the client also tracks the time between `poll()` calls. If it exceeds `max.poll.interval.ms` (default 5 min), the client leaves the group itself, and a later `commitSync()` fails with `CommitFailedException`.
+
+<Figure caption="Two independent timers. Heartbeats prove the process is alive; poll() calls prove it is making progress.">
+  <svg viewBox="0 0 640 220" role="img" aria-label="Heartbeat and poll timers over time">
+    <line x1="30" y1="190" x2="620" y2="190" stroke="currentColor" strokeWidth="1" />
+    <text x="600" y="210" textAnchor="end" fontSize="13" fill="currentColor">time</text>
+    <text x="30" y="30" fontSize="14" fill="currentColor">background thread</text>
+    <line x1="60" y1="45" x2="60" y2="65" stroke="currentColor" strokeWidth="1.5" />
+    <line x1="120" y1="45" x2="120" y2="65" stroke="currentColor" strokeWidth="1.5" />
+    <line x1="180" y1="45" x2="180" y2="65" stroke="currentColor" strokeWidth="1.5" />
+    <line x1="240" y1="45" x2="240" y2="65" stroke="currentColor" strokeWidth="1.5" />
+    <line x1="300" y1="45" x2="300" y2="65" stroke="currentColor" strokeWidth="1.5" />
+    <line x1="360" y1="45" x2="360" y2="65" stroke="currentColor" strokeWidth="1.5" />
+    <line x1="420" y1="45" x2="420" y2="65" stroke="currentColor" strokeWidth="1.5" />
+    <line x1="480" y1="45" x2="480" y2="65" stroke="currentColor" strokeWidth="1.5" />
+    <line x1="540" y1="45" x2="540" y2="65" stroke="currentColor" strokeWidth="1.5" />
+    <text x="330" y="85" textAnchor="middle" fontSize="13" fill="currentColor">heartbeat every heartbeat.interval.ms; none for session.timeout.ms means dead</text>
+    <text x="30" y="118" fontSize="14" fill="currentColor">poll thread</text>
+    <rect x="60" y="128" width="30" height="24" fill="none" stroke="currentColor" strokeWidth="1.5" />
+    <rect x="160" y="128" width="30" height="24" fill="none" stroke="currentColor" strokeWidth="1.5" />
+    <text x="75" y="145" textAnchor="middle" fontSize="13" fill="currentColor">poll</text>
+    <text x="175" y="145" textAnchor="middle" fontSize="13" fill="currentColor">poll</text>
+    <rect className="accent" x="190" y="128" width="400" height="24" fill="none" stroke="currentColor" strokeWidth="2.5" />
+    <text x="390" y="145" textAnchor="middle" fontSize="13" fill="currentColor">slow batch: no poll() for longer than max.poll.interval.ms</text>
+    <text x="390" y="178" textAnchor="middle" fontSize="13" fill="currentColor">client leaves the group even though heartbeats continue</text>
+  </svg>
+</Figure>
+
+With `group.protocol=consumer`, the broker sets the heartbeat interval (`group.consumer.heartbeat.interval.ms`, default 5 s) and session timeout (`group.consumer.session.timeout.ms`, default 45 s). `max.poll.interval.ms` still applies on the client.
+
+**Fetching.** The broker answers a fetch once it has `fetch.min.bytes` (default 1) or after `fetch.max.wait.ms` (default 500 ms), whichever comes first. `max.partition.fetch.bytes` (default 1 MiB) and `fetch.max.bytes` (default 50 MiB) cap the response, but a single batch bigger than the cap is still returned so the consumer can make progress. `max.poll.records` (default 500) only limits how many cached records one `poll()` hands back; it does not change fetching.
+
+**Threads.** `KafkaConsumer` is not thread-safe. Only `wakeup()` may be called from another thread: it makes the blocked call (or the next one) throw `WakeupException`, which is the standard way to shut down.
+
+## Gotchas the exam loves
+
+- Slow processing breaks `max.poll.interval.ms`, not `session.timeout.ms`. Fix it with a smaller `max.poll.records`, a larger `max.poll.interval.ms`, or by moving work to another thread with `pause()`/`resume()`.
+- A `kill -9` is detected by the session timeout (45 s by default). A clean `close()` of a dynamic member leaves the group at once.
+- `heartbeat.interval.ms` must be lower than `session.timeout.ms`, typically no more than a third of it.
+- `session.timeout.ms` must lie between the broker's `group.min.session.timeout.ms` (6 s) and `group.max.session.timeout.ms` (30 min).
+- A static member that exceeds `max.poll.interval.ms` stops heartbeating; its partitions move only after the session timeout.
+- `poll(Duration)` returns an empty batch when the timeout passes; `poll(long)` was removed in 4.0.
+- `pause()` stops records from those partitions without a rebalance. Keep calling `poll()`.
+- Unsynchronized use from several threads raises `ConcurrentModificationException`.
+
+## Java sample
+
+```java
+public class OrdersLoop implements Runnable {
+    private final AtomicBoolean closed = new AtomicBoolean(false);
+    private final KafkaConsumer<String, String> consumer;
+
+    public OrdersLoop(Properties props) {
+        props.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, "100");        // smaller batches
+        props.put(ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG, "600000"); // 10 min budget
+        this.consumer = new KafkaConsumer<>(props);
+    }
+
+    public void run() {
+        try {
+            consumer.subscribe(List.of("orders"));
+            while (!closed.get()) {
+                ConsumerRecords<String, String> records = consumer.poll(Duration.ofSeconds(1));
+                records.forEach(this::handle);
+                consumer.commitSync();
+            }
+        } catch (WakeupException e) {
+            if (!closed.get()) throw e;      // unexpected wakeup
+        } finally {
+            consumer.close();                // commits if auto-commit is on, leaves the group
+        }
+    }
+
+    public void shutdown() {                 // called from another thread
+        closed.set(true);
+        consumer.wakeup();
+    }
+
+    private void handle(ConsumerRecord<String, String> r) { /* ... */ }
+}
+```
+
+## Version notes
+
+<Note>
+`session.timeout.ms` has defaulted to 45 s since Kafka 3.0 (it was 10 s), so older material may quote the old value. Under `group.protocol=consumer` (GA in 4.0) the client's `session.timeout.ms` and `heartbeat.interval.ms` are not supported. Kafka 4.0 removed `poll(long)`, and 4.1 deprecated `close(Duration)` in favour of `close(CloseOptions)`.
+</Note>
+
+See [Detecting Consumer Failures](https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html#detecting-consumer-failures-heading) in the `KafkaConsumer` Javadoc.

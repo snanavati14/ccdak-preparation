@@ -1,0 +1,2575 @@
+[
+  {
+    "id": "sr-wire-001",
+    "domain": "app-development",
+    "topics": [
+      "serialization-wire-format"
+    ],
+    "type": "single",
+    "stem": "A producer uses `KafkaAvroSerializer` with default settings to write a record value. Which byte layout does the value have on the topic?",
+    "options": [
+      {
+        "id": "a",
+        "text": "The full Avro schema as JSON, followed by the Avro binary data"
+      },
+      {
+        "id": "b",
+        "text": "A 4-byte schema version number, then the Avro data encoded as JSON"
+      },
+      {
+        "id": "c",
+        "text": "A magic byte `0`, a 4-byte schema ID, then the Avro binary-encoded data"
+      },
+      {
+        "id": "d",
+        "text": "An 8-byte CRC-64 schema fingerprint, then the Avro binary-encoded data"
+      }
+    ],
+    "correct": [
+      "c"
+    ],
+    "explanation": "With the default wire format the Confluent serializers write:\n\n- byte 0: the magic (version) byte, `0` when a schema ID is used;\n- bytes 1-4: the 4-byte schema ID returned by Schema Registry;\n- the rest: the data in the schema's format, here Avro binary.\n\nThe serializer does **not** embed the schema text; that is the point of the registry, which replaces a whole schema with a 4-byte ID. The 8-byte CRC-64 fingerprint belongs to Avro's own *single-object encoding*, not the Confluent format. The number written is the global schema **ID**, not the subject version, and the data is binary, not JSON.",
+    "references": [
+      {
+        "title": "Formats, Serializers, and Deserializers (Confluent Platform)",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/fundamentals/serdes-develop/index.html#wire-format-schema-id-in-the-payload-prefix",
+        "kind": "official"
+      },
+      {
+        "title": "Apache Avro 1.12.0 Specification",
+        "url": "https://avro.apache.org/docs/1.12.0/specification/#single-object-encoding",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "sr-wire-002",
+    "domain": "app-development",
+    "topics": [
+      "serialization-wire-format"
+    ],
+    "type": "single",
+    "stem": "A producer switches from `KafkaAvroSerializer` to `KafkaProtobufSerializer`. The `.proto` file registered for the subject defines several message types and the producer sends the **first** top-level message type. Compared with the Avro wire format, what extra bytes appear between the schema ID and the Protobuf payload?",
+    "options": [
+      {
+        "id": "a",
+        "text": "None; Protobuf uses exactly the same 5-byte prefix as Avro"
+      },
+      {
+        "id": "b",
+        "text": "The fully qualified message name as a UTF-8 string"
+      },
+      {
+        "id": "c",
+        "text": "A list of message indexes; for the first message type this is optimised to a single `0` byte"
+      },
+      {
+        "id": "d",
+        "text": "A 16-byte schema GUID followed by the field count"
+      }
+    ],
+    "correct": [
+      "c"
+    ],
+    "explanation": "For Protobuf the serializer writes the magic byte and the 4-byte schema ID, then **message indexes**: an array that identifies which message type in the registered schema (possibly nested) was used. The array is zigzag varint encoded with a length prefix, and the common case of the first message type (`[0]`) is shortened to a single `0`.\n\nAvro and JSON Schema have no message-index part, so the prefix is not identical. The message name is not written as a string. A 16-byte GUID is used only by the newer header-based format, and it goes in a record header, not between ID and payload.",
+    "references": [
+      {
+        "title": "Formats, Serializers, and Deserializers (Confluent Platform)",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/fundamentals/serdes-develop/index.html#wire-format-schema-id-in-the-payload-prefix",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "sr-wire-003",
+    "domain": "app-development",
+    "topics": [
+      "serialization-wire-format"
+    ],
+    "type": "multi",
+    "stem": "Which **two** statements about the Confluent Schema Registry wire format (schema ID in the payload prefix) are correct? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "The schema ID is written as a zigzag varint so small IDs take one byte"
+      },
+      {
+        "id": "b",
+        "text": "The 4-byte schema ID is written in big-endian (network) byte order"
+      },
+      {
+        "id": "c",
+        "text": "The format is applied only to values; keys are always written as plain strings"
+      },
+      {
+        "id": "d",
+        "text": "The same format is used for message keys and message values"
+      },
+      {
+        "id": "e",
+        "text": "The magic byte is the subject version number"
+      }
+    ],
+    "correct": [
+      "b",
+      "d"
+    ],
+    "explanation": "- The schema ID is a fixed 4 bytes, big-endian (standard network order). It is not a varint; only Protobuf message indexes use zigzag varints.\n- The wire format applies to **both keys and values**. A key serialized with `KafkaAvroSerializer` also carries the magic byte and schema ID, and its schema is registered under `<topic>-key` by default.\n- The magic byte is the serialization *format* version (`0`), not a subject version.",
+    "references": [
+      {
+        "title": "Formats, Serializers, and Deserializers (Confluent Platform)",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/fundamentals/serdes-develop/index.html#wire-format-schema-id-in-the-payload-prefix",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "sr-wire-004",
+    "domain": "app-development",
+    "topics": [
+      "serialization-wire-format"
+    ],
+    "type": "single",
+    "stem": "The same Avro schema text is registered under the subject `orders-value`, where it becomes version 3, and later under `audit-value`, where it becomes version 1. What schema ID do producers embed for each subject?",
+    "options": [
+      {
+        "id": "a",
+        "text": "ID 3 for `orders-value` and ID 1 for `audit-value`, because the ID is the version"
+      },
+      {
+        "id": "b",
+        "text": "No ID until the topic is created, because IDs are tied to topics"
+      },
+      {
+        "id": "c",
+        "text": "Different IDs, because IDs are allocated per subject"
+      },
+      {
+        "id": "d",
+        "text": "The same ID for both subjects, because an identical schema shares one globally unique ID"
+      }
+    ],
+    "correct": [
+      "d"
+    ],
+    "explanation": "A schema ID identifies a schema **definition** and is globally unique in the registry. Two registrations of an identical schema share the same ID even under different subjects; the API docs note that registering the same schema under a different subject returns the same identifier while the version may differ. The version is a position within one subject's history and is separate from the ID. IDs are not tied to topics.",
+    "references": [
+      {
+        "title": "Schema Registry Concepts (Confluent Platform)",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/fundamentals/index.html#schemas-subjects-and-topics",
+        "kind": "official"
+      },
+      {
+        "title": "Schema Registry API Reference (Confluent Platform)",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/develop/api.html#register-a-new-schema-under-a-subject",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "sr-wire-005",
+    "domain": "app-development",
+    "topics": [
+      "serialization-wire-format"
+    ],
+    "type": "single",
+    "stem": "Subject `payments-value` has versions 1 and 2. A deployment script calls `POST /subjects/payments-value/versions` again with exactly the schema that is already version 2. What happens?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Version 3 is created with a new schema ID"
+      },
+      {
+        "id": "b",
+        "text": "The request fails with HTTP 409 because the schema already exists"
+      },
+      {
+        "id": "c",
+        "text": "No new version is created; the existing schema ID and version are returned"
+      },
+      {
+        "id": "d",
+        "text": "Version 2 is deleted and re-created with a new ID"
+      }
+    ],
+    "correct": [
+      "c"
+    ],
+    "explanation": "Registering a schema that is identical to one already in the subject does not create a new version. Schema Registry returns the existing schema's ID and version. Versions only increment when the schema differs from every existing schema in the subject. HTTP 409 is the response for an **incompatible** schema, not a duplicate. Nothing is deleted.",
+    "references": [
+      {
+        "title": "Schema Registry API Reference (Confluent Platform)",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/develop/api.html#register-a-new-schema-under-a-subject",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "sr-ser-006",
+    "domain": "app-development",
+    "topics": [
+      "serialization-wire-format"
+    ],
+    "type": "single",
+    "stem": "A producer sends records whose keys are Java `String` customer IDs and whose values are already-encoded `byte[]` images. Which configuration is correct?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`key.serializer=org.apache.kafka.common.serialization.StringSerializer` and `value.serializer=org.apache.kafka.common.serialization.BytesSerializer`"
+      },
+      {
+        "id": "b",
+        "text": "`key.serializer=org.apache.kafka.common.serialization.StringSerializer` and `value.serializer=org.apache.kafka.common.serialization.ByteArraySerializer`"
+      },
+      {
+        "id": "c",
+        "text": "Leave both unset; the producer defaults to `StringSerializer` for keys and `ByteArraySerializer` for values"
+      },
+      {
+        "id": "d",
+        "text": "`key.serializer=io.confluent.kafka.serializers.KafkaAvroSerializer` and `value.serializer=org.apache.kafka.common.serialization.ByteArraySerializer`"
+      }
+    ],
+    "correct": [
+      "b"
+    ],
+    "explanation": "`StringSerializer` handles `String` (UTF-8 by default) and `ByteArraySerializer` passes a `byte[]` through. Both are in `org.apache.kafka.common.serialization`.\n\n- `BytesSerializer` exists, but it serializes Kafka's `org.apache.kafka.common.utils.Bytes` wrapper, not a raw `byte[]`.\n- `KafkaAvroSerializer` needs `schema.registry.url` and would wrap the key in the Avro wire format; nothing here calls for Avro.\n- `key.serializer` and `value.serializer` have **no default**. They must be set.",
+    "references": [
+      {
+        "title": "Apache Kafka 4.4 Javadoc: org.apache.kafka.common.serialization",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/common/serialization/package-summary.html",
+        "kind": "official"
+      },
+      {
+        "title": "Apache Kafka 4.4 producer configs",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_key.serializer",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "sr-ser-007",
+    "domain": "app-development",
+    "topics": [
+      "serialization-wire-format"
+    ],
+    "type": "multi",
+    "stem": "Which **three** serializer classes ship with the Apache Kafka client library in the package `org.apache.kafka.common.serialization`? (Choose three.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "`AvroSerializer`"
+      },
+      {
+        "id": "b",
+        "text": "`UUIDSerializer`"
+      },
+      {
+        "id": "c",
+        "text": "`ByteArraySerializer`"
+      },
+      {
+        "id": "d",
+        "text": "`IntegerSerializer`"
+      },
+      {
+        "id": "e",
+        "text": "`ProtobufSerializer`"
+      },
+      {
+        "id": "f",
+        "text": "`JsonSerializer`"
+      }
+    ],
+    "correct": [
+      "b",
+      "c",
+      "d"
+    ],
+    "explanation": "The Kafka clients package contains serializers for primitive and simple types: `String`, `ByteArray`, `ByteBuffer`, `Bytes`, `Integer`, `Long`, `Short`, `Float`, `Double`, `Boolean`, `UUID`, `Void` and `List`, each with a matching deserializer.\n\nThere is no JSON, Avro or Protobuf serializer in that package. Schema-aware serializers come from Confluent (`io.confluent.kafka.serializers.KafkaAvroSerializer`, `...protobuf.KafkaProtobufSerializer`, `...json.KafkaJsonSchemaSerializer`), which are separate libraries, not part of Apache Kafka.",
+    "references": [
+      {
+        "title": "Apache Kafka 4.4 Javadoc: org.apache.kafka.common.serialization",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/common/serialization/package-summary.html",
+        "kind": "official"
+      },
+      {
+        "title": "Formats, Serializers, and Deserializers (Confluent Platform)",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/fundamentals/serdes-develop/index.html#supported-formats",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "sr-ser-008",
+    "domain": "app-development",
+    "topics": [
+      "serialization-wire-format"
+    ],
+    "type": "single",
+    "stem": "A developer creates a `KafkaProducer` with `bootstrap.servers` set but forgets `value.serializer`, and does not pass serializer instances to the constructor. What happens?",
+    "options": [
+      {
+        "id": "a",
+        "text": "The producer starts, and the broker rejects each record with `InvalidRecordException`"
+      },
+      {
+        "id": "b",
+        "text": "The producer starts and uses `StringSerializer` for values"
+      },
+      {
+        "id": "c",
+        "text": "Construction fails with a configuration error because `value.serializer` has no default"
+      },
+      {
+        "id": "d",
+        "text": "The producer starts and uses `ByteArraySerializer` for values"
+      }
+    ],
+    "correct": [
+      "c"
+    ],
+    "explanation": "`key.serializer` and `value.serializer` are high-importance producer configs with **no default value**. If neither the property nor a serializer instance in the constructor provides one, the producer cannot be built and throws a `ConfigException` when it is created. The broker never sees the records; brokers store bytes and do not pick serializers. The same applies to `key.deserializer` and `value.deserializer` on the consumer.",
+    "references": [
+      {
+        "title": "Apache Kafka 4.4 producer configs",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_value.serializer",
+        "kind": "official"
+      },
+      {
+        "title": "Apache Kafka 4.4 consumer configs",
+        "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_value.deserializer",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "likely",
+    "source": "original"
+  },
+  {
+    "id": "sr-ser-009",
+    "domain": "app-development",
+    "topics": [
+      "serialization-wire-format"
+    ],
+    "type": "single",
+    "stem": "A team moves a topic's values from Avro to Protobuf, with the schemas kept in Schema Registry. Which producer and consumer classes should they configure?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`io.confluent.kafka.serializers.protobuf.KafkaProtobufSerializer` and `io.confluent.kafka.serializers.protobuf.KafkaProtobufDeserializer`"
+      },
+      {
+        "id": "b",
+        "text": "`org.apache.kafka.common.serialization.ProtobufSerializer` and `org.apache.kafka.common.serialization.ProtobufDeserializer`"
+      },
+      {
+        "id": "c",
+        "text": "`io.confluent.kafka.serializers.KafkaAvroSerializer` with `schemaType=PROTOBUF`"
+      },
+      {
+        "id": "d",
+        "text": "`io.confluent.kafka.serializers.json.KafkaJsonSchemaSerializer` and `io.confluent.kafka.serializers.json.KafkaJsonSchemaDeserializer`"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "Each schema format has its own Confluent serde pair:\n\n| Format | Serializer | Deserializer |\n|---|---|---|\n| Avro | `KafkaAvroSerializer` | `KafkaAvroDeserializer` |\n| Protobuf | `KafkaProtobufSerializer` | `KafkaProtobufDeserializer` |\n| JSON Schema | `KafkaJsonSchemaSerializer` | `KafkaJsonSchemaDeserializer` |\n\nApache Kafka itself has no Protobuf serializer. `schemaType` is a field of the REST registration request, not a serializer setting, and the Avro serializer cannot write Protobuf. The JSON Schema serdes handle JSON Schema, not Protobuf.",
+    "references": [
+      {
+        "title": "Formats, Serializers, and Deserializers (Confluent Platform)",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/fundamentals/serdes-develop/index.html#supported-formats",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "sr-ser-010",
+    "domain": "app-development",
+    "topics": [
+      "serialization-wire-format"
+    ],
+    "type": "multi",
+    "stem": "A producer is configured with `value.serializer=io.confluent.kafka.serializers.KafkaAvroSerializer` and `schema.registry.url`, and every other serializer setting is left at its default. It sends a `GenericRecord` to topic `clicks` for the first time. Which **two** things happen? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "The serializer embeds the full schema JSON in every record so consumers do not need the registry"
+      },
+      {
+        "id": "b",
+        "text": "The broker validates the record against the schema before appending it"
+      },
+      {
+        "id": "c",
+        "text": "The serializer registers the value schema under the subject `clicks-value`, provided it passes the subject's compatibility check"
+      },
+      {
+        "id": "d",
+        "text": "The serializer registers the schema under the record's fully qualified name"
+      },
+      {
+        "id": "e",
+        "text": "The serializer writes the schema ID returned by the registry into the record's payload prefix"
+      }
+    ],
+    "correct": [
+      "c",
+      "e"
+    ],
+    "explanation": "- `auto.register.schemas` defaults to `true` and the default subject strategy is `TopicNameStrategy`, so the value schema is registered under `clicks-value` if the compatibility test passes.\n- The serializer then writes the magic byte and the schema ID it got back, followed by the Avro binary data. The schema itself is not embedded.\n- The record-name subject would need `RecordNameStrategy`.\n- Brokers in Apache Kafka do not validate records against schemas. Broker-side schema ID validation is a separate Confluent Server feature that must be switched on.",
+    "references": [
+      {
+        "title": "Avro Serializer and Deserializer (Confluent Platform)",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/fundamentals/serdes-develop/serdes-avro.html#avro-serializer",
+        "kind": "official"
+      },
+      {
+        "title": "Integrate Schemas from Kafka Connect (Confluent Platform)",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/connect.html#configuration-options",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "sr-ser-011",
+    "domain": "app-development",
+    "topics": [
+      "serialization-wire-format"
+    ],
+    "type": "single",
+    "stem": "A consumer is declared as `KafkaConsumer<String, Order>` where `Order` is a class generated from an Avro schema. It uses `KafkaAvroDeserializer` with only `schema.registry.url` set. Processing fails with a `ClassCastException` when the code reads `record.value()` as an `Order`. What is the fix?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Set `use.latest.version=true` so the newest schema is used"
+      },
+      {
+        "id": "b",
+        "text": "Set `specific.avro.reader=true` so the deserializer returns the generated `SpecificRecord` class"
+      },
+      {
+        "id": "c",
+        "text": "Switch to `value.subject.name.strategy=RecordNameStrategy`"
+      },
+      {
+        "id": "d",
+        "text": "Set `auto.register.schemas=false` on the consumer"
+      }
+    ],
+    "correct": [
+      "b"
+    ],
+    "explanation": "By default `KafkaAvroDeserializer` returns a `GenericRecord` (`specific.avro.reader` defaults to `false`). Casting that to a generated class fails. Setting `specific.avro.reader=true` (`KafkaAvroDeserializerConfig.SPECIFIC_AVRO_READER_CONFIG`) makes it return the generated `SpecificRecord` type.\n\n`auto.register.schemas` is a serializer concern. The subject name strategy changes which subject is used, not the Java type returned. `use.latest.version` changes which schema is used, not generic vs specific.",
+    "references": [
+      {
+        "title": "Avro Serializer and Deserializer (Confluent Platform)",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/fundamentals/serdes-develop/serdes-avro.html#avro-deserializer",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "sr-ser-012",
+    "domain": "app-development",
+    "topics": [
+      "serialization-wire-format"
+    ],
+    "type": "single",
+    "stem": "In production a platform team sets `auto.register.schemas=false` on all producers and registers schemas through CI. A developer deploys a producer with a new Avro schema that was never registered, leaving `use.latest.version` at its default. What happens when the producer sends?",
+    "options": [
+      {
+        "id": "a",
+        "text": "The record is sent without a schema ID and consumers fall back to the writer's schema"
+      },
+      {
+        "id": "b",
+        "text": "The serializer silently uses the latest registered version instead"
+      },
+      {
+        "id": "c",
+        "text": "The serializer registers the schema anyway because the subject exists"
+      },
+      {
+        "id": "d",
+        "text": "Serialization fails because the schema cannot be found in the subject"
+      }
+    ],
+    "correct": [
+      "d"
+    ],
+    "explanation": "With `auto.register.schemas=false` the serializer only looks the schema up. If it is not registered under the subject, the lookup fails and the send fails with a serialization error (\"Schema not found\"). It falls back to the latest version only when `use.latest.version=true`, whose default is `false`. A Confluent serializer never writes a record without the ID prefix.",
+    "references": [
+      {
+        "title": "Formats, Serializers, and Deserializers (Confluent Platform)",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/fundamentals/serdes-develop/index.html#handling-differences-between-preregistered-and-client-derived-schemas",
+        "kind": "official"
+      },
+      {
+        "title": "Integrate Schemas from Kafka Connect (Confluent Platform)",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/connect.html#configuration-options",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "likely",
+    "source": "original"
+  },
+  {
+    "id": "sr-ser-013",
+    "domain": "app-development",
+    "topics": [
+      "serialization-wire-format",
+      "schema-compatibility"
+    ],
+    "type": "single",
+    "stem": "A topic carries several event types using one Avro union schema registered as the latest version of `<topic>-value`. Producers send individual event records, not the union. Which serializer settings make producers serialize with the registered union instead of registering each event type as a new version?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`auto.register.schemas=true` and `use.latest.version=true`"
+      },
+      {
+        "id": "b",
+        "text": "`auto.register.schemas=false` and `latest.compatibility.strict=false` only"
+      },
+      {
+        "id": "c",
+        "text": "`value.subject.name.strategy=TopicNameStrategy` only"
+      },
+      {
+        "id": "d",
+        "text": "`auto.register.schemas=false` and `use.latest.version=true`"
+      }
+    ],
+    "correct": [
+      "d"
+    ],
+    "explanation": "`use.latest.version` only applies when `auto.register.schemas=false`. With both set, the serializer looks up the **latest** version in the subject (the union) and serializes with it instead of deriving and registering the event's own schema. If auto-registration stayed on, each event type would be registered and would replace the union as latest; with `auto.register.schemas=true` the other two settings are ignored.\n\n`latest.compatibility.strict` only matters when `use.latest.version=true`. `TopicNameStrategy` is already the default and does not change the lookup.",
+    "references": [
+      {
+        "title": "Formats, Serializers, and Deserializers (Confluent Platform)",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/fundamentals/serdes-develop/index.html#handling-differences-between-preregistered-and-client-derived-schemas",
+        "kind": "official"
+      },
+      {
+        "title": "Avro Serializer and Deserializer (Confluent Platform)",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/fundamentals/serdes-develop/serdes-avro.html#multiple-event-types-in-the-same-topic",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "sr-ser-014",
+    "domain": "app-development",
+    "topics": [
+      "serialization-wire-format"
+    ],
+    "type": "multi",
+    "stem": "Which **two** are the default values of Schema Registry serializer settings? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "`value.subject.name.strategy=io.confluent.kafka.serializers.subject.RecordNameStrategy`"
+      },
+      {
+        "id": "b",
+        "text": "`specific.avro.reader=true`"
+      },
+      {
+        "id": "c",
+        "text": "`use.latest.version=true`"
+      },
+      {
+        "id": "d",
+        "text": "`latest.compatibility.strict=true`"
+      },
+      {
+        "id": "e",
+        "text": "`auto.register.schemas=true`"
+      }
+    ],
+    "correct": [
+      "d",
+      "e"
+    ],
+    "explanation": "- `auto.register.schemas` defaults to `true`: serializers register schemas automatically.\n- `use.latest.version` defaults to `false`.\n- `latest.compatibility.strict` defaults to `true` (it only takes effect when `use.latest.version=true`).\n- `specific.avro.reader` defaults to `false`, so `GenericRecord` is returned.\n- The default subject strategy is `TopicNameStrategy`.",
+    "references": [
+      {
+        "title": "Integrate Schemas from Kafka Connect (Confluent Platform)",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/connect.html#configuration-options",
+        "kind": "official"
+      },
+      {
+        "title": "Formats, Serializers, and Deserializers (Confluent Platform)",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/fundamentals/serdes-develop/index.html#configuration-details",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "sr-sub-015",
+    "domain": "app-development",
+    "topics": [
+      "serialization-wire-format"
+    ],
+    "type": "single",
+    "stem": "A producer writes Avro values to topic `payments` and `String` keys with `StringSerializer`. All serializer settings are at their defaults. Under which subject is the value schema registered?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`payments`"
+      },
+      {
+        "id": "b",
+        "text": "`payments-com.acme.Payment`"
+      },
+      {
+        "id": "c",
+        "text": "`payments-value`"
+      },
+      {
+        "id": "d",
+        "text": "The fully qualified Avro record name, for example `com.acme.Payment`"
+      }
+    ],
+    "correct": [
+      "c"
+    ],
+    "explanation": "The default `value.subject.name.strategy` is `TopicNameStrategy`, which uses `<topic>-value` for values and `<topic>-key` for keys. Here no key schema is registered at all, because the key uses `StringSerializer`, which never talks to the registry.\n\nThe record name alone is `RecordNameStrategy`; `<topic>-<record name>` is `TopicRecordNameStrategy`.",
+    "references": [
+      {
+        "title": "Formats, Serializers, and Deserializers (Confluent Platform)",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/fundamentals/serdes-develop/index.html#how-the-naming-strategies-work",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "sr-sub-016",
+    "domain": "app-development",
+    "topics": [
+      "serialization-wire-format"
+    ],
+    "type": "single",
+    "stem": "Topic `customer-events` must keep `CustomerCreated`, `AddressChanged` and `CustomerClosed` records for one customer in order, so all three Avro record types go to the same topic. Each type should evolve on its own, with compatibility checked per type **within this topic only**. Which value subject name strategy fits?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`TopicNameStrategy`"
+      },
+      {
+        "id": "b",
+        "text": "`RecordNameStrategy`"
+      },
+      {
+        "id": "c",
+        "text": "`TopicRecordNameStrategy`"
+      },
+      {
+        "id": "d",
+        "text": "No strategy is needed; Schema Registry detects multiple types automatically"
+      }
+    ],
+    "correct": [
+      "c"
+    ],
+    "explanation": "`TopicRecordNameStrategy` registers each type under `<topic>-<fully-qualified record name>`, for example `customer-events-com.acme.CustomerCreated`. A topic can hold several record types, and the compatibility check is scoped to one record name in one topic.\n\n- `TopicNameStrategy` (the default) uses one subject per topic, so a new record type would usually fail the compatibility check against the others.\n- `RecordNameStrategy` also allows several types per topic, but its subject is the record name alone, so checks span **all topics** that use that record name, not this topic only.\n- The strategy must be set in the client; it is not detected.",
+    "references": [
+      {
+        "title": "Formats, Serializers, and Deserializers (Confluent Platform)",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/fundamentals/serdes-develop/index.html#how-the-naming-strategies-work",
+        "kind": "official"
+      },
+      {
+        "title": "Formats, Serializers, and Deserializers (Confluent Platform)",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/fundamentals/serdes-develop/index.html#configuration-details",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "sr-sub-017",
+    "domain": "app-development",
+    "topics": [
+      "serialization-wire-format"
+    ],
+    "type": "single",
+    "stem": "The Avro record `com.acme.Address` is written to five different topics. The team wants one evolution history and one compatibility check for `Address`, no matter which topic it is written to. Which value subject name strategy fits?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`DefaultReferenceSubjectNameStrategy`"
+      },
+      {
+        "id": "b",
+        "text": "`TopicNameStrategy`"
+      },
+      {
+        "id": "c",
+        "text": "`TopicRecordNameStrategy`"
+      },
+      {
+        "id": "d",
+        "text": "`RecordNameStrategy`"
+      }
+    ],
+    "correct": [
+      "d"
+    ],
+    "explanation": "`RecordNameStrategy` registers the schema under the fully qualified record name (`com.acme.Address`) regardless of topic, so compatibility is checked across all occurrences of that record name in all topics.\n\n`TopicNameStrategy` would create five subjects (`<topic>-value`), and `TopicRecordNameStrategy` five subjects (`<topic>-com.acme.Address`) that can even hold mutually incompatible versions. `DefaultReferenceSubjectNameStrategy` names auto-registered Protobuf schema **references**, not record subjects.",
+    "references": [
+      {
+        "title": "Formats, Serializers, and Deserializers (Confluent Platform)",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/fundamentals/serdes-develop/index.html#configuration-details",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "sr-sub-018",
+    "domain": "app-development",
+    "topics": [
+      "serialization-wire-format"
+    ],
+    "type": "multi",
+    "stem": "Which **two** statements about `TopicNameStrategy` are correct? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "It is the default strategy for both `key.subject.name.strategy` and `value.subject.name.strategy`"
+      },
+      {
+        "id": "b",
+        "text": "It implicitly expects every value in a topic to conform to one evolving schema"
+      },
+      {
+        "id": "c",
+        "text": "It must be configured on the brokers, which then pass it to clients"
+      },
+      {
+        "id": "d",
+        "text": "It registers schemas under the fully qualified record name"
+      },
+      {
+        "id": "e",
+        "text": "It lets one topic hold unrelated record types without any compatibility risk"
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "`TopicNameStrategy` is the default for keys and values and produces `<topic>-key` / `<topic>-value`. Because there is one subject per topic, all messages in the topic are expected to follow one schema (and its versions). A new, unrelated record type would usually break the compatibility check.\n\nRegistering under the record name is `RecordNameStrategy`. The strategy is a serializer (client) setting. The docs say a strategy configured on a topic for broker-side schema ID validation does **not** propagate to clients.",
+    "references": [
+      {
+        "title": "Formats, Serializers, and Deserializers (Confluent Platform)",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/fundamentals/serdes-develop/index.html#how-the-naming-strategies-work",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "sr-sub-019",
+    "domain": "app-development",
+    "topics": [
+      "serialization-wire-format"
+    ],
+    "type": "single",
+    "stem": "A topic in Confluent Server has broker-side schema ID validation enabled with a subject name strategy of `RecordNameStrategy`. The producers do not set `value.subject.name.strategy`. Which strategy do the producers' serializers use?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`TopicRecordNameStrategy`, chosen because the two settings conflict"
+      },
+      {
+        "id": "b",
+        "text": "`TopicNameStrategy`, the client default, because the topic's setting does not propagate to clients"
+      },
+      {
+        "id": "c",
+        "text": "`RecordNameStrategy`, inherited from the topic configuration"
+      },
+      {
+        "id": "d",
+        "text": "None; the producer fails at startup until the strategies match"
+      }
+    ],
+    "correct": [
+      "b"
+    ],
+    "explanation": "The subject name strategy is a client-side serializer setting whose default is `TopicNameStrategy`. The docs state that a strategy configured on a broker topic for schema ID validation does not propagate to clients; it must be configured separately in the clients. Here the producer would use `<topic>-value`, which may not match what the broker validates against. Set the same strategy on both sides.",
+    "references": [
+      {
+        "title": "Formats, Serializers, and Deserializers (Confluent Platform)",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/fundamentals/serdes-develop/index.html#subject-name-strategy",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "sr-sub-020",
+    "domain": "app-development",
+    "topics": [
+      "serialization-wire-format"
+    ],
+    "type": "multi",
+    "stem": "With `RecordNameStrategy`, how is the subject name derived for each schema format? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "Protobuf: the `.proto` file name"
+      },
+      {
+        "id": "b",
+        "text": "JSON Schema: the schema's `title`"
+      },
+      {
+        "id": "c",
+        "text": "Avro: the record's full name, namespace plus record name"
+      },
+      {
+        "id": "d",
+        "text": "Avro: the record name without the namespace"
+      },
+      {
+        "id": "e",
+        "text": "JSON Schema: the topic name plus `-value`"
+      }
+    ],
+    "correct": [
+      "b",
+      "c"
+    ],
+    "explanation": "For `RecordNameStrategy` and `TopicRecordNameStrategy`, the record part of the subject is: for Avro the full name (namespace + name), for Protobuf the **message** name, and for JSON Schema the `title`. The bare name without namespace is not used for Avro, the file name is not used for Protobuf, and `<topic>-value` is `TopicNameStrategy`.",
+    "references": [
+      {
+        "title": "Formats, Serializers, and Deserializers (Confluent Platform)",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/fundamentals/serdes-develop/index.html#subject-name-strategies",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "sr-arch-021",
+    "domain": "app-development",
+    "topics": [
+      "serialization-wire-format"
+    ],
+    "type": "single",
+    "stem": "Where does Confluent Schema Registry store registered schemas, versions and compatibility settings by default?",
+    "options": [
+      {
+        "id": "a",
+        "text": "In the `__consumer_offsets` topic under a reserved group"
+      },
+      {
+        "id": "b",
+        "text": "In a single-partition, compacted Kafka topic named `_schemas`"
+      },
+      {
+        "id": "c",
+        "text": "In the KRaft metadata log of the Kafka controllers"
+      },
+      {
+        "id": "d",
+        "text": "In an embedded RocksDB database on each Schema Registry node, replicated over HTTP"
+      }
+    ],
+    "correct": [
+      "b"
+    ],
+    "explanation": "Schema Registry uses Kafka as its storage backend. The topic is set by `kafkastore.topic` (default `_schemas`), has a single partition and must be compacted so retention never removes schemas. Every instance produces to and consumes from this log and keeps local caches built from it.\n\nIt does not use the KRaft metadata log, a local database as the source of truth, or `__consumer_offsets`.",
+    "references": [
+      {
+        "title": "Schema Registry Concepts (Confluent Platform)",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/fundamentals/index.html#ak-backend",
+        "kind": "official"
+      },
+      {
+        "title": "Schema Registry Configuration Reference (Confluent Platform)",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/installation/config.html#kafkastore-topic",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "sr-arch-022",
+    "domain": "app-development",
+    "topics": [
+      "serialization-wire-format"
+    ],
+    "type": "multi",
+    "stem": "Which **two** statements about Confluent Schema Registry are correct? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "It runs as its own process, outside the Kafka brokers, and exposes a REST interface"
+      },
+      {
+        "id": "b",
+        "text": "Clients send every record through Schema Registry, which forwards it to the broker"
+      },
+      {
+        "id": "c",
+        "text": "It is licensed under the Apache License 2.0 as part of Apache Kafka"
+      },
+      {
+        "id": "d",
+        "text": "It uses a single-primary design; schema registration requests are forwarded to the primary instance"
+      },
+      {
+        "id": "e",
+        "text": "It is part of the Apache Kafka distribution and starts with each broker"
+      }
+    ],
+    "correct": [
+      "a",
+      "d"
+    ],
+    "explanation": "Schema Registry \"lives outside of and separately from your Kafka brokers\". Producers and consumers still talk to Kafka directly for data and talk to the registry over REST only to register or fetch schemas. It is a distributed service with a single primary; registrations sent to a secondary are forwarded to the primary, which allocates IDs.\n\nIt is a Confluent component under the Confluent Community License, not part of Apache Kafka and not Apache 2.0. Data never flows through it.",
+    "references": [
+      {
+        "title": "Schema Registry Concepts (Confluent Platform)",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/fundamentals/index.html#how-it-works",
+        "kind": "official"
+      },
+      {
+        "title": "Schema Registry API Reference (Confluent Platform)",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/develop/api.html#register-a-new-schema-under-a-subject",
+        "kind": "official"
+      },
+      {
+        "title": "Schema Registry for Confluent Platform",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/index.html#cp-license",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "sr-arch-023",
+    "domain": "app-development",
+    "topics": [
+      "serialization-wire-format"
+    ],
+    "type": "single",
+    "stem": "A developer lists the schema IDs in a registry and sees 1, 2, 5, 6, 21. No schemas were deleted. What does this indicate?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Each gap is a schema that failed its compatibility check"
+      },
+      {
+        "id": "b",
+        "text": "Nothing is wrong; IDs are unique and monotonically increasing but not necessarily consecutive"
+      },
+      {
+        "id": "c",
+        "text": "Two Schema Registry instances were both acting as primary"
+      },
+      {
+        "id": "d",
+        "text": "The `_schemas` topic has lost data and must be restored"
+      }
+    ],
+    "correct": [
+      "b"
+    ],
+    "explanation": "Schema Registry guarantees that allocated IDs are globally unique and monotonically increasing, but **not necessarily consecutive**. ID allocation happens on the primary node, in batches after a primary election, so gaps are normal. Gaps do not mean data loss, split brain or rejected schemas.",
+    "references": [
+      {
+        "title": "Schema Registry Concepts (Confluent Platform)",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/fundamentals/index.html#schema-id-allocation",
+        "kind": "official"
+      },
+      {
+        "title": "Schema Registry Concepts (Confluent Platform)",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/fundamentals/index.html#how-it-works",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "sr-ser-024",
+    "domain": "app-development",
+    "topics": [
+      "serialization-wire-format"
+    ],
+    "type": "single",
+    "stem": "A consumer uses `KafkaProtobufDeserializer` with no type-related settings. The topic's Protobuf schema has one message type, and the generated Java class is on the classpath. What does `record.value()` return?",
+    "options": [
+      {
+        "id": "a",
+        "text": "A `GenericRecord`, as with Avro"
+      },
+      {
+        "id": "b",
+        "text": "An instance of the generated message class, found by scanning the classpath"
+      },
+      {
+        "id": "c",
+        "text": "A `com.google.protobuf.DynamicMessage`"
+      },
+      {
+        "id": "d",
+        "text": "The raw `byte[]` payload without the 5-byte prefix"
+      }
+    ],
+    "correct": [
+      "c"
+    ],
+    "explanation": "If no specific type is configured (`specific.protobuf.value.type` or `specific.protobuf.key.type`) and none can be derived (`derive.type=true` with `java_outer_classname` or `java_multiple_files=true` in the schema), the Protobuf deserializer uses the schema to return a `DynamicMessage`. `GenericRecord` is the Avro generic type. The deserializer does not return raw bytes.",
+    "references": [
+      {
+        "title": "Protobuf Serializer and Deserializer (Confluent Platform)",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/fundamentals/serdes-develop/serdes-protobuf.html#protobuf-deserializer",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "sr-wire-025",
+    "domain": "app-development",
+    "topics": [
+      "serialization-wire-format"
+    ],
+    "type": "single",
+    "stem": "On Confluent Platform 8.1.1 or later, a producer sets `value.schema.id.serializer=io.confluent.kafka.serializers.schema.id.HeaderSchemaIdSerializer`. Where does the schema identifier go?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Nowhere; consumers must set `use.latest.version=true`"
+      },
+      {
+        "id": "b",
+        "text": "In the `__value_schema_id` record header, as a version byte `1` followed by a 16-byte schema GUID; the value holds only the serialized data"
+      },
+      {
+        "id": "c",
+        "text": "In the payload prefix as before, but with an 8-byte ID"
+      },
+      {
+        "id": "d",
+        "text": "In a separate `_schema_ids` topic keyed by offset"
+      }
+    ],
+    "correct": [
+      "b"
+    ],
+    "explanation": "From Confluent Platform 8.1.1 the serializers can put the schema identifier in a header instead of the payload: `__key_schema_id` / `__value_schema_id`, holding version byte `1`, a 16-byte schema GUID and (for Protobuf) message indexes. The payload then holds only the serialized data. Deserializers in 8.1.1+ look for the header GUID first and fall back to the payload prefix (magic byte `0` plus 4-byte ID), which remains the default for serializers.",
+    "references": [
+      {
+        "title": "Formats, Serializers, and Deserializers (Confluent Platform)",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/fundamentals/serdes-develop/index.html#wire-format-schema-guid-in-header",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "unsure",
+    "source": "original",
+    "kafkaVersionNote": "Header-based schema GUIDs are new in Confluent Platform 8.1.1, and the deserializer default changed in that release. Older platforms and most exam material know only the payload-prefix format (magic byte 0 plus a 4-byte ID)."
+  },
+  {
+    "id": "sr-api-026",
+    "domain": "app-development",
+    "topics": [
+      "serialization-wire-format",
+      "schema-compatibility"
+    ],
+    "type": "multi",
+    "stem": "Which **two** Schema Registry REST calls are correct? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "`POST /topics/orders/schema` attaches a schema to the topic on the broker"
+      },
+      {
+        "id": "b",
+        "text": "`POST /subjects/orders-value/versions` with a `schema` in the body registers a new version under `orders-value`"
+      },
+      {
+        "id": "c",
+        "text": "`PUT /schemas/ids/42` replaces the schema stored under ID 42"
+      },
+      {
+        "id": "d",
+        "text": "`GET /subjects/orders-value/compatibility` sets the compatibility level"
+      },
+      {
+        "id": "e",
+        "text": "`POST /compatibility/subjects/orders-value/versions/latest` tests a schema against the latest version without registering it"
+      }
+    ],
+    "correct": [
+      "b",
+      "e"
+    ],
+    "explanation": "- `POST /subjects/{subject}/versions` registers a schema and returns its ID.\n- `POST /compatibility/subjects/{subject}/versions/{version}` (with `latest`) returns `{\"is_compatible\": ...}`; add `?verbose=true` to get the reasons for a failure.\n- Schemas are immutable; there is no endpoint to overwrite the schema behind an ID.\n- Schema Registry has no `/topics` resource; it works with subjects.\n- Compatibility is set with `PUT /config` (global) or `PUT /config/{subject}`.",
+    "references": [
+      {
+        "title": "Schema Registry API Reference (Confluent Platform)",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/develop/api.html#register-a-new-schema-under-a-subject",
+        "kind": "official"
+      },
+      {
+        "title": "Schema Registry API Reference (Confluent Platform)",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/develop/api.html#test-compatibility-against-a-particular-schema-subject-version",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "sr-api-027",
+    "domain": "app-development",
+    "topics": [
+      "serialization-wire-format",
+      "schema-compatibility"
+    ],
+    "type": "single",
+    "stem": "A CI job registers a new Avro schema with `POST /subjects/orders-value/versions`, but the schema breaks the subject's configured compatibility rules. What does Schema Registry return?",
+    "options": [
+      {
+        "id": "a",
+        "text": "HTTP 409 Conflict; the schema is not registered"
+      },
+      {
+        "id": "b",
+        "text": "HTTP 404 Not Found with error code 40401"
+      },
+      {
+        "id": "c",
+        "text": "HTTP 200 with a warning; the schema is registered anyway"
+      },
+      {
+        "id": "d",
+        "text": "HTTP 201 Created with a new subject named `orders-value-2`"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The register endpoint lists **409 Conflict** for an incompatible schema, and nothing is stored. 404 / 40401 means the subject was not found (for example on the compatibility test endpoint). 422 / 42201 is an invalid schema. The registry never creates a new subject on its own to get around a compatibility failure.",
+    "references": [
+      {
+        "title": "Schema Registry API Reference (Confluent Platform)",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/develop/api.html#register-a-new-schema-under-a-subject",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "sr-api-028",
+    "domain": "app-development",
+    "topics": [
+      "serialization-wire-format"
+    ],
+    "type": "single",
+    "stem": "A script registers a schema with `POST /subjects/events-value/versions` and a body that contains only the `schema` string, no `schemaType`. How does Schema Registry treat the schema?",
+    "options": [
+      {
+        "id": "a",
+        "text": "It rejects the request with 422 because `schemaType` is required"
+      },
+      {
+        "id": "b",
+        "text": "As JSON Schema, because the body is JSON"
+      },
+      {
+        "id": "c",
+        "text": "As Protobuf, the most compact format"
+      },
+      {
+        "id": "d",
+        "text": "As Avro, the default when `schemaType` is omitted"
+      }
+    ],
+    "correct": [
+      "d"
+    ],
+    "explanation": "`schemaType` is optional and defaults to `AVRO`. The valid values are `AVRO`, `PROTOBUF` and `JSON` (for JSON Schema). The request body always being JSON says nothing about the schema format, and leaving out `schemaType` is not an error.",
+    "references": [
+      {
+        "title": "Schema Registry API Reference (Confluent Platform)",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/develop/api.html#register-a-new-schema-under-a-subject",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "sr-ser-029",
+    "domain": "app-development",
+    "topics": [
+      "serialization-wire-format"
+    ],
+    "type": "single",
+    "stem": "Why does a consumer using `KafkaAvroDeserializer` need access to Schema Registry even though it may already have its own copy of the schema?",
+    "options": [
+      {
+        "id": "a",
+        "text": "The broker refuses fetch requests from consumers not registered with Schema Registry"
+      },
+      {
+        "id": "b",
+        "text": "It must register the reader schema before every poll"
+      },
+      {
+        "id": "c",
+        "text": "Schema Registry decrypts the record payload for the consumer"
+      },
+      {
+        "id": "d",
+        "text": "Each record carries only a schema ID, so the deserializer fetches the writer's schema by that ID (and caches it) to decode the Avro binary data"
+      }
+    ],
+    "correct": [
+      "d"
+    ],
+    "explanation": "Avro binary data has no field names or type information, so it can only be decoded with the writer's schema. The Confluent format replaces that schema with a 4-byte ID; the deserializer reads the ID and fetches the schema from the registry. Clients cache what they fetch locally (`max.schemas.per.subject` bounds the local cache, default 1000), so the registry is not called for every record.\n\nConsumers do not register schemas, the registry does not decrypt data, and brokers do not check registry membership.",
+    "references": [
+      {
+        "title": "Schema Registry Concepts (Confluent Platform)",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/fundamentals/index.html#schemas-subjects-and-topics",
+        "kind": "official"
+      },
+      {
+        "title": "Apache Avro 1.12.0 Specification",
+        "url": "https://avro.apache.org/docs/1.12.0/specification/#data-serialization-and-deserialization",
+        "kind": "official"
+      },
+      {
+        "title": "Integrate Schemas from Kafka Connect (Confluent Platform)",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/connect.html#configuration-options",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "likely",
+    "source": "original"
+  },
+  {
+    "id": "sr-ser-030",
+    "domain": "app-development",
+    "topics": [
+      "serialization-wire-format"
+    ],
+    "type": "single",
+    "stem": "A consumer configured with `KafkaAvroDeserializer` reads a topic where an older application wrote plain UTF-8 JSON strings with `StringSerializer`. What happens when it polls those records?",
+    "options": [
+      {
+        "id": "a",
+        "text": "The deserializer turns the JSON into a `GenericRecord` using the latest schema"
+      },
+      {
+        "id": "b",
+        "text": "The broker converts the records to Avro before returning them"
+      },
+      {
+        "id": "c",
+        "text": "Deserialization fails with a `SerializationException`, because the bytes do not start with the expected magic byte and schema ID"
+      },
+      {
+        "id": "d",
+        "text": "The deserializer returns the JSON as a `String`"
+      }
+    ],
+    "correct": [
+      "c"
+    ],
+    "explanation": "`KafkaAvroDeserializer` expects the Confluent wire format: magic byte `0`, a 4-byte schema ID, then Avro binary data. A plain JSON string starts with a character such as `{`, so the deserializer cannot read it and throws a `SerializationException` (an unknown magic byte error). It does not fall back to strings, and brokers never convert data. Producer and consumer serdes must match.",
+    "references": [
+      {
+        "title": "Formats, Serializers, and Deserializers (Confluent Platform)",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/fundamentals/serdes-develop/index.html#wire-format-schema-id-in-the-payload-prefix",
+        "kind": "official"
+      },
+      {
+        "title": "Avro Serializer and Deserializer (Confluent Platform)",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/fundamentals/serdes-develop/serdes-avro.html#avro-deserializer",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "likely",
+    "source": "original"
+  },
+  {
+    "id": "sr-compat-031",
+    "domain": "app-development",
+    "topics": [
+      "schema-compatibility"
+    ],
+    "type": "single",
+    "stem": "A new subject is created on a Schema Registry whose global compatibility setting has never been changed. Which compatibility type applies, and what does the registry compare a new version against?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`NONE`, so no comparison is made"
+      },
+      {
+        "id": "b",
+        "text": "`FULL`, compared against all earlier versions"
+      },
+      {
+        "id": "c",
+        "text": "`BACKWARD`, compared against the latest registered version only"
+      },
+      {
+        "id": "d",
+        "text": "`BACKWARD_TRANSITIVE`, compared against all earlier versions"
+      }
+    ],
+    "correct": [
+      "c"
+    ],
+    "explanation": "The default compatibility type is `BACKWARD` (`schema.compatibility.level` defaults to `backward`). `BACKWARD` is non-transitive: a new schema is checked only against the latest version. Use `BACKWARD_TRANSITIVE` to check against all versions.",
+    "references": [
+      {
+        "title": "Schema Evolution and Compatibility (Confluent Platform)",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/fundamentals/schema-evolution.html#transitive-property",
+        "kind": "official"
+      },
+      {
+        "title": "Schema Registry Configuration Reference (Confluent Platform)",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/installation/config.html#schema-compatibility-level",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "sr-compat-032",
+    "domain": "app-development",
+    "topics": [
+      "schema-compatibility"
+    ],
+    "type": "single",
+    "stem": "Subject `users-value` uses the default compatibility. Version 1 has fields `id` (string) and `name` (string). A developer registers version 2, which adds `country` of type `string` **with no default**. What happens?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Accepted, because adding a field is always backward compatible"
+      },
+      {
+        "id": "b",
+        "text": "Accepted, but only consumers on version 1 can read new data"
+      },
+      {
+        "id": "c",
+        "text": "Rejected, because a consumer using version 2 cannot fill `country` when reading data written with version 1"
+      },
+      {
+        "id": "d",
+        "text": "Rejected, because `BACKWARD` forbids adding fields of any kind"
+      }
+    ],
+    "correct": [
+      "c"
+    ],
+    "explanation": "Under `BACKWARD` the new schema must be able to read data written with the latest schema. Version 1 data has no `country`, and with no default the version 2 reader has nothing to fill it with, so the Avro reader signals an error and the registry rejects the schema. Adding the same field **with a default** (for example `\"default\": \"unknown\"`) would be accepted.",
+    "references": [
+      {
+        "title": "Schema Evolution and Compatibility (Confluent Platform)",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/fundamentals/schema-evolution.html#backward-compatibility",
+        "kind": "official"
+      },
+      {
+        "title": "Apache Avro 1.12.0 Specification",
+        "url": "https://avro.apache.org/docs/1.12.0/specification/#schema-resolution",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "sr-compat-033",
+    "domain": "app-development",
+    "topics": [
+      "schema-compatibility"
+    ],
+    "type": "single",
+    "stem": "Subject `orders-value` is `BACKWARD`. Version 1 has `id`, `amount` and `coupon` (a `string` with no default). Version 2 removes `coupon`. Is version 2 accepted?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Yes, but only if `coupon` is renamed instead"
+      },
+      {
+        "id": "b",
+        "text": "No; removing a field without a default is never allowed"
+      },
+      {
+        "id": "c",
+        "text": "No; removing fields is only allowed under `FORWARD`"
+      },
+      {
+        "id": "d",
+        "text": "Yes; a consumer on version 2 simply ignores `coupon` when reading version 1 data"
+      }
+    ],
+    "correct": [
+      "d"
+    ],
+    "explanation": "Removing a field is backward compatible: when the reader (version 2) has no field that the writer (version 1) had, Avro ignores the writer's value. The default of the removed field does not matter for `BACKWARD`.\n\nThe default matters for **forward** compatibility: old consumers still expect `coupon` in new data, and without a default in version 1 they cannot fill it. So this change passes `BACKWARD` but would fail `FORWARD` and `FULL`.",
+    "references": [
+      {
+        "title": "Schema Evolution and Compatibility (Confluent Platform)",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/fundamentals/schema-evolution.html#backward-compatibility",
+        "kind": "official"
+      },
+      {
+        "title": "Apache Avro 1.12.0 Specification",
+        "url": "https://avro.apache.org/docs/1.12.0/specification/#schema-resolution",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "sr-compat-034",
+    "domain": "app-development",
+    "topics": [
+      "schema-compatibility"
+    ],
+    "type": "single",
+    "stem": "Subject `inventory-value` is set to `FORWARD`. Version 1 has `sku`, `qty` and `warehouse` (a `string` with **no default**). Version 2 removes `warehouse`. What happens?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Rejected, because consumers still on version 1 cannot fill `warehouse` when reading data written with version 2"
+      },
+      {
+        "id": "b",
+        "text": "Accepted, because `FORWARD` only checks newly added fields"
+      },
+      {
+        "id": "c",
+        "text": "Rejected, because `FORWARD` forbids removing fields of any kind"
+      },
+      {
+        "id": "d",
+        "text": "Accepted, because removing a field is always compatible"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`FORWARD` means data written with the new schema must be readable by consumers using the latest registered schema. Version 1 readers expect `warehouse`; version 2 data lacks it; version 1 declares no default, so the read fails and the registry rejects the change.\n\nIf `warehouse` had a default in version 1, removing it would be forward compatible (the old reader uses the default). Removing fields is not banned under `FORWARD`; removing fields without defaults is.",
+    "references": [
+      {
+        "title": "Schema Evolution and Compatibility (Confluent Platform)",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/fundamentals/schema-evolution.html#forward-compatibility",
+        "kind": "official"
+      },
+      {
+        "title": "Apache Avro 1.12.0 Specification",
+        "url": "https://avro.apache.org/docs/1.12.0/specification/#schema-resolution",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "sr-compat-035",
+    "domain": "app-development",
+    "topics": [
+      "schema-compatibility"
+    ],
+    "type": "single",
+    "stem": "Subject `sensor-value` is `FORWARD`. Version 2 adds a field `firmware` of type `string` with **no default**. What happens, and why?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Accepted, because consumers on version 1 ignore the extra field when reading version 2 data"
+      },
+      {
+        "id": "b",
+        "text": "Accepted only if `firmware` is the last field in the record"
+      },
+      {
+        "id": "c",
+        "text": "Rejected, because new fields always need defaults"
+      },
+      {
+        "id": "d",
+        "text": "Rejected, because `FORWARD` forbids adding fields"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "Under `FORWARD` the old schema reads new data. A version 1 reader meets `firmware`, which it does not know, and Avro ignores the writer's field. So adding a field, even without a default, is forward compatible.\n\nThe same change would fail `BACKWARD`: a version 2 reader could not fill `firmware` for old data. Field order does not matter in Avro resolution; fields are matched by name.",
+    "references": [
+      {
+        "title": "Schema Evolution and Compatibility (Confluent Platform)",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/fundamentals/schema-evolution.html#forward-compatibility",
+        "kind": "official"
+      },
+      {
+        "title": "Apache Avro 1.12.0 Specification",
+        "url": "https://avro.apache.org/docs/1.12.0/specification/#schema-resolution",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "sr-compat-036",
+    "domain": "app-development",
+    "topics": [
+      "schema-compatibility"
+    ],
+    "type": "multi",
+    "stem": "Subject `profiles-value` is set to `FULL`. Version 1 has `id` (no default), `nickname` (`[\"null\",\"string\"]`, default `null`) and `score` (`int`, no default). Which **two** version 2 changes will be accepted? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "Add `locale` as `[\"null\",\"string\"]` with default `null`"
+      },
+      {
+        "id": "b",
+        "text": "Remove `score`"
+      },
+      {
+        "id": "c",
+        "text": "Add `tier` as `string` with no default"
+      },
+      {
+        "id": "d",
+        "text": "Rename `id` to `userId` with no alias"
+      },
+      {
+        "id": "e",
+        "text": "Remove `nickname`"
+      }
+    ],
+    "correct": [
+      "a",
+      "e"
+    ],
+    "explanation": "`FULL` requires both backward and forward compatibility with the latest version. In Avro that means **only fields with defaults** can be added or removed.\n\n- Adding `locale` with a default: new readers fill it for old data; old readers ignore it. Accepted.\n- Removing `nickname`, which had a default: new readers ignore it in old data; old readers use the default `null` for new data. Accepted.\n- Removing `score` (no default) breaks forward compatibility: old readers cannot fill it.\n- Adding `tier` with no default breaks backward compatibility.\n- A rename with no alias acts like removing `id` and adding `userId` with no default, which breaks both directions.",
+    "references": [
+      {
+        "title": "Schema Evolution and Compatibility (Confluent Platform)",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/fundamentals/schema-evolution.html#full-compatibility",
+        "kind": "official"
+      },
+      {
+        "title": "Apache Avro 1.12.0 Specification",
+        "url": "https://avro.apache.org/docs/1.12.0/specification/#schema-resolution",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "sr-compat-037",
+    "domain": "app-development",
+    "topics": [
+      "schema-compatibility"
+    ],
+    "type": "single",
+    "stem": "A subject uses `BACKWARD` and a new compatible schema version has just been registered. In which order should the applications be upgraded?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Both at the same moment, with the topic paused"
+      },
+      {
+        "id": "b",
+        "text": "Any order; `BACKWARD` guarantees both directions"
+      },
+      {
+        "id": "c",
+        "text": "Consumers first, then producers"
+      },
+      {
+        "id": "d",
+        "text": "Producers first, then consumers"
+      }
+    ],
+    "correct": [
+      "c"
+    ],
+    "explanation": "`BACKWARD` guarantees that the **new** schema can read **old** data. It does not guarantee that consumers on the old schema can read data written with the new one. So upgrade all consumers first; once they all run the new schema, upgrade producers to start writing new data.\n\nProducers first is the order for `FORWARD`. Any order is only safe under `FULL`. Upgrading everything at once is what `NONE` may force.",
+    "references": [
+      {
+        "title": "Schema Evolution and Compatibility (Confluent Platform)",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/fundamentals/schema-evolution.html#order-of-upgrading-clients",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "sr-compat-038",
+    "domain": "app-development",
+    "topics": [
+      "schema-compatibility"
+    ],
+    "type": "single",
+    "stem": "A subject uses `FORWARD`. What is the recommended order for rolling out a new schema version?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Upgrade producers first, make sure old-schema data is no longer read, then upgrade consumers"
+      },
+      {
+        "id": "b",
+        "text": "Create a new topic for the new version"
+      },
+      {
+        "id": "c",
+        "text": "Upgrade consumers first, then producers"
+      },
+      {
+        "id": "d",
+        "text": "Upgrade in any order"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`FORWARD` guarantees that consumers on the **old** schema can read data from the **new** schema, but not that consumers on the new schema can read old data. So producers are upgraded first. The docs add that you should make sure data written with the older schemas is no longer available to consumers before upgrading them.",
+    "references": [
+      {
+        "title": "Schema Evolution and Compatibility (Confluent Platform)",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/fundamentals/schema-evolution.html#order-of-upgrading-clients",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "sr-compat-039",
+    "domain": "app-development",
+    "topics": [
+      "schema-compatibility"
+    ],
+    "type": "multi",
+    "stem": "Which **two** compatibility types let producers and consumers be upgraded in any order? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "`FORWARD`"
+      },
+      {
+        "id": "b",
+        "text": "`BACKWARD_TRANSITIVE`"
+      },
+      {
+        "id": "c",
+        "text": "`FULL`"
+      },
+      {
+        "id": "d",
+        "text": "`NONE`"
+      },
+      {
+        "id": "e",
+        "text": "`FULL_TRANSITIVE`"
+      }
+    ],
+    "correct": [
+      "c",
+      "e"
+    ],
+    "explanation": "`FULL` and `FULL_TRANSITIVE` guarantee both directions: old consumers can read new data and new consumers can read old data, so producers and consumers can be upgraded independently.\n\n`BACKWARD_TRANSITIVE` needs consumers first, `FORWARD` producers first. `NONE` gives no guarantee at all, so upgrades must be coordinated by hand.",
+    "references": [
+      {
+        "title": "Schema Evolution and Compatibility (Confluent Platform)",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/fundamentals/schema-evolution.html#order-of-upgrading-clients",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "sr-compat-040",
+    "domain": "app-development",
+    "topics": [
+      "schema-compatibility"
+    ],
+    "type": "single",
+    "stem": "Subject `accounts-value` is `BACKWARD`. Version 1 has `id` and `status` (a `string`). Version 2 removes `status`. A developer now registers version 3, which adds `status` back as an `int` with default `0`. What happens, and what would `BACKWARD_TRANSITIVE` have done?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`BACKWARD` accepts version 3 because it is only compared with version 2; `BACKWARD_TRANSITIVE` rejects it because version 3 cannot read version 1 data, whose `status` is a string"
+      },
+      {
+        "id": "b",
+        "text": "Both reject version 3 because a removed field can never be added again"
+      },
+      {
+        "id": "c",
+        "text": "Both accept version 3 because `status` has a default"
+      },
+      {
+        "id": "d",
+        "text": "`BACKWARD` rejects version 3; `BACKWARD_TRANSITIVE` accepts it"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "Non-transitive `BACKWARD` compares only with the latest version. Version 2 has no `status`, so adding it with a default is fine.\n\n`BACKWARD_TRANSITIVE` compares with **all** earlier versions. A version 3 reader meeting version 1 data finds `status` as `string` but expects `int`; `string` cannot be promoted to `int`, so the check fails. This is the documented risk: changes can be compatible step by step but not transitively. Consumers rewinding to old data are only safe under the transitive type.",
+    "references": [
+      {
+        "title": "Schema Evolution and Compatibility (Confluent Platform)",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/fundamentals/schema-evolution.html#transitive-property",
+        "kind": "official"
+      },
+      {
+        "title": "Apache Avro 1.12.0 Specification",
+        "url": "https://avro.apache.org/docs/1.12.0/specification/#schema-resolution",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "sr-compat-041",
+    "domain": "app-development",
+    "topics": [
+      "schema-compatibility"
+    ],
+    "type": "multi",
+    "stem": "Which **three** compatibility types check a new schema against **all** previously registered versions in the subject, not just the latest? (Choose three.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "`FULL`"
+      },
+      {
+        "id": "b",
+        "text": "`FORWARD_TRANSITIVE`"
+      },
+      {
+        "id": "c",
+        "text": "`FULL_TRANSITIVE`"
+      },
+      {
+        "id": "d",
+        "text": "`NONE`"
+      },
+      {
+        "id": "e",
+        "text": "`BACKWARD_TRANSITIVE`"
+      },
+      {
+        "id": "f",
+        "text": "`BACKWARD`"
+      }
+    ],
+    "correct": [
+      "b",
+      "c",
+      "e"
+    ],
+    "explanation": "Only the `_TRANSITIVE` types compare against every earlier version. `BACKWARD`, `FORWARD` and `FULL` compare with the latest version only, and `NONE` does no check. The compatibility test endpoint behaves the same way: against the latest version for the non-transitive types, against all versions for the transitive ones.",
+    "references": [
+      {
+        "title": "Schema Evolution and Compatibility (Confluent Platform)",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/fundamentals/schema-evolution.html#transitive-property",
+        "kind": "official"
+      },
+      {
+        "title": "Schema Registry API Reference (Confluent Platform)",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/develop/api.html#test-schema-compatibility-against-all-schemas-under-a-subject",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "sr-compat-042",
+    "domain": "app-development",
+    "topics": [
+      "schema-compatibility"
+    ],
+    "type": "single",
+    "stem": "A field `price` must change from Avro `double` to `string`, which no compatibility type allows. What does the Confluent documentation recommend?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Register the change under `FORWARD`, which accepts type changes"
+      },
+      {
+        "id": "b",
+        "text": "Set the subject to `NONE`, then either upgrade all producers and consumers at the same time or, more likely, create a new topic and migrate applications to it"
+      },
+      {
+        "id": "c",
+        "text": "Set the subject to `FULL_TRANSITIVE` so the registry converts old data"
+      },
+      {
+        "id": "d",
+        "text": "Delete the `_schemas` topic and register the new schema as version 1"
+      }
+    ],
+    "correct": [
+      "b"
+    ],
+    "explanation": "`NONE` disables compatibility checks, which allows the incompatible change but gives no guarantee to clients. The docs say you then either upgrade all producers and consumers together or, more likely, create a brand-new topic with the new schema and migrate applications to it, so one topic does not hold two incompatible versions.\n\nNo compatibility type converts stored data. `FORWARD` does not allow `double` to `string`. Deleting `_schemas` would wipe every schema in the registry.",
+    "references": [
+      {
+        "title": "Schema Evolution and Compatibility (Confluent Platform)",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/fundamentals/schema-evolution.html#no-compatibility-checking",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "sr-compat-043",
+    "domain": "app-development",
+    "topics": [
+      "schema-compatibility"
+    ],
+    "type": "single",
+    "stem": "The global compatibility is `BACKWARD`. An administrator runs `PUT /config/orders-value` with `{\"compatibility\": \"FULL\"}`. Then a new subject `shipments-value` is created. Which compatibility types apply?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`orders-value` uses `FULL` only for keys; values still use `BACKWARD`"
+      },
+      {
+        "id": "b",
+        "text": "`orders-value` uses `FULL`; `shipments-value` uses the global `BACKWARD`"
+      },
+      {
+        "id": "c",
+        "text": "Both use `BACKWARD`, because the global setting overrides subject settings"
+      },
+      {
+        "id": "d",
+        "text": "Both subjects use `FULL`, because the last change wins globally"
+      }
+    ],
+    "correct": [
+      "b"
+    ],
+    "explanation": "Compatibility can be set globally (`PUT /config`) or per subject (`PUT /config/{subject}`). A subject-level setting overrides the global one for that subject only. Subjects with no subject-level setting, such as the new `shipments-value`, use the global level. `GET /config/{subject}` returns an error (40401) for a subject with no setting of its own; `?defaultToGlobal=true` shows the level actually in effect.",
+    "references": [
+      {
+        "title": "Schema Registry API Reference (Confluent Platform)",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/develop/api.html#register-a-new-schema-under-a-subject",
+        "kind": "official"
+      },
+      {
+        "title": "Schema Registry API Usage Examples (Confluent Platform)",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/develop/using.html#show-compatibility-requirements-in-effect-for-a-subject",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "sr-compat-044",
+    "domain": "app-development",
+    "topics": [
+      "schema-compatibility"
+    ],
+    "type": "single",
+    "stem": "`schema-registry.properties` contains `schema.compatibility.level=full`. After startup an operator runs `PUT /config` with `{\"compatibility\": \"NONE\"}`. Which global compatibility is in effect afterwards?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`FULL`, because the properties file always wins"
+      },
+      {
+        "id": "b",
+        "text": "Neither; the REST call fails while the properties file sets a level"
+      },
+      {
+        "id": "c",
+        "text": "`NONE`, because a global REST update overrides the compatibility set in the properties file"
+      },
+      {
+        "id": "d",
+        "text": "`FULL` for existing subjects and `NONE` for new subjects only"
+      }
+    ],
+    "correct": [
+      "c"
+    ],
+    "explanation": "The docs say a REST API call to set compatibility globally overrides any compatibility parameters set in the Schema Registry properties files. `schema.compatibility.level` (default `backward`) is only the starting value. The global setting applies to every subject without its own subject-level setting, old or new.",
+    "references": [
+      {
+        "title": "Schema Evolution and Compatibility (Confluent Platform)",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/fundamentals/schema-evolution.html#using-compatibility-types",
+        "kind": "official"
+      },
+      {
+        "title": "Schema Registry API Usage Examples (Confluent Platform)",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/develop/using.html#update-compatibility-requirements-globally",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "sr-compat-045",
+    "domain": "app-development",
+    "topics": [
+      "schema-compatibility"
+    ],
+    "type": "single",
+    "stem": "Subject `people-value` is `BACKWARD`. Version 2 renames the Avro field `fname` to `firstName` and adds `\"aliases\": [\"fname\"]` to the renamed field. Version 1 data has `fname`. What happens when a consumer on version 2 reads version 1 data?",
+    "options": [
+      {
+        "id": "a",
+        "text": "It fills `firstName` with `null`"
+      },
+      {
+        "id": "b",
+        "text": "It fails unless the producer also adds the alias to version 1"
+      },
+      {
+        "id": "c",
+        "text": "It fails, because Avro matches fields by position"
+      },
+      {
+        "id": "d",
+        "text": "It reads `fname` from the old data into `firstName`, because the reader's alias maps the writer's field name"
+      }
+    ],
+    "correct": [
+      "d"
+    ],
+    "explanation": "Avro aliases work by rewriting the **writer's** schema using the **reader's** aliases: if data was written with field `x` and is read with field `y` that has alias `x`, the reader acts as if `x` were named `y`. Fields are matched by name, not position. The alias goes in the new (reader) schema; version 1 does not change.\n\nWithout the alias, the rename would look like removing `fname` and adding `firstName` with no default, which `BACKWARD` rejects.",
+    "references": [
+      {
+        "title": "Apache Avro 1.12.0 Specification",
+        "url": "https://avro.apache.org/docs/1.12.0/specification/#aliases",
+        "kind": "official"
+      },
+      {
+        "title": "Schema Evolution and Compatibility (Confluent Platform)",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/fundamentals/schema-evolution.html#backward-compatibility",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "likely",
+    "source": "original",
+    "kafkaVersionNote": "The Avro spec says implementations may optionally use aliases. The Java Avro library that Schema Registry uses for its compatibility check honours reader field aliases, but the Confluent docs do not say so outright."
+  },
+  {
+    "id": "sr-compat-046",
+    "domain": "app-development",
+    "topics": [
+      "schema-compatibility"
+    ],
+    "type": "multi",
+    "stem": "A subject uses `BACKWARD`. Which **three** Avro changes in version 2 will be accepted? (Choose three.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "Add a field with a default value"
+      },
+      {
+        "id": "b",
+        "text": "Change a field's type from `int` to `long`"
+      },
+      {
+        "id": "c",
+        "text": "Change a field's type from `long` to `int`"
+      },
+      {
+        "id": "d",
+        "text": "Change a field's type from `string` to `int`"
+      },
+      {
+        "id": "e",
+        "text": "Add a field without a default value"
+      },
+      {
+        "id": "f",
+        "text": "Remove a field that had no default"
+      }
+    ],
+    "correct": [
+      "a",
+      "b",
+      "f"
+    ],
+    "explanation": "`BACKWARD` asks: can the version 2 reader read version 1 data?\n\n- Added field with a default: the reader uses the default. Accepted.\n- Removed field: the reader ignores the writer's value, whatever its default was. Accepted.\n- `int` to `long`: the writer's `int` is promoted to the reader's `long` (Avro allows `int` to `long`, `float` or `double`; `long` to `float` or `double`; `float` to `double`; `string` to and from `bytes`). Accepted.\n- Added field without a default: nothing to fill it with. Rejected.\n- `long` to `int` narrows; there is no promotion from `long` to `int`. Rejected.\n- `string` to `int` has no promotion. Rejected.",
+    "references": [
+      {
+        "title": "Apache Avro 1.12.0 Specification",
+        "url": "https://avro.apache.org/docs/1.12.0/specification/#schema-resolution",
+        "kind": "official"
+      },
+      {
+        "title": "Schema Evolution and Compatibility (Confluent Platform)",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/fundamentals/schema-evolution.html#avro-and-protobuf-compatibility",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "sr-compat-047",
+    "domain": "app-development",
+    "topics": [
+      "schema-compatibility"
+    ],
+    "type": "single",
+    "stem": "You want to add an optional `middleName` field to an Avro record so the change is fully compatible. Which declaration follows the pattern the Confluent docs recommend?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`{\"name\": \"middleName\", \"type\": [\"null\", \"string\"], \"default\": null}`"
+      },
+      {
+        "id": "b",
+        "text": "`{\"name\": \"middleName\", \"type\": [\"string\"], \"nullable\": true}`"
+      },
+      {
+        "id": "c",
+        "text": "`{\"name\": \"middleName\", \"type\": \"string\", \"optional\": true}`"
+      },
+      {
+        "id": "d",
+        "text": "`{\"name\": \"middleName\", \"type\": \"string\", \"default\": null}`"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "Avro has no `optional` or `nullable` keyword. A field is made nullable with a union that includes `\"null\"`, and for evolution it needs a default. The docs say Avro requires the default to match the first branch of the union, so the usual pattern is to put `\"null\"` first and use `\"default\": null`. Adding or removing a field that has a default is a fully compatible change.\n\nA default of `null` on a plain `string` field is invalid, because `null` is not a string.",
+    "references": [
+      {
+        "title": "Schema Evolution and Compatibility (Confluent Platform)",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/fundamentals/schema-evolution.html#full-compatibility",
+        "kind": "official"
+      },
+      {
+        "title": "Apache Avro 1.12.0 Specification",
+        "url": "https://avro.apache.org/docs/1.12.0/specification/#unions",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "sr-compat-048",
+    "domain": "app-development",
+    "topics": [
+      "schema-compatibility"
+    ],
+    "type": "single",
+    "stem": "A developer declares an Avro field as `{\"name\": \"note\", \"type\": [\"string\", \"null\"], \"default\": null}` and registers it with Schema Registry. According to the Confluent schema evolution docs, what is wrong?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Defaults are not allowed on union fields"
+      },
+      {
+        "id": "b",
+        "text": "Unions cannot contain `null`"
+      },
+      {
+        "id": "c",
+        "text": "The default should conform to the first branch of the union (`string`), so with a `null` default the union should list `\"null\"` first"
+      },
+      {
+        "id": "d",
+        "text": "Nothing; the order of union branches never matters"
+      }
+    ],
+    "correct": [
+      "c"
+    ],
+    "explanation": "The Confluent docs state that Avro requires a field's default to conform to the **first** branch of the union, which is why the optional-field pattern is `[\"null\", \"string\"]` with `\"default\": null`. With `[\"string\", \"null\"]` the default would have to be a string.\n\nUnions with `null` and defaults on union fields are both allowed; that is the standard optional-field idiom.",
+    "references": [
+      {
+        "title": "Schema Evolution and Compatibility (Confluent Platform)",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/fundamentals/schema-evolution.html#full-compatibility",
+        "kind": "official"
+      },
+      {
+        "title": "Apache Avro 1.12.0 Specification",
+        "url": "https://avro.apache.org/docs/1.12.0/specification/#records",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "unsure",
+    "source": "original",
+    "kafkaVersionNote": "The Avro 1.12.0 specification now says union defaults correspond to the first schema in the union that matches, which would allow this declaration. Older Avro versions and the Confluent docs require the first branch, and parsers differ by version. Putting `null` first is safe everywhere."
+  },
+  {
+    "id": "sr-compat-049",
+    "domain": "app-development",
+    "topics": [
+      "schema-compatibility"
+    ],
+    "type": "single",
+    "stem": "An Avro enum `Status` has symbols `NEW` and `PAID` in version 1, with no enum-level `default`. Version 2 adds the symbol `REFUNDED`. A consumer still on version 1 reads a record written with version 2 whose value is `REFUNDED`. What happens?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Resolution fails, because the writer's symbol is not in the reader's enum and the reader declares no default"
+      },
+      {
+        "id": "b",
+        "text": "The consumer receives `REFUNDED` as a plain string"
+      },
+      {
+        "id": "c",
+        "text": "The consumer receives `NEW`, the first symbol"
+      },
+      {
+        "id": "d",
+        "text": "The consumer receives `null`"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "Avro's enum resolution rule: if the writer's symbol is not present in the reader's enum and the reader has a default, the default is used; otherwise an error is signalled. Version 1 has no enum default, so reading `REFUNDED` fails.\n\nSo adding an enum symbol is backward compatible (a new reader knows all old symbols) but forward compatible only if the old reader's enum declares a `default`. Design enums with a default such as `UNKNOWN` if you plan to add symbols under `FORWARD` or `FULL`.",
+    "references": [
+      {
+        "title": "Apache Avro 1.12.0 Specification",
+        "url": "https://avro.apache.org/docs/1.12.0/specification/#schema-resolution",
+        "kind": "official"
+      },
+      {
+        "title": "Avro Serializer and Deserializer (Confluent Platform)",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/fundamentals/serdes-develop/serdes-avro.html#avro-schema-compatibility-rules",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "likely",
+    "source": "original"
+  },
+  {
+    "id": "sr-compat-050",
+    "domain": "app-development",
+    "topics": [
+      "schema-compatibility"
+    ],
+    "type": "single",
+    "stem": "A Kafka Streams application reads topic `orders`, whose subject uses `BACKWARD`. Its state stores and changelogs hold data written with the current schema. A new backward-compatible schema version is registered. What is the recommended upgrade order?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Any order, because Streams rebuilds its state stores"
+      },
+      {
+        "id": "b",
+        "text": "Upgrade the upstream producer first, then the Streams application"
+      },
+      {
+        "id": "c",
+        "text": "Upgrade the Streams application first, then the upstream producer"
+      },
+      {
+        "id": "d",
+        "text": "Switch the subject to `FORWARD` first, because Streams needs forward compatibility"
+      }
+    ],
+    "correct": [
+      "c"
+    ],
+    "explanation": "A Streams application must read the new schema from its input topic and also the **old** schema from its state stores and changelogs. Only backward compatibility (or a stronger type that includes it: `BACKWARD_TRANSITIVE`, `FULL`, `FULL_TRANSITIVE`) guarantees that. So the Streams application is upgraded first, and then it is safe to upgrade the producer writing to the input topic. `FORWARD` is not supported for Streams.",
+    "references": [
+      {
+        "title": "Schema Evolution and Compatibility (Confluent Platform)",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/fundamentals/schema-evolution.html#order-of-upgrading-clients",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "likely",
+    "source": "original",
+    "kafkaVersionNote": "The Confluent page states this but is slightly inconsistent: one sentence lists FULL, TRANSITIVE and BACKWARD as supported, the next says only BACKWARD."
+  },
+  {
+    "id": "sr-compat-051",
+    "domain": "app-development",
+    "topics": [
+      "schema-compatibility"
+    ],
+    "type": "single",
+    "stem": "A team uses Protobuf with Schema Registry and expects to add new message types to its `.proto` files over time. Which compatibility type do the Confluent docs name as best practice for Protobuf?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`FORWARD`"
+      },
+      {
+        "id": "b",
+        "text": "`FULL`"
+      },
+      {
+        "id": "c",
+        "text": "`BACKWARD_TRANSITIVE`"
+      },
+      {
+        "id": "d",
+        "text": "`NONE`"
+      }
+    ],
+    "correct": [
+      "c"
+    ],
+    "explanation": "The docs say the best practice for Protobuf is `BACKWARD_TRANSITIVE`, because adding new message types is not forward compatible. That rules out `FORWARD` and `FULL` (which includes forward). `NONE` turns off checking entirely.",
+    "references": [
+      {
+        "title": "Schema Evolution and Compatibility (Confluent Platform)",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/fundamentals/schema-evolution.html#avro-protobuf-and-json-schema-have-different-compatibility-rules",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "sr-compat-052",
+    "domain": "app-development",
+    "topics": [
+      "schema-compatibility"
+    ],
+    "type": "single",
+    "stem": "Why is `BACKWARD` the default compatibility type in Confluent Schema Registry, rather than `FORWARD`?",
+    "options": [
+      {
+        "id": "a",
+        "text": "It allows any change as long as producers upgrade first"
+      },
+      {
+        "id": "b",
+        "text": "Consumers on the newest schema can rewind to the beginning of the topic and still read older data"
+      },
+      {
+        "id": "c",
+        "text": "It checks against all previous versions, which `FORWARD` cannot do"
+      },
+      {
+        "id": "d",
+        "text": "It is the only type that works with Protobuf"
+      }
+    ],
+    "correct": [
+      "b"
+    ],
+    "explanation": "The docs give the main reason as being able to rewind consumers to the beginning of the topic: with `BACKWARD`, a consumer on the new schema can read data written with the previous one. `FORWARD` does not guarantee the ability to read old messages and is harder to work with, because you need to anticipate future changes.\n\nAll formats support every compatibility type. Under `BACKWARD` consumers upgrade first, not producers. `BACKWARD` is non-transitive; it compares with the latest version only.",
+    "references": [
+      {
+        "title": "Schema Evolution and Compatibility (Confluent Platform)",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/fundamentals/schema-evolution.html#backward-compatibility",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "sr-compat-053",
+    "domain": "app-development",
+    "topics": [
+      "schema-compatibility"
+    ],
+    "type": "single",
+    "stem": "A subject has versions X-2, X-1 and X under `FORWARD_TRANSITIVE`. What does this guarantee?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Data written with schema X can be read by consumers using X or X-1 only"
+      },
+      {
+        "id": "b",
+        "text": "No guarantee; transitive types apply only to `BACKWARD`"
+      },
+      {
+        "id": "c",
+        "text": "Consumers using schema X can read data written with X, X-1 and X-2"
+      },
+      {
+        "id": "d",
+        "text": "Data written with schema X can be read by consumers using X, X-1 or X-2"
+      }
+    ],
+    "correct": [
+      "d"
+    ],
+    "explanation": "`FORWARD` means data from the new schema is readable with the previous schema. The transitive form extends this to every registered version: data produced with X can be read by consumers on X, X-1 or X-2.\n\nReading old data with the new schema describes `BACKWARD_TRANSITIVE`. \"X or X-1 only\" is plain `FORWARD`. All three of `BACKWARD`, `FORWARD` and `FULL` have transitive forms.",
+    "references": [
+      {
+        "title": "Schema Evolution and Compatibility (Confluent Platform)",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/fundamentals/schema-evolution.html#forward-compatibility",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "sr-compat-054",
+    "domain": "app-development",
+    "topics": [
+      "schema-compatibility"
+    ],
+    "type": "multi",
+    "stem": "Subject `metrics-value` is `FORWARD`. Version 1 has `host` (no default), `region` (`string`, default `\"eu\"`) and `value` (`double`, no default). Which **two** version 2 changes will be accepted? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "Change `value` from `double` to `string`"
+      },
+      {
+        "id": "b",
+        "text": "Add `rack` as `string` with no default"
+      },
+      {
+        "id": "c",
+        "text": "Remove `region`"
+      },
+      {
+        "id": "d",
+        "text": "Rename `host` to `hostname` with no alias"
+      },
+      {
+        "id": "e",
+        "text": "Remove `value`"
+      }
+    ],
+    "correct": [
+      "b",
+      "c"
+    ],
+    "explanation": "Under `FORWARD` the version 1 schema must be able to read data written with version 2.\n\n- Adding `rack` without a default: version 1 readers ignore the unknown field. Accepted.\n- Removing `region`: version 1 readers fill it from their default `\"eu\"`. Accepted.\n- Removing `value`: version 1 has no default for it. Rejected.\n- `double` to `string`: version 1 readers expect a `double`, and Avro cannot promote a `string` to `double`. Rejected.\n- Renaming `host` with no alias: version 1 readers look for `host`, find nothing and have no default. Rejected.",
+    "references": [
+      {
+        "title": "Schema Evolution and Compatibility (Confluent Platform)",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/fundamentals/schema-evolution.html#forward-compatibility",
+        "kind": "official"
+      },
+      {
+        "title": "Apache Avro 1.12.0 Specification",
+        "url": "https://avro.apache.org/docs/1.12.0/specification/#schema-resolution",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "sr-arch-055",
+    "domain": "app-development",
+    "topics": [
+      "serialization-wire-format"
+    ],
+    "type": "multi",
+    "stem": "An operator inspects the Kafka topic that backs Schema Registry. Which **two** statements about it are correct? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "It uses `cleanup.policy=delete` with a 7-day retention, so old schema versions expire"
+      },
+      {
+        "id": "b",
+        "text": "It has one partition per subject"
+      },
+      {
+        "id": "c",
+        "text": "It is written only by producers that use `KafkaAvroSerializer`"
+      },
+      {
+        "id": "d",
+        "text": "It must use `cleanup.policy=compact` so retention never deletes schemas"
+      },
+      {
+        "id": "e",
+        "text": "Its name is set by `kafkastore.topic`, default `_schemas`"
+      }
+    ],
+    "correct": [
+      "d",
+      "e"
+    ],
+    "explanation": "The registry's durable log is set by `kafkastore.topic` (default `_schemas`). It is a single-partition topic and must be compacted to avoid losing data to retention; the docs show `cleanup.policy=compact` on it. Schema Registry instances, not client serializers, produce to it when schemas or compatibility settings change, and consume it to rebuild their local caches. A delete policy would eventually lose schemas that old records still reference.",
+    "references": [
+      {
+        "title": "Schema Registry Configuration Reference (Confluent Platform)",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/installation/config.html#kafkastore-topic",
+        "kind": "official"
+      },
+      {
+        "title": "Schema Registry Concepts (Confluent Platform)",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/fundamentals/index.html#ak-backend",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "sr-compat-056",
+    "domain": "app-development",
+    "topics": [
+      "schema-compatibility"
+    ],
+    "type": "multi",
+    "stem": "Subject `rides-value` is `BACKWARD`. Which **two** statements about upgrading clients for a new version are correct? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "Producers and consumers can be upgraded in any order"
+      },
+      {
+        "id": "b",
+        "text": "Consumers on the new schema are guaranteed to read data written with the previous schema"
+      },
+      {
+        "id": "c",
+        "text": "Consumers still on the old schema are not guaranteed to read data written with the new schema"
+      },
+      {
+        "id": "d",
+        "text": "The new schema is guaranteed to read data from every earlier version, not just the previous one"
+      },
+      {
+        "id": "e",
+        "text": "Producers should be upgraded before consumers"
+      }
+    ],
+    "correct": [
+      "b",
+      "c"
+    ],
+    "explanation": "`BACKWARD` guarantees that the new schema reads data from the latest previous schema. It says nothing about old consumers reading new data, so consumers must be upgraded **before** producers start writing with the new schema. Any order is safe only under `FULL` or `FULL_TRANSITIVE`. Reading every earlier version is the guarantee of `BACKWARD_TRANSITIVE`, not plain `BACKWARD`.",
+    "references": [
+      {
+        "title": "Schema Evolution and Compatibility (Confluent Platform)",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/fundamentals/schema-evolution.html#order-of-upgrading-clients",
+        "kind": "official"
+      },
+      {
+        "title": "Schema Evolution and Compatibility (Confluent Platform)",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/fundamentals/schema-evolution.html#backward-compatibility",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  }
+]

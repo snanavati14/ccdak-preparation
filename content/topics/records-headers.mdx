@@ -1,0 +1,69 @@
+A Kafka record is a key, a value, a timestamp and optional headers. Its offset is its position within one partition. Knowing which parts the producer sets, which the broker sets, and which ones Kafka itself acts on (keys for partitioning and compaction, values for tombstones) answers most data-model questions.
+
+## How it works
+
+- **The producer sets** `topic`, optionally `partition`, optionally `timestamp`, `key`, `value` and `headers`. All of these go into a `ProducerRecord`. With no timestamp, the producer stamps its current time. With no partition, the partitioner picks one from the serialized key.
+- **The partition leader assigns the offset** when it appends the record. The producer learns the offset and the timestamp actually used from `RecordMetadata`.
+- **Offsets** are numbered separately in each partition and never change. They aren't always consecutive:
+  - compaction removes records without renumbering;
+  - transaction commit and abort markers take offsets but are never returned to applications.
+
+  A position whose record is gone reads as the next higher offset.
+- **Timestamps** follow the topic's `message.timestamp.type`:
+  - `CreateTime` (the default) keeps the producer's timestamp.
+  - `LogAppendTime` overwrites it with the broker's clock at append time.
+
+  `ConsumerRecord.timestampType()` says which kind a record has.
+- **Headers** are an ordered list of key-value pairs. Keys are `String`; values are `byte[]` and may be `null`. Keys can repeat. Use headers for metadata such as trace IDs, a content type or the source system, and keep business data in the value.
+
+<Figure caption="One record as stored. The producer supplies everything except the offset; with LogAppendTime the broker also replaces the timestamp.">
+  <svg viewBox="0 0 640 120" role="img" aria-label="Record fields: offset, timestamp, key, value, headers">
+    <rect x="20" y="30" width="110" height="44" fill="none" stroke="currentColor" strokeWidth="2.5" className="accent" />
+    <rect x="130" y="30" width="120" height="44" fill="none" stroke="currentColor" strokeWidth="1.5" />
+    <rect x="250" y="30" width="100" height="44" fill="none" stroke="currentColor" strokeWidth="1.5" />
+    <rect x="350" y="30" width="140" height="44" fill="none" stroke="currentColor" strokeWidth="1.5" />
+    <rect x="490" y="30" width="130" height="44" fill="none" stroke="currentColor" strokeWidth="1.5" />
+    <text x="75" y="57" textAnchor="middle" fontSize="14" fill="currentColor">offset</text>
+    <text x="190" y="57" textAnchor="middle" fontSize="14" fill="currentColor">timestamp</text>
+    <text x="300" y="57" textAnchor="middle" fontSize="14" fill="currentColor">key</text>
+    <text x="420" y="57" textAnchor="middle" fontSize="14" fill="currentColor">value</text>
+    <text x="555" y="57" textAnchor="middle" fontSize="14" fill="currentColor">headers</text>
+    <text x="75" y="100" textAnchor="middle" fontSize="13" fill="currentColor">set by leader</text>
+    <text x="375" y="100" textAnchor="middle" fontSize="13" fill="currentColor">set by producer</text>
+  </svg>
+</Figure>
+
+## Gotchas the exam loves
+
+- The same offset exists in every partition. A record is identified by topic, partition and offset together.
+- `seek()` to a compacted-away offset returns the next remaining record; there is no error.
+- Since Kafka 4.0, `message.timestamp.after.max.ms` defaults to 1 hour, so `CreateTime` records more than an hour in the future are rejected. `message.timestamp.before.max.ms` is still unbounded. Neither applies to `LogAppendTime`.
+- `Headers.add()` appends and never replaces. `lastHeader(key)` returns the newest header with that key; `headers(key)` returns all of them.
+- Headers don't affect partitioning (`Partitioner.partition()` doesn't receive them) or compaction (it keeps the latest record per key).
+- A tombstone is a key with a `null` value. A "delete" header on a non-null value deletes nothing.
+- Compacted topics reject records with a `null` key. Brokers count them in `NoKeyCompactedTopicRecordsPerSec`.
+- `Serializer.serialize(topic, headers, data)` lets a serializer read or write headers, for example to carry a schema ID.
+
+## Java sample
+
+```java
+ProducerRecord<String, Order> record = new ProducerRecord<>("orders", order.customerId(), order);
+record.headers()
+      .add("trace-id", traceId.getBytes(StandardCharsets.UTF_8))
+      .add("source", "web".getBytes(StandardCharsets.UTF_8));
+producer.send(record, (md, e) -> {
+    if (e == null) log.info("p{} @ {} ts={}", md.partition(), md.offset(), md.timestamp());
+});
+
+// consumer side
+Header trace = consumerRecord.headers().lastHeader("trace-id");
+String traceId = trace == null ? null : new String(trace.value(), StandardCharsets.UTF_8);
+```
+
+## Version notes
+
+<Note>
+Kafka 4.0 changed the default of `message.timestamp.after.max.ms` from `Long.MAX_VALUE` to 1 hour (KIP-1030).
+</Note>
+
+See the [record header format](https://kafka.apache.org/44/implementation/message-format/#record-header) and the [`Headers` javadoc](https://kafka.apache.org/44/javadoc/org/apache/kafka/common/header/Headers.html).

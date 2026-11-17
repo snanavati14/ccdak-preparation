@@ -1,0 +1,81 @@
+Kafka brokers store bytes. Turning objects into bytes is the client's job, done by the `key.serializer` and `value.serializer` you configure. Confluent Schema Registry adds schema-aware serializers that put a small schema ID in front of each record instead of the whole schema.
+
+## How it works
+
+Apache Kafka ships simple serializers in `org.apache.kafka.common.serialization`: `StringSerializer` (UTF-8 by default), `ByteArraySerializer`, `ByteBufferSerializer`, `BytesSerializer`, `IntegerSerializer`, `LongSerializer`, `ShortSerializer`, `FloatSerializer`, `DoubleSerializer`, `BooleanSerializer`, `UUIDSerializer`, `VoidSerializer` and `ListSerializer`, each with a matching deserializer. There is no Avro, Protobuf or JSON serializer in Apache Kafka.
+
+Schema Registry is a separate Confluent service with a REST API. It runs outside the brokers and stores everything in a single-partition, compacted Kafka topic (`kafkastore.topic`, default `_schemas`). Its serdes come from Confluent:
+
+| Format | Serializer | Deserializer |
+|---|---|---|
+| Avro | `KafkaAvroSerializer` | `KafkaAvroDeserializer` |
+| Protobuf | `KafkaProtobufSerializer` | `KafkaProtobufDeserializer` |
+| JSON Schema | `KafkaJsonSchemaSerializer` | `KafkaJsonSchemaDeserializer` |
+
+On the first send the serializer derives the schema, registers it under a **subject** (if `auto.register.schemas=true`, the default, and the compatibility check passes), gets back a **schema ID** and caches it. Every record then carries that ID in the wire format below. The deserializer reads the ID, fetches the writer's schema by ID (also cached) and decodes the data.
+
+<Figure caption="Default wire format: magic byte, 4-byte big-endian schema ID, then the encoded data. Protobuf inserts message indexes before the data.">
+  <svg viewBox="0 0 640 150" role="img" aria-label="Wire format byte layout">
+    <rect x="10" y="40" width="90" height="50" fill="none" stroke="currentColor" strokeWidth="1.5" />
+    <rect className="accent" x="100" y="40" width="200" height="50" fill="none" stroke="currentColor" strokeWidth="2.5" />
+    <rect x="300" y="40" width="110" height="50" fill="none" stroke="currentColor" strokeWidth="1.5" strokeDasharray="5 4" />
+    <rect x="410" y="40" width="220" height="50" fill="none" stroke="currentColor" strokeWidth="1.5" />
+    <text x="55" y="70" textAnchor="middle" fontSize="14" fill="currentColor">magic 0</text>
+    <text x="200" y="70" textAnchor="middle" fontSize="14" fill="currentColor">schema ID (4 bytes)</text>
+    <text x="355" y="70" textAnchor="middle" fontSize="13" fill="currentColor">msg indexes</text>
+    <text x="520" y="70" textAnchor="middle" fontSize="14" fill="currentColor">Avro / Protobuf / JSON data</text>
+    <text x="55" y="28" textAnchor="middle" fontSize="13" fill="currentColor">byte 0</text>
+    <text x="200" y="28" textAnchor="middle" fontSize="13" fill="currentColor">bytes 1-4</text>
+    <text x="355" y="28" textAnchor="middle" fontSize="13" fill="currentColor">Protobuf only</text>
+    <text x="520" y="28" textAnchor="middle" fontSize="13" fill="currentColor">rest of the record</text>
+    <text x="320" y="120" textAnchor="middle" fontSize="13" fill="currentColor">Same layout for keys and values. The schema text itself is never in the record.</text>
+  </svg>
+</Figure>
+
+The subject is chosen by `key.subject.name.strategy` / `value.subject.name.strategy`:
+
+| Strategy | Subject | Several record types per topic? |
+|---|---|---|
+| `TopicNameStrategy` (default) | `<topic>-key` / `<topic>-value` | Not generally |
+| `RecordNameStrategy` | fully qualified record name | Yes; checks span all topics |
+| `TopicRecordNameStrategy` | `<topic>-<record name>` | Yes; checks scoped to the topic |
+
+## Gotchas the exam loves
+
+- `key.serializer` and `value.serializer` have no default; the client fails to start without them.
+- The magic byte is `0`. The schema ID is 4 bytes, big-endian. Protobuf adds message indexes; the first message type is written as a single `0`.
+- Schema IDs are globally unique, monotonically increasing and not necessarily consecutive. The same schema under two subjects has **one** ID but its own version in each subject.
+- Registering an identical schema again creates no new version; the existing ID and version are returned.
+- `auto.register.schemas` defaults to `true`, `use.latest.version` to `false`, `latest.compatibility.strict` to `true`. `use.latest.version` only works with `auto.register.schemas=false`.
+- With `auto.register.schemas=false` and an unregistered schema, the send fails ("Schema not found").
+- `KafkaAvroDeserializer` returns `GenericRecord` unless `specific.avro.reader=true`. The Protobuf deserializer returns `DynamicMessage` unless a type is configured or derived.
+- For `RecordNameStrategy` the record name is the Avro full name, the Protobuf message name or the JSON Schema `title`.
+- The subject name strategy is a client setting. A strategy set on a broker topic for schema ID validation does not propagate to clients.
+- Reading non-Schema-Registry bytes with a Confluent deserializer fails with a `SerializationException`.
+- In REST calls `schemaType` defaults to `AVRO`; the others are `PROTOBUF` and `JSON`.
+
+## Java sample
+
+```java
+Properties props = new Properties();
+props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
+props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, KafkaAvroSerializer.class);
+props.put("schema.registry.url", "http://localhost:8081");
+// Several event types in one topic, each evolving per topic:
+props.put("value.subject.name.strategy",
+    "io.confluent.kafka.serializers.subject.TopicRecordNameStrategy");
+
+try (KafkaProducer<String, GenericRecord> producer = new KafkaProducer<>(props)) {
+  GenericRecord order = new GenericData.Record(orderSchema);
+  order.put("id", "o-42");
+  // Subject: orders-com.acme.Order; the value starts with 0x00 + 4-byte ID
+  producer.send(new ProducerRecord<>("orders", "o-42", order));
+}
+```
+
+## Version notes
+
+<Note>From Confluent Platform 8.1.1, setting `value.schema.id.serializer=io.confluent.kafka.serializers.schema.id.HeaderSchemaIdSerializer` moves the identifier into a `__value_schema_id` header (version byte `1` plus a 16-byte schema GUID), and deserializers check that header before the payload prefix. The payload-prefix format above is still the serializer default.</Note>
+
+Background reading: [Formats, Serializers, and Deserializers](https://docs.confluent.io/platform/current/schema-registry/fundamentals/serdes-develop/index.html#wire-format-schema-id-in-the-payload-prefix).

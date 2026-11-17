@@ -1,0 +1,1012 @@
+[
+  {
+    "id": "ops-metric-008",
+    "domain": "observability",
+    "topics": [
+      "client-metrics"
+    ],
+    "type": "single",
+    "stem": "Which client metric shows how many records a producer sends per second?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`record-send-rate` in `kafka.producer:type=producer-metrics`"
+      },
+      {
+        "id": "b",
+        "text": "`records-consumed-rate` in `kafka.consumer:type=consumer-fetch-manager-metrics`"
+      },
+      {
+        "id": "c",
+        "text": "`records-lag-max` in `kafka.producer:type=producer-metrics`"
+      },
+      {
+        "id": "d",
+        "text": "`bytes-in-per-sec` in `kafka.producer:type=producer-metrics`"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`record-send-rate` is \"the average number of records sent per second\", reported under `kafka.producer:type=producer-metrics,client-id=...`; a per-topic version exists under `producer-topic-metrics`. Each rate metric has a matching `-total` count.\n\n- `records-consumed-rate` is the consumer-side equivalent.\n- `records-lag-max` is a consumer metric.\n- The fourth option is not a producer metric.",
+    "references": [
+      {
+        "title": "Apache Kafka monitoring: Producer Sender Metrics",
+        "url": "https://kafka.apache.org/44/operations/monitoring/#producer-sender-metrics",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "ops-metric-009",
+    "domain": "observability",
+    "topics": [
+      "client-metrics"
+    ],
+    "type": "single",
+    "stem": "Which consumer-side metric reports the largest lag, in records, across the partitions a consumer is reading?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`records-lag-max` in `kafka.consumer:type=consumer-fetch-manager-metrics`"
+      },
+      {
+        "id": "b",
+        "text": "`commit-latency-avg` in `kafka.consumer:type=consumer-coordinator-metrics`"
+      },
+      {
+        "id": "c",
+        "text": "`fetch-rate` in `kafka.consumer:type=consumer-fetch-manager-metrics`"
+      },
+      {
+        "id": "d",
+        "text": "`request-latency-avg` in `kafka.producer:type=producer-metrics`"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`records-lag-max` is \"the maximum lag in terms of number of records for any partition in this window\", and the docs add that it \"is based on current offset and not committed offset\". It is \"published by the consumer, not broker\", so you read it from the consumer's JMX.\n\n- `commit-latency-avg` measures commit time.\n- `fetch-rate` counts fetch requests.\n- `request-latency-avg` is a producer (and generic client) latency metric.",
+    "references": [
+      {
+        "title": "Apache Kafka monitoring: Consumer Fetch Metrics",
+        "url": "https://kafka.apache.org/44/operations/monitoring/#consumer-fetch-metrics",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "ops-metric-010",
+    "domain": "observability",
+    "topics": [
+      "client-metrics"
+    ],
+    "type": "multi",
+    "stem": "A producer's throughput has dropped. Which two producer metrics help you tell whether sends are failing or the brokers are slow? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "`record-error-rate`"
+      },
+      {
+        "id": "b",
+        "text": "`request-latency-avg`"
+      },
+      {
+        "id": "c",
+        "text": "`records-lag-max`"
+      },
+      {
+        "id": "d",
+        "text": "`records-consumed-rate`"
+      },
+      {
+        "id": "e",
+        "text": "`commit-latency-avg`"
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "Both are in `kafka.producer:type=producer-metrics`:\n\n- `record-error-rate` is \"the average per-second number of record sends that resulted in errors\".\n- `request-latency-avg` is \"the average request latency in ms\".\n\n`records-lag-max`, `records-consumed-rate` and `commit-latency-avg` are consumer metrics.",
+    "references": [
+      {
+        "title": "Apache Kafka monitoring: Producer Sender Metrics",
+        "url": "https://kafka.apache.org/44/operations/monitoring/#producer-sender-metrics",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "ops-lag-011",
+    "domain": "observability",
+    "topics": [
+      "client-metrics",
+      "cli-tools"
+    ],
+    "type": "single",
+    "stem": "`kafka-consumer-groups --describe --group my-group` prints `CURRENT-OFFSET 241019` and `LOG-END-OFFSET 395308` for a partition. What does the `LAG` column show, and what does it mean?",
+    "options": [
+      {
+        "id": "a",
+        "text": "154289: how many records the group's committed position is behind the end of the partition"
+      },
+      {
+        "id": "b",
+        "text": "154289: how many records the brokers have not yet replicated"
+      },
+      {
+        "id": "c",
+        "text": "395308: the total number of records in the partition"
+      },
+      {
+        "id": "d",
+        "text": "241019: the number of records the group has consumed so far"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The tool shows \"the position of all consumers in a consumer group as well as how far behind the end of the log they are\". `LAG = LOG-END-OFFSET − CURRENT-OFFSET` = 395308 − 241019 = 154289. `CURRENT-OFFSET` is the group's committed offset.\n\n- Replication progress is a broker matter (ISR, under-replicated partitions).\n- The log-end offset is not a record count; retention may have deleted older records.\n- `CURRENT-OFFSET` is a position, not a lag.",
+    "references": [
+      {
+        "title": "Basic Kafka operations: Managing consumer groups",
+        "url": "https://kafka.apache.org/44/operations/basic-kafka-operations/#managing-consumer-groups",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "ops-lag-012",
+    "domain": "observability",
+    "topics": [
+      "client-metrics",
+      "cli-tools"
+    ],
+    "type": "single",
+    "stem": "A consumer's `records-lag-max` metric is near 0, yet `kafka-consumer-groups --describe` shows a lag of several thousand for the same group. Auto-commit is disabled, and the application commits only after processing large batches. What best explains the difference?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`records-lag-max` is based on the consumer's current fetch position, while the CLI computes lag from the last committed offset."
+      },
+      {
+        "id": "b",
+        "text": "`records-lag-max` is measured on the broker and lags behind the CLI."
+      },
+      {
+        "id": "c",
+        "text": "The CLI counts records in all topics of the cluster, not just the group's."
+      },
+      {
+        "id": "d",
+        "text": "`records-lag-max` only counts records of the partition with the lowest lag."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The docs note that `records-lag-max` \"is based on current offset and not committed offset\". The consumer has fetched up to the end of the log, but its commits trail behind, and the CLI's `CURRENT-OFFSET` is the committed offset. The CLI therefore shows the gap between committed and end offsets.\n\n- The metric is \"published by the consumer, not broker\".\n- The CLI works per group and partition.\n- The metric reports the maximum lag, not the minimum.",
+    "references": [
+      {
+        "title": "Apache Kafka monitoring: Consumer Fetch Metrics",
+        "url": "https://kafka.apache.org/44/operations/monitoring/#consumer-fetch-metrics",
+        "kind": "official"
+      },
+      {
+        "title": "Basic Kafka operations: Checking consumer position",
+        "url": "https://kafka.apache.org/44/operations/basic-kafka-operations/#checking-consumer-position",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "likely",
+    "source": "original"
+  },
+  {
+    "id": "obs-metric-001",
+    "domain": "observability",
+    "topics": [
+      "client-metrics"
+    ],
+    "type": "single",
+    "stem": "One JVM runs two `KafkaProducer` instances, one with `client.id=orders-svc` and one with `client.id=audit-svc`. You want the `record-send-rate` of the first one in JConsole. Which MBean holds it?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`kafka.producer:type=producer-metrics,client-id=orders-svc`"
+      },
+      {
+        "id": "b",
+        "text": "`kafka.server:type=BrokerTopicMetrics,name=MessagesInPerSec,client-id=orders-svc`"
+      },
+      {
+        "id": "c",
+        "text": "`kafka.producer:type=producer-metrics,group-id=orders-svc`"
+      },
+      {
+        "id": "d",
+        "text": "`kafka.consumer:type=consumer-fetch-manager-metrics,client-id=orders-svc`"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "Java clients register their metrics as JMX MBeans named `kafka.<client>:type=<group>,client-id=<id>`. Producer-wide sender metrics such as `record-send-rate` live in `kafka.producer:type=producer-metrics,client-id=\"{client-id}\"`, so the `client-id` tag is what separates two producers in one JVM.\n\n- `kafka.server:type=BrokerTopicMetrics` is a broker MBean; it has no per-client tag.\n- Producer MBeans are tagged by `client-id`, not `group-id`.\n- `consumer-fetch-manager-metrics` belongs to consumers.",
+    "references": [
+      {
+        "title": "Apache Kafka monitoring: Producer Sender Metrics",
+        "url": "https://kafka.apache.org/44/operations/monitoring/#producer-sender-metrics",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "obs-metric-002",
+    "domain": "observability",
+    "topics": [
+      "client-metrics"
+    ],
+    "type": "multi",
+    "stem": "A team runs 12 instances of the same consumer application and leaves `client.id` unset. Which two things do they gain by giving each instance a meaningful `client.id`? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "Broker-side request logs can name the application behind each request, not just its IP address and port."
+      },
+      {
+        "id": "b",
+        "text": "Each instance's metrics appear under its own `client-id` tag in MBean names such as `kafka.consumer:type=consumer-metrics,client-id=...`."
+      },
+      {
+        "id": "c",
+        "text": "The group coordinator uses `client.id` instead of `group.id` to decide which group the consumer joins."
+      },
+      {
+        "id": "d",
+        "text": "Brokers reject a second connection that uses the same `client.id`, so duplicate instances are caught early."
+      },
+      {
+        "id": "e",
+        "text": "Committed offsets are stored per `client.id`, so each instance keeps its own position after a restart."
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "The config reference says `client.id` is \"an id string to pass to the server when making requests\" whose purpose is \"to track the source of requests beyond just ip/port by allowing a logical application name to be included in server-side request logging\". Its default is `\"\"`. On the client side, every client MBean carries a `client-id=...` tag, so a readable id makes dashboards and JConsole easy to read.\n\n- Group membership comes from `group.id`.\n- `client.id` doesn't have to be unique; brokers don't reject duplicates.\n- Committed offsets are stored per group and partition, not per `client.id`.",
+    "references": [
+      {
+        "title": "Producer configs: client.id",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_client.id",
+        "kind": "official"
+      },
+      {
+        "title": "Consumer configs: client.id",
+        "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_client.id",
+        "kind": "official"
+      },
+      {
+        "title": "Apache Kafka monitoring: Consumer monitoring",
+        "url": "https://kafka.apache.org/44/operations/monitoring/#consumer-monitoring",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "obs-metric-003",
+    "domain": "observability",
+    "topics": [
+      "client-metrics"
+    ],
+    "type": "single",
+    "stem": "A producer uses the defaults `buffer.memory=33554432` and `max.block.ms=60000`. During a traffic spike its metrics show `waiting-threads` above 0, `buffer-available-bytes` near 0 and a rising `bufferpool-wait-ratio`; a few `send()` calls fail after about a minute. `record-error-rate` and `produce-throttle-time-avg` stay near 0. What is happening?",
+    "options": [
+      {
+        "id": "a",
+        "text": "The application hands records to `send()` faster than the producer can deliver them, so `send()` blocks waiting for buffer memory and fails once `max.block.ms` runs out."
+      },
+      {
+        "id": "b",
+        "text": "The brokers are throttling the producer with a quota, so its requests are delayed."
+      },
+      {
+        "id": "c",
+        "text": "Records exceed `max.request.size` and are rejected by the broker."
+      },
+      {
+        "id": "d",
+        "text": "The topic's ISR has shrunk below `min.insync.replicas`, so every send is retried."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`waiting-threads` is \"the number of user threads blocked waiting for buffer memory to enqueue their records\", `buffer-available-bytes` is the unused part of `buffer.memory`, and `bufferpool-wait-ratio` is \"the fraction of time an appender waits for space allocation\". The `KafkaProducer` javadoc explains the rest: when records arrive faster than they can be sent, the buffer is exhausted, further sends block, and after `max.block.ms` (default 60000) `send()` returns \"a failed future with `BufferExhaustedException`\". `buffer-exhausted-rate` counts those.\n\n- Quota throttling would show in `produce-throttle-time-avg`.\n- Oversized records and `NotEnoughReplicas` errors would raise `record-error-rate` or `record-retry-rate`, not buffer waits.\n\nFixes: send less, deliver faster (better batching or compression), or raise `buffer.memory`.",
+    "references": [
+      {
+        "title": "Apache Kafka monitoring: Producer monitoring",
+        "url": "https://kafka.apache.org/44/operations/monitoring/#producer-monitoring",
+        "kind": "official"
+      },
+      {
+        "title": "KafkaProducer javadoc (Kafka 4.4)",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/producer/KafkaProducer.html",
+        "kind": "official"
+      },
+      {
+        "title": "Producer configs: buffer.memory",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_buffer.memory",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "obs-metric-004",
+    "domain": "observability",
+    "topics": [
+      "client-metrics"
+    ],
+    "type": "single",
+    "stem": "After setting `compression.type=zstd`, a producer reports `compression-rate-avg` = 0.3. What does that mean?",
+    "options": [
+      {
+        "id": "a",
+        "text": "On average a compressed batch is 30% of its uncompressed size, so lower values mean better compression."
+      },
+      {
+        "id": "b",
+        "text": "30% of the batches were compressed and the rest were sent uncompressed."
+      },
+      {
+        "id": "c",
+        "text": "Compression saved 0.3 bytes for every byte sent."
+      },
+      {
+        "id": "d",
+        "text": "The producer compresses 0.3 batches per second."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`compression-rate-avg` is \"the average compression rate of record batches, defined as the average ratio of the compressed batch size over the uncompressed size\". A value of 0.3 means batches shrink to about 30% of their original size. Compression works on whole batches, so better batching (larger `batch-size-avg`) usually improves the ratio. A per-topic `compression-rate` exists in `producer-topic-metrics`.\n\nThe other readings misdefine the metric: it is neither a share of batches, nor a saving, nor a per-second rate.",
+    "references": [
+      {
+        "title": "Apache Kafka monitoring: Producer Sender Metrics",
+        "url": "https://kafka.apache.org/44/operations/monitoring/#producer-sender-metrics",
+        "kind": "official"
+      },
+      {
+        "title": "Producer configs: compression.type",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_compression.type",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "obs-metric-005",
+    "domain": "observability",
+    "topics": [
+      "client-metrics"
+    ],
+    "type": "multi",
+    "stem": "A consumer's `records-lag-max` has climbed for an hour. Its metrics show `poll-idle-ratio-avg` near 0, `time-between-poll-max` close to `max.poll.interval.ms` (default 300000) and a rising `rebalance-rate-per-hour`. `fetch-latency-avg` is normal. Which two conclusions are correct? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "The consumer spends almost all its time in application code between `poll()` calls; fetching from the brokers is not the bottleneck."
+      },
+      {
+        "id": "b",
+        "text": "Each loop is close to the poll timeout; when it exceeds `max.poll.interval.ms` the consumer leaves the group, which explains the rebalances. Smaller `max.poll.records` or faster processing helps."
+      },
+      {
+        "id": "c",
+        "text": "Raising `session.timeout.ms` will stop the rebalances, because heartbeats are only sent from inside `poll()`."
+      },
+      {
+        "id": "d",
+        "text": "The brokers are answering fetches slowly; raising `fetch.max.wait.ms` will reduce the lag."
+      },
+      {
+        "id": "e",
+        "text": "Lag rises only because commits are slow; switching to `commitAsync()` will bring `records-lag-max` down."
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "Read the metrics together:\n\n- `poll-idle-ratio-avg` is \"the average fraction of time the consumer's poll() is idle as opposed to waiting for the user code to process records\". Near 0 means the time goes to user code.\n- `time-between-poll-max` is \"the max delay between invocations of poll()\". If `poll()` isn't called within `max.poll.interval.ms`, \"the client will proactively leave the group\", which shows up in the coordinator metrics as rebalances.\n- `max.poll.records` (default 500) bounds the work per loop; moving processing to another thread is the other documented fix.\n\nWhy the others are wrong:\n\n- Heartbeats are sent \"underneath the covers\" and keep going during a livelock, so `session.timeout.ms` doesn't cover slow processing.\n- Normal `fetch-latency-avg` rules out slow brokers.\n- `records-lag-max` is based on the consumer's position, not its committed offset, so commit style doesn't move it.",
+    "references": [
+      {
+        "title": "KafkaConsumer javadoc: Detecting Consumer Failures",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html#detecting-consumer-failures-heading",
+        "kind": "official"
+      },
+      {
+        "title": "Apache Kafka monitoring: Consumer monitoring",
+        "url": "https://kafka.apache.org/44/operations/monitoring/#consumer-monitoring",
+        "kind": "official"
+      },
+      {
+        "title": "Consumer configs: max.poll.interval.ms",
+        "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_max.poll.interval.ms",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "likely",
+    "source": "original"
+  },
+  {
+    "id": "obs-metric-006",
+    "domain": "observability",
+    "topics": [
+      "client-metrics"
+    ],
+    "type": "single",
+    "stem": "A consumer's processing thread sometimes deadlocks inside the poll loop. The JVM stays up and the consumer keeps heartbeating, so a simple liveness check passes. Which client metric best detects the stuck loop?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`last-poll-seconds-ago` in `kafka.consumer:type=consumer-metrics`"
+      },
+      {
+        "id": "b",
+        "text": "`heartbeat-rate` in `kafka.consumer:type=consumer-coordinator-metrics`"
+      },
+      {
+        "id": "c",
+        "text": "`connection-count` in `kafka.consumer:type=consumer-metrics`"
+      },
+      {
+        "id": "d",
+        "text": "`assigned-partitions` in `kafka.consumer:type=consumer-coordinator-metrics`"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`last-poll-seconds-ago` is \"the number of seconds since the last poll() invocation\", so it grows without limit when the loop stops calling `poll()`. Alert well before it reaches `max.poll.interval.ms` (300 s by default); `time-between-poll-max` gives the same signal as a windowed maximum.\n\n- Heartbeats come from the client's background work, and the javadoc describes exactly this \"livelock\" case where the consumer keeps sending heartbeats while making no progress.\n- Open connections and the assignment stay unchanged until the poll timeout makes the consumer leave the group.",
+    "references": [
+      {
+        "title": "Apache Kafka monitoring: Consumer monitoring",
+        "url": "https://kafka.apache.org/44/operations/monitoring/#consumer-monitoring",
+        "kind": "official"
+      },
+      {
+        "title": "KafkaConsumer javadoc: Detecting Consumer Failures",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html#detecting-consumer-failures-heading",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "obs-metric-007",
+    "domain": "observability",
+    "topics": [
+      "client-metrics"
+    ],
+    "type": "single",
+    "stem": "A consumer reads a topic with `retention.ms` of one day. It has fallen far behind: `records-lag-max` is large and `records-lead-min` keeps dropping toward 0. What is the risk?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Its position is getting close to the log start offset, so retention may delete records before it reads them; it would then get an out-of-range position and `auto.offset.reset` would decide where it restarts."
+      },
+      {
+        "id": "b",
+        "text": "It is about to catch up with the end of the log, so the lag alert can be closed."
+      },
+      {
+        "id": "c",
+        "text": "The producer is about to be throttled because the consumer cannot keep up."
+      },
+      {
+        "id": "d",
+        "text": "The partition leader is about to drop the consumer from the ISR."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`records-lead-min` is \"the minimum lead in terms of number of records for any partition in this window\" (`consumer-fetch-manager-metrics`). KIP-223, which added it, defines lead as the distance between the consumer's offset and the start offset of the log: \"if this number gets close to 0, it's an indication that the consumer may stall or lose data soon\". Lag measures distance to the end of the log; lead measures distance to the start, which retention keeps moving forward.\n\n- A falling lead with large lag means the consumer is near the *oldest* data, not the newest.\n- Consumers never throttle producers.\n- The ISR is a set of replica brokers; consumers are not part of it.",
+    "references": [
+      {
+        "title": "Apache Kafka monitoring: Consumer Fetch Metrics",
+        "url": "https://kafka.apache.org/44/operations/monitoring/#consumer-fetch-metrics",
+        "kind": "official"
+      },
+      {
+        "title": "KIP-223: Add per-topic min lead and per-partition lead metrics to KafkaConsumer",
+        "url": "https://cwiki.apache.org/confluence/display/KAFKA/KIP-223+-+Add+per-topic+min+lead+and+per-partition+lead+metrics+to+KafkaConsumer",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "likely",
+    "source": "original"
+  },
+  {
+    "id": "obs-metric-008",
+    "domain": "observability",
+    "topics": [
+      "client-metrics"
+    ],
+    "type": "single",
+    "stem": "Which values does `metrics.recording.level` accept, and what is its default for producers, consumers and Kafka Streams?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`INFO`, `DEBUG` and `TRACE`; the default is `INFO`."
+      },
+      {
+        "id": "b",
+        "text": "`OFF`, `INFO` and `DEBUG`; the default is `OFF`."
+      },
+      {
+        "id": "c",
+        "text": "`INFO` and `DEBUG`; the default is `DEBUG`."
+      },
+      {
+        "id": "d",
+        "text": "`ERROR`, `WARN`, `INFO` and `DEBUG`; the default is `WARN`."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`metrics.recording.level` is \"the highest recording level for metrics\". Valid values are `[INFO, DEBUG, TRACE]` and the default is `INFO` on the producer, consumer and Streams config pages. `INFO` records the essential metrics, `DEBUG` most metrics, and `TRACE` all of them at the highest overhead. It is a metrics setting, not a log level, so `ERROR` and `WARN` don't apply, and there is no `OFF` value.",
+    "references": [
+      {
+        "title": "Producer configs: metrics.recording.level",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_metrics.recording.level",
+        "kind": "official"
+      },
+      {
+        "title": "Streams configs: metrics.recording.level",
+        "url": "https://kafka.apache.org/44/configuration/kafka-streams-configs/#streamsconfigs_metrics.recording.level",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "obs-metric-009",
+    "domain": "observability",
+    "topics": [
+      "client-metrics"
+    ],
+    "type": "single",
+    "stem": "A Kafka Streams application runs with default settings. In JMX the team sees `kafka.streams:type=stream-thread-metrics` (for example `process-rate`), but no per-task `process-latency-avg` from `stream-task-metrics`. Why?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Most task-level metrics are recorded only at `DEBUG` level, and `metrics.recording.level` defaults to `INFO`; set it to `DEBUG`."
+      },
+      {
+        "id": "b",
+        "text": "Task metrics exist only when `num.stream.threads` is greater than 1."
+      },
+      {
+        "id": "c",
+        "text": "Streams metrics need `org.apache.kafka.common.metrics.JmxReporter` added to `metric.reporters` explicitly."
+      },
+      {
+        "id": "d",
+        "text": "Task metrics are only reported with `processing.guarantee=exactly_once_v2`."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The Streams monitoring docs say task metrics \"have a recording level of debug, except for the `dropped-records-*` and `active-process-ratio` metrics which have a recording level of info\". Thread metrics are all `info`. With the default `metrics.recording.level=INFO`, `process-latency-avg` at task level is therefore not recorded. Set `metrics.recording.level=DEBUG` (more overhead).\n\n- The thread count doesn't matter; each thread runs tasks.\n- `JmxReporter` is already the default `metric.reporters` value, which is why thread metrics are visible.\n- The processing guarantee doesn't control metric levels.",
+    "references": [
+      {
+        "title": "Apache Kafka monitoring: Streams task metrics",
+        "url": "https://kafka.apache.org/44/operations/monitoring/#task-metrics",
+        "kind": "official"
+      },
+      {
+        "title": "Streams configs: metrics.recording.level",
+        "url": "https://kafka.apache.org/44/configuration/kafka-streams-configs/#streamsconfigs_metrics.recording.level",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "obs-metric-010",
+    "domain": "observability",
+    "topics": [
+      "client-metrics"
+    ],
+    "type": "multi",
+    "stem": "Which two statements about Kafka Streams metrics are true? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "A Streams instance also exposes the producer and consumer metrics of the clients it uses internally."
+      },
+      {
+        "id": "b",
+        "text": "Task-level `dropped-records-rate` is recorded at `INFO` level, so it is available with default settings."
+      },
+      {
+        "id": "c",
+        "text": "All Streams metrics are recorded only at `DEBUG` level, so nothing is visible with defaults."
+      },
+      {
+        "id": "d",
+        "text": "Streams metrics are only available through `KafkaStreams#metrics()`; they are never registered in JMX."
+      },
+      {
+        "id": "e",
+        "text": "Thread metrics are published under `kafka.consumer:type=stream-thread-metrics`."
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "From the Streams monitoring section:\n\n- \"A Kafka Streams instance contains all the producer and consumer metrics as well as additional metrics specific to Streams.\" They form a hierarchy: client, then stream thread, then task, then processor node, state store and record cache.\n- Task metrics are `debug` \"except for the `dropped-records-*` and `active-process-ratio` metrics which have a recording level of info\".\n\nWhy the others are wrong:\n\n- Client and thread metrics are all `info`.\n- `metric.reporters` defaults to `JmxReporter`, so Streams metrics show up in JMX.\n- Thread metrics use `kafka.streams:type=stream-thread-metrics,thread-id=...`.",
+    "references": [
+      {
+        "title": "Apache Kafka monitoring: Streams Monitoring",
+        "url": "https://kafka.apache.org/44/operations/monitoring/#streams-monitoring",
+        "kind": "official"
+      },
+      {
+        "title": "Apache Kafka monitoring: Streams task metrics",
+        "url": "https://kafka.apache.org/44/operations/monitoring/#task-metrics",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "obs-metric-011",
+    "domain": "observability",
+    "topics": [
+      "client-metrics",
+      "connect-converters-errors"
+    ],
+    "type": "single",
+    "stem": "A sink connector runs with `errors.tolerance=all` and a dead letter queue topic. After an ACL change, writes to the DLQ topic start failing, but the task keeps running. Which metric shows the problem?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`deadletterqueue-produce-failures` in `kafka.connect:type=task-error-metrics`"
+      },
+      {
+        "id": "b",
+        "text": "`connector-failed-task-count` in `kafka.connect:type=connect-worker-metrics`"
+      },
+      {
+        "id": "c",
+        "text": "`offset-commit-failure-percentage` in `kafka.connect:type=connector-task-metrics`"
+      },
+      {
+        "id": "d",
+        "text": "`rebalancing` in `kafka.connect:type=connect-worker-rebalance-metrics`"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "Each Connect task reports error-handling metrics in `kafka.connect:type=task-error-metrics,connector=\"{connector}\",task=\"{task}\"`. `deadletterqueue-produce-failures` is \"the number of failed writes to the dead letter queue\", next to `deadletterqueue-produce-requests` (attempted writes), `total-record-failures`, `total-records-skipped` and `last-error-timestamp`.\n\n- `connector-failed-task-count` counts failed tasks; here the task is still running.\n- `offset-commit-failure-percentage` is about the task's offset commits, not DLQ writes.\n- `rebalancing` shows whether the worker is rebalancing.",
+    "references": [
+      {
+        "title": "Apache Kafka monitoring: Connect Monitoring",
+        "url": "https://kafka.apache.org/44/operations/monitoring/#connect-monitoring",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "obs-metric-012",
+    "domain": "observability",
+    "topics": [
+      "client-metrics"
+    ],
+    "type": "single",
+    "stem": "You are building a dashboard. Which pairing of metric to MBean type is correct?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`records-lag-max` → `consumer-fetch-manager-metrics`; `rebalance-rate-per-hour` → `consumer-coordinator-metrics`; `record-retry-rate` → `producer-metrics`; `total-record-failures` → `task-error-metrics`"
+      },
+      {
+        "id": "b",
+        "text": "`records-lag-max` → `consumer-coordinator-metrics`; `rebalance-rate-per-hour` → `consumer-fetch-manager-metrics`; `record-retry-rate` → `producer-metrics`; `total-record-failures` → `task-error-metrics`"
+      },
+      {
+        "id": "c",
+        "text": "`records-lag-max` → `consumer-fetch-manager-metrics`; `rebalance-rate-per-hour` → `consumer-coordinator-metrics`; `record-retry-rate` → `connector-task-metrics`; `total-record-failures` → `producer-metrics`"
+      },
+      {
+        "id": "d",
+        "text": "`records-lag-max` → `producer-metrics`; `rebalance-rate-per-hour` → `connect-worker-metrics`; `record-retry-rate` → `consumer-fetch-manager-metrics`; `total-record-failures` → `task-error-metrics`"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The monitoring page groups client metrics by MBean type:\n\n- `consumer-fetch-manager-metrics`: fetching and lag (`records-lag-max`, `records-lead-min`, `fetch-latency-avg`, `fetch-rate`, `records-consumed-rate`).\n- `consumer-coordinator-metrics`: group membership and commits (`commit-latency-avg`, `rebalance-rate-per-hour`, `rebalance-latency-avg`, `assigned-partitions`).\n- `producer-metrics`: sender metrics (`record-send-rate`, `record-retry-rate`, `record-error-rate`, `request-latency-avg`).\n- Connect `task-error-metrics`: error handling (`total-record-failures`, `total-records-skipped`).\n\nEach other option swaps at least one metric into the wrong group.",
+    "references": [
+      {
+        "title": "Apache Kafka monitoring: Consumer Group Metrics",
+        "url": "https://kafka.apache.org/44/operations/monitoring/#consumer-group-metrics",
+        "kind": "official"
+      },
+      {
+        "title": "Apache Kafka monitoring: Consumer Fetch Metrics",
+        "url": "https://kafka.apache.org/44/operations/monitoring/#consumer-fetch-metrics",
+        "kind": "official"
+      },
+      {
+        "title": "Apache Kafka monitoring: Producer Sender Metrics",
+        "url": "https://kafka.apache.org/44/operations/monitoring/#producer-sender-metrics",
+        "kind": "official"
+      },
+      {
+        "title": "Apache Kafka monitoring: Connect Monitoring",
+        "url": "https://kafka.apache.org/44/operations/monitoring/#connect-monitoring",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "obs-metric-013",
+    "domain": "observability",
+    "topics": [
+      "client-metrics"
+    ],
+    "type": "single",
+    "stem": "A record's delay can be measured at several stages on its way through the producer. Put these metrics in the order the record passes through them. Which order is correct?\n\n1. `request-latency-avg`\n2. `bufferpool-wait-ratio`\n3. `record-queue-time-avg`",
+    "options": [
+      {
+        "id": "a",
+        "text": "2, 3, 1: wait for buffer space inside `send()`, then wait in the send buffer as part of a batch, then the produce request round trip"
+      },
+      {
+        "id": "b",
+        "text": "3, 2, 1: wait in the send buffer, then wait for buffer space, then the request round trip"
+      },
+      {
+        "id": "c",
+        "text": "1, 2, 3: the request round trip, then buffer allocation, then queueing"
+      },
+      {
+        "id": "d",
+        "text": "2, 1, 3: buffer allocation, then the request round trip, then queueing in the send buffer"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`send()` first has to get space in the producer's buffer: `bufferpool-wait-ratio` is \"the fraction of time an appender waits for space allocation\", and `max.block.ms` bounds this wait inside `send()`. The record then sits in a batch in the send buffer until the background I/O thread sends it: `record-queue-time-avg` is \"the average time in ms record batches spent in the send buffer\". Finally the batch goes out in a produce request, and `request-latency-avg` measures that request's latency.\n\nHigh values at each stage point to different fixes: buffer waits to `buffer.memory` or throughput, queue time to `linger.ms` and batching, request latency to the brokers or `acks`.",
+    "references": [
+      {
+        "title": "Apache Kafka monitoring: Producer monitoring",
+        "url": "https://kafka.apache.org/44/operations/monitoring/#producer-monitoring",
+        "kind": "official"
+      },
+      {
+        "title": "Apache Kafka monitoring: Producer Sender Metrics",
+        "url": "https://kafka.apache.org/44/operations/monitoring/#producer-sender-metrics",
+        "kind": "official"
+      },
+      {
+        "title": "KafkaProducer javadoc (Kafka 4.4)",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/producer/KafkaProducer.html",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "likely",
+    "source": "original"
+  },
+  {
+    "id": "obs-metric-014",
+    "domain": "observability",
+    "topics": [
+      "client-metrics"
+    ],
+    "type": "multi",
+    "stem": "A team on Kafka 4.4 adds its own metrics reporter to a consumer with `metric.reporters=com.example.PromReporter`. Afterwards the consumer's MBeans have disappeared from JConsole. Which two statements explain this and the fix? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "`metric.reporters` defaults to `org.apache.kafka.common.metrics.JmxReporter`; setting it replaces that default."
+      },
+      {
+        "id": "b",
+        "text": "To keep JMX, list both reporters: `metric.reporters=org.apache.kafka.common.metrics.JmxReporter,com.example.PromReporter`."
+      },
+      {
+        "id": "c",
+        "text": "Set `auto.include.jmx.reporter=true` to add JMX back."
+      },
+      {
+        "id": "d",
+        "text": "JMX metrics also need `metrics.recording.level=DEBUG`."
+      },
+      {
+        "id": "e",
+        "text": "Remote JMX is on by default, so JConsole will reconnect after a restart."
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "The 4.4 config reference: `metric.reporters` defaults to `org.apache.kafka.common.metrics.JmxReporter`, and \"when custom reporters are set and `JmxReporter` is needed, it has to be explicitly added to the list\".\n\n- `auto.include.jmx.reporter` was removed in Kafka 4.0.\n- The client metrics shown in JMX are at `INFO` level, so the default recording level is enough.\n- The monitoring docs say \"Apache Kafka disables remote JMX by default\". You enable it with `JMX_PORT` or Java system properties, and should secure it.",
+    "references": [
+      {
+        "title": "Consumer configs: metric.reporters",
+        "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_metric.reporters",
+        "kind": "official"
+      },
+      {
+        "title": "Upgrade notes: Notable changes in 4.0.0",
+        "url": "https://kafka.apache.org/44/getting-started/upgrade/#notable-changes-in-400",
+        "kind": "official"
+      },
+      {
+        "title": "Apache Kafka monitoring: Security considerations for remote JMX",
+        "url": "https://kafka.apache.org/44/operations/monitoring/#security-considerations-for-remote-monitoring-using-jmx",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original",
+    "kafkaVersionNote": "Kafka 4.0 removed `auto.include.jmx.reporter` and made `JmxReporter` the default value of `metric.reporters`."
+  },
+  {
+    "id": "obs-push-001",
+    "domain": "observability",
+    "topics": [
+      "client-metrics"
+    ],
+    "type": "single",
+    "stem": "A Kafka 4.4 producer runs with default settings. The cluster operator creates a client metrics subscription that matches it (KIP-714). What happens?",
+    "options": [
+      {
+        "id": "a",
+        "text": "The producer pushes the subscribed metrics to the broker, because `enable.metrics.push` defaults to `true`"
+      },
+      {
+        "id": "b",
+        "text": "Nothing, until the producer sets `enable.metrics.push=true`"
+      },
+      {
+        "id": "c",
+        "text": "The broker starts scraping the producer's JMX port"
+      },
+      {
+        "id": "d",
+        "text": "The producer replaces its JMX metrics with the pushed ones"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`enable.metrics.push` (producer, consumer, admin and Streams) controls \"whether to enable pushing of client metrics to the cluster, if the cluster has a client metrics subscription which matches this client\". Its default is `true`, so a matching subscription is enough. Set it to `false` to opt a client out.\n\n- The broker never connects to the client's JMX; clients push over the Kafka protocol.\n- Pushing is in addition to local metrics; `JmxReporter` still exposes them.\n\nThe broker needs a metrics reporter plugin that implements client telemetry to export what it receives.",
+    "references": [
+      {
+        "title": "Producer configs: enable.metrics.push",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_enable.metrics.push",
+        "kind": "official"
+      },
+      {
+        "title": "KIP-714: Client metrics and observability",
+        "url": "https://cwiki.apache.org/confluence/display/KAFKA/KIP-714%3A+Client+metrics+and+observability",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "obs-push-002",
+    "domain": "observability",
+    "topics": [
+      "client-metrics"
+    ],
+    "type": "multi",
+    "stem": "A platform team wants central visibility into many teams' Java clients without each team setting up JMX scraping, so it plans to use KIP-714 client metrics. Which statements are true? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "Clients only push metrics when a client metrics subscription on the cluster matches them"
+      },
+      {
+        "id": "b",
+        "text": "A client can opt out by setting `enable.metrics.push=false`"
+      },
+      {
+        "id": "c",
+        "text": "Clients must add a `metric.reporters` entry for the push to work"
+      },
+      {
+        "id": "d",
+        "text": "Pushed metrics are written to a topic that consumers can read with `kafka-console-consumer`"
+      },
+      {
+        "id": "e",
+        "text": "The feature needs ZooKeeper to store subscriptions"
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "Pushing is driven by the cluster: the `enable.metrics.push` description says metrics go to the cluster \"if the cluster has a client metrics subscription which matches this client\". The setting defaults to `true` and can be turned off per client.\n\n- No client `metric.reporters` change is needed; the client's built-in telemetry does the push.\n- Pushed metrics go to a broker-side plugin that exports them to a monitoring system, not to a Kafka topic.\n- Kafka 4.x has no ZooKeeper; subscriptions are cluster configs.\n\nThe broker limits a push's size with `telemetry.max.bytes` (default 1 MB).",
+    "references": [
+      {
+        "title": "Consumer configs: enable.metrics.push",
+        "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_enable.metrics.push",
+        "kind": "official"
+      },
+      {
+        "title": "KIP-714: Client metrics and observability",
+        "url": "https://cwiki.apache.org/confluence/display/KAFKA/KIP-714%3A+Client+metrics+and+observability",
+        "kind": "official"
+      },
+      {
+        "title": "Broker configs: telemetry.max.bytes",
+        "url": "https://kafka.apache.org/44/configuration/broker-configs/#brokerconfigs_telemetry.max.bytes",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "likely",
+    "source": "original"
+  }
+]

@@ -1,0 +1,182 @@
+[
+  {
+    "id": "conn-deploy-001",
+    "domain": "connect",
+    "topics": ["connect-architecture"],
+    "type": "single",
+    "stem": "A CI job must check a new connector configuration for missing required settings and invalid values before deploying it, **without** creating the connector. Which REST call should it make?",
+    "options": [
+      { "id": "a", "text": "`PUT /connector-plugins/{plugin}/config/validate` with the configuration map as the body" },
+      { "id": "b", "text": "`GET /connector-plugins/{plugin}/config`" },
+      { "id": "c", "text": "`POST /connectors` with `\"initial_state\": \"STOPPED\"`" },
+      { "id": "d", "text": "`PUT /connectors/{name}/config`" }
+    ],
+    "correct": ["a"],
+    "explanation": "`PUT /connector-plugins/{connector-type}/config/validate` checks each value against the plugin's configuration definition. It returns suggested values and error messages, and it doesn't create or change any connector. It can return HTTP 200 even when the config has problems, so check `error_count` and each config's `errors` list.\n\n- `GET /connector-plugins/{plugin}/config` only returns the plugin's configuration definition. It checks no values.\n- `POST /connectors` creates a connector, even when `initial_state` is `STOPPED`.\n- `PUT /connectors/{name}/config` creates the connector if it doesn't exist, or updates it if it does.",
+    "references": [
+      { "title": "Connect user guide: REST API", "url": "https://kafka.apache.org/44/kafka-connect/user-guide/#rest-api", "kind": "official" },
+      { "title": "Confluent docs: Connect REST API, connector plugins", "url": "https://docs.confluent.io/platform/current/connect/references/restapi.html#connector-plugins", "kind": "official" }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "conn-deploy-002",
+    "domain": "connect",
+    "topics": ["connect-architecture"],
+    "type": "single",
+    "stem": "A deploy script rolls out a new configuration for the connector `orders-sink`. These are its steps, out of order:\n\n1. `GET /connectors/orders-sink/status` until the connector and its tasks are `RUNNING`\n2. `PUT /connector-plugins/{plugin}/config/validate`, then check that `error_count` is 0\n3. `POST /connectors/orders-sink/restart?includeTasks=true&onlyFailed=true` if any task shows `FAILED` after the cause is fixed\n4. `PUT /connectors/orders-sink/config` with the new configuration\n\nWhich order is correct?",
+    "options": [
+      { "id": "a", "text": "2 → 4 → 1 → 3" },
+      { "id": "b", "text": "4 → 2 → 1 → 3" },
+      { "id": "c", "text": "2 → 3 → 4 → 1" },
+      { "id": "d", "text": "1 → 4 → 2 → 3" }
+    ],
+    "correct": ["a"],
+    "explanation": "1. **Validate first**, so that a bad config never reaches the cluster. The validate call doesn't create anything.\n2. **`PUT /connectors/{name}/config`** creates the connector or updates its configuration, so the same script works for the first deploy and every later one.\n3. **Check `GET /connectors/{name}/status`.** It shows the state of the connector and of each task, which worker each runs on, and the error trace of any failure.\n4. **Restart only what failed.** Connect doesn't restart failed tasks on its own. `includeTasks=true&onlyFailed=true` restarts only the instances in the `FAILED` state. Without parameters, `restart` restarts only the connector instance.\n\nValidating after the update is too late, and a restart before the update or status check has nothing to fix.",
+    "references": [
+      { "title": "Connect user guide: REST API", "url": "https://kafka.apache.org/44/kafka-connect/user-guide/#rest-api", "kind": "official" },
+      { "title": "Confluent docs: Connect REST API, connectors", "url": "https://docs.confluent.io/platform/current/connect/references/restapi.html#connectors", "kind": "official" }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "conn-deploy-003",
+    "domain": "connect",
+    "topics": ["connect-architecture"],
+    "type": "single",
+    "stem": "Match each REST request to its effect.\n\nRequests:\n1. `PUT /connectors/{name}/config`\n2. `PATCH /connectors/{name}/config`\n3. `PUT /connectors/{name}/stop`\n4. `DELETE /connectors/{name}`\n\nEffects:\n- W: creates the connector, or replaces the whole configuration of an existing one\n- X: changes only the keys in the request body; a key set to `null` is removed\n- Y: shuts down the tasks and frees their resources but keeps the connector and its configuration\n- Z: halts all tasks and deletes the connector's configuration\n\nWhich pairing is correct?",
+    "options": [
+      { "id": "a", "text": "1-W, 2-X, 3-Y, 4-Z" },
+      { "id": "b", "text": "1-X, 2-W, 3-Y, 4-Z" },
+      { "id": "c", "text": "1-W, 2-X, 3-Z, 4-Y" },
+      { "id": "d", "text": "1-X, 2-W, 3-Z, 4-Y" }
+    ],
+    "correct": ["a"],
+    "explanation": "- `PUT /connectors/{name}/config` takes the full configuration map. It creates the connector if it doesn't exist and replaces the configuration if it does.\n- `PATCH /connectors/{name}/config` merges the body into the existing configuration, and a `null` value removes that key.\n- `PUT /connectors/{name}/stop` shuts the tasks down and frees their resources, but the connector stays defined. It is also the state you need before changing offsets, and `PUT .../resume` starts it again.\n- `DELETE /connectors/{name}` halts all tasks and deletes the configuration, so the connector is gone.",
+    "references": [
+      { "title": "Connect user guide: REST API", "url": "https://kafka.apache.org/44/kafka-connect/user-guide/#rest-api", "kind": "official" },
+      { "title": "Confluent docs: Connect REST API, connectors", "url": "https://docs.confluent.io/platform/current/connect/references/restapi.html#connectors", "kind": "official" }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "conn-deploy-004",
+    "domain": "connect",
+    "topics": ["connect-architecture"],
+    "type": "single",
+    "stem": "A sink connector reads a topic with 12 partitions. It runs with `tasks.max=2` on a distributed Connect cluster of 3 workers. Consumer lag keeps growing, and the target system has spare capacity. Which change increases the number of partitions processed in parallel?",
+    "options": [
+      { "id": "a", "text": "Raise `tasks.max` (for example to 6) with `PUT /connectors/{name}/config`; the cluster rebalances and spreads the tasks across the workers." },
+      { "id": "b", "text": "Add a fourth worker with the same `group.id`; the connector then creates one task per worker." },
+      { "id": "c", "text": "Raise `offset.storage.partitions` on the workers." },
+      { "id": "d", "text": "Restart the connector with `POST /connectors/{name}/restart?includeTasks=true`." }
+    ],
+    "correct": ["a"],
+    "explanation": "Tasks do the copying, and `tasks.max` (default 1) caps how many a connector creates. With 2 tasks, at most 2 consumers share the 12 partitions. Raising `tasks.max` changes the connector's configuration, which triggers a rebalance that spreads the new tasks across the workers. A sink connector can't usefully run more tasks than there are partitions.\n\n- Adding a worker makes room for tasks, but it doesn't create any. The connector still has 2 tasks, and the rebalance may just move one of them to the new worker.\n- `offset.storage.partitions` sizes the internal offsets topic, not the sink's input.\n- A restart keeps the same number of tasks.",
+    "references": [
+      { "title": "Connect user guide: Configuring connectors", "url": "https://kafka.apache.org/44/kafka-connect/user-guide/#configuring-connectors", "kind": "official" },
+      { "title": "Confluent docs: Task rebalancing", "url": "https://docs.confluent.io/platform/current/connect/index.html#task-rebalancing", "kind": "official" }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "conn-deploy-005",
+    "domain": "connect",
+    "topics": ["connect-converters-errors", "connect-architecture"],
+    "type": "single",
+    "stem": "The Connect workers are configured with:\n\n```properties\nvalue.converter=io.confluent.connect.avro.AvroConverter\nvalue.converter.schema.registry.url=http://schema-registry:8081\n```\n\nOne connector needs Schema Registry credentials, so its configuration adds:\n\n```properties\nvalue.converter=io.confluent.connect.avro.AvroConverter\nvalue.converter.basic.auth.credentials.source=USER_INFO\nvalue.converter.basic.auth.user.info=svc-orders:secret\n```\n\nWhat happens when the connector starts?",
+    "options": [
+      { "id": "a", "text": "It fails: once the connector sets `value.converter`, the worker's `value.converter.*` properties are ignored, so the converter has no Schema Registry URL." },
+      { "id": "b", "text": "It works: Connect merges the worker's and the connector's `value.converter.*` properties." },
+      { "id": "c", "text": "It works, but it ignores the credentials, because worker converter settings always win." },
+      { "id": "d", "text": "It fails, because converters can only be set in the worker configuration." }
+    ],
+    "correct": ["a"],
+    "explanation": "Workers set the default converters, and any connector can override them in its own configuration. If you add a converter to a connector's configuration, Connect ignores all worker properties with that converter's prefix (`value.converter.*` here). The connector's converter therefore gets no `schema.registry.url` and fails when the connector starts. The fix is to also set `value.converter.schema.registry.url` in the connector configuration.\n\n- Connect doesn't merge worker and connector converter properties.\n- A converter set on the connector takes precedence over the worker's.\n- Per-connector converters are allowed: `key.converter` and `value.converter` are optional connector settings.",
+    "references": [
+      { "title": "Confluent docs: Configuring key and value converters", "url": "https://docs.confluent.io/platform/current/connect/userguide.html#configuring-key-and-value-converters", "kind": "official" },
+      { "title": "Connect user guide: Configuring connectors", "url": "https://kafka.apache.org/44/kafka-connect/user-guide/#configuring-connectors", "kind": "official" }
+    ],
+    "difficulty": 3,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "conn-deploy-006",
+    "domain": "connect",
+    "topics": ["connect-architecture"],
+    "type": "multi",
+    "stem": "A connector's database password is in clear text, and anyone with access to `GET /connectors/{name}/config` can read it. The team mounts `/etc/connect/secrets.properties`, which contains `db-password=...`, on every worker. Which changes keep the password out of the connector configuration? (Choose two.)",
+    "options": [
+      { "id": "a", "text": "In every worker's configuration: `config.providers=file` and `config.providers.file.class=org.apache.kafka.common.config.provider.FileConfigProvider`" },
+      { "id": "b", "text": "In the connector configuration: `\"connection.password\": \"${file:/etc/connect/secrets.properties:db-password}\"`" },
+      { "id": "c", "text": "Define `config.providers` only in the connector configuration and leave the workers unchanged" },
+      { "id": "d", "text": "Set `errors.log.include.messages=false` so that the REST API hides the password" },
+      { "id": "e", "text": "Create `config.storage.topic` with `cleanup.policy=compact` so that the password is stored encrypted" }
+    ],
+    "correct": ["a", "b"],
+    "explanation": "Configuration providers load values such as passwords from outside the configuration:\n\n- **Worker:** `config.providers` (default empty) lists provider aliases, and `config.providers.<alias>.class` names the class. Kafka ships `FileConfigProvider`, `DirectoryConfigProvider` and `EnvVarConfigProvider`. Every worker needs the same providers and access to the referenced file.\n- **Connector:** reference a value as `${<alias>:<path>:<key>}`.\n\nThe connector configuration is stored and returned by the REST API with the variable, not the secret. The value is resolved in memory only when the connector starts.\n\n- Providers are defined in the worker configuration; a connector configuration can only reference them.\n- `errors.log.include.messages` controls whether failed records are written to the log. It has nothing to do with the REST API.\n- Compaction doesn't encrypt anything.",
+    "references": [
+      { "title": "Apache Kafka: Configuration providers, referencing files", "url": "https://kafka.apache.org/44/configuration/configuration-providers/#example-referencing-files", "kind": "official" },
+      { "title": "Confluent docs: Externalize secrets", "url": "https://docs.confluent.io/platform/current/connect/security.html#externalize-secrets", "kind": "official" },
+      { "title": "Connect configs: config.providers", "url": "https://kafka.apache.org/44/configuration/kafka-connect-configs/#connectconfigs_config.providers", "kind": "official" }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "conn-deploy-007",
+    "domain": "connect",
+    "topics": ["connect-architecture"],
+    "type": "multi",
+    "stem": "Team A runs a three-worker distributed Connect cluster. Team B wants its own independent Connect cluster against the same Kafka cluster, and starts by copying Team A's worker properties. Which statements are correct? (Choose two.)",
+    "options": [
+      { "id": "a", "text": "Team B must change `group.id` **and** use its own `config.storage.topic`, `offset.storage.topic` and `status.storage.topic`." },
+      { "id": "b", "text": "A new worker started with Team A's `group.id` and internal topics joins Team A's cluster, and a rebalance moves some existing connectors and tasks to it." },
+      { "id": "c", "text": "Changing only `group.id` is enough: records in the shared internal topics are tagged with the cluster's `group.id`." },
+      { "id": "d", "text": "A worker that joins a cluster gets no work until an operator calls a rebalance endpoint on the REST API." },
+      { "id": "e", "text": "Each worker in a cluster must have a different `group.id` so that the workers can tell each other apart." }
+    ],
+    "correct": ["a", "b"],
+    "explanation": "Workers with the same `group.id` form one Connect cluster. They share the three internal topics for connector configurations, offsets and status, so every worker in a cluster must use the same topic names. Connect clusters can't share group IDs **or** internal topics. A new, independent cluster needs a new `group.id` and new names for all three topics. It should also use connector names not used in the other cluster.\n\nWhen a worker joins, leaves or fails, the workers in the group rebalance and spread connectors and tasks across the new set of workers, much like a consumer group. No REST call is needed for that.\n\n- Changing only `group.id` isn't enough: Connect clusters can't share internal topics, whatever their `group.id`.\n- All workers of one cluster share one `group.id`.",
+    "references": [
+      { "title": "Confluent docs: Connect internal topics", "url": "https://docs.confluent.io/platform/current/connect/userguide.html#connect-internal-topics", "kind": "official" },
+      { "title": "Confluent docs: Distributed workers", "url": "https://docs.confluent.io/platform/current/connect/index.html#distributed-workers", "kind": "official" }
+    ],
+    "difficulty": 3,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "conn-deploy-008",
+    "domain": "connect",
+    "topics": ["connect-architecture"],
+    "type": "multi",
+    "stem": "A team runs one Kafka Connect worker in a Kubernetes pod with no persistent volume. The worker runs in standalone mode with a source connector passed on the command line. Which statements are correct? (Choose two.)",
+    "options": [
+      { "id": "a", "text": "If the pod is rescheduled, the file named by `offset.storage.file.filename` is lost, so the source connector restarts with no stored offsets." },
+      { "id": "b", "text": "In distributed mode, even with a single worker, connector configurations, offsets and status are kept in Kafka topics, so a replacement pod can pick up where the old one stopped." },
+      { "id": "c", "text": "Kafka Connect restarts a failed worker on another node by itself, so the orchestrator doesn't need to." },
+      { "id": "d", "text": "Running several standalone pods with the same `group.id` makes them share the connector's tasks." },
+      { "id": "e", "text": "Distributed mode needs at least three workers before it starts any connector." }
+    ],
+    "correct": ["a", "b"],
+    "explanation": "A standalone worker keeps its state on the local file system: source offsets go to `offset.storage.file.filename`. In a pod without a persistent volume, that file disappears with the pod, and the connector starts again as if it had never run. That can mean re-reading data it has already sent.\n\nA distributed worker keeps all its state in Kafka, in the config, offset and status topics. That is why distributed mode suits containers and is recommended for production, even with a single worker.\n\n- By design, Kafka Connect doesn't restart or scale workers; that is the orchestrator's job.\n- `group.id` only applies to distributed mode. Standalone workers never form a cluster.\n- A distributed cluster can run with a single worker.",
+    "references": [
+      { "title": "Confluent docs: Operating environment", "url": "https://docs.confluent.io/platform/current/connect/userguide.html#operating-environment", "kind": "official" },
+      { "title": "Connect user guide: Running Kafka Connect", "url": "https://kafka.apache.org/44/kafka-connect/user-guide/#running-kafka-connect", "kind": "official" }
+    ],
+    "difficulty": 2,
+    "confidence": "likely",
+    "source": "original"
+  }
+]

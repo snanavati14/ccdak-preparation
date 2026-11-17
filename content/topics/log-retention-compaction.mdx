@@ -1,0 +1,87 @@
+Each partition is a directory of segment files, and all cleanup works on whole segments. `cleanup.policy` picks the cleanup: `delete` drops old segments by time or size, `compact` keeps at least the latest record per key, and `delete,compact` does both.
+
+## How it works
+
+**Segments.** A partition directory such as `orders-0` holds segment files named after the first offset they contain (`00000000000000000000.log`, ...). Writes always go to the last one, the **active segment**. It rolls when it reaches `segment.bytes` (default 1 GiB) or gets older than `segment.ms` (default 7 days). The active segment is never compacted.
+
+<Figure caption="One partition. Retention and compaction only touch closed segments; new records are appended to the active segment.">
+  <svg viewBox="0 0 640 140" role="img" aria-label="Partition made of closed segments and one active segment">
+    <rect x="20" y="40" width="170" height="44" fill="none" stroke="currentColor" strokeWidth="1.5" />
+    <text x="105" y="60" textAnchor="middle" fontSize="13" fill="currentColor">000...000.log</text>
+    <text x="105" y="77" textAnchor="middle" fontSize="13" fill="currentColor">offsets 0 to 52370</text>
+    <rect x="200" y="40" width="170" height="44" fill="none" stroke="currentColor" strokeWidth="1.5" />
+    <text x="285" y="60" textAnchor="middle" fontSize="13" fill="currentColor">000...52371.log</text>
+    <text x="285" y="77" textAnchor="middle" fontSize="13" fill="currentColor">52371 to 104861</text>
+    <rect className="accent" x="380" y="40" width="170" height="44" fill="none" stroke="currentColor" strokeWidth="2.5" />
+    <text x="465" y="60" textAnchor="middle" fontSize="13" fill="currentColor">000...104862.log</text>
+    <text x="465" y="77" textAnchor="middle" fontSize="13" fill="currentColor">active segment</text>
+    <line x1="555" y1="62" x2="610" y2="62" stroke="currentColor" strokeWidth="1.5" />
+    <text x="615" y="66" fontSize="13" fill="currentColor">new</text>
+    <text x="195" y="28" textAnchor="middle" fontSize="13" fill="currentColor">closed: can be deleted or compacted</text>
+    <text x="465" y="110" textAnchor="middle" fontSize="13" fill="currentColor">rolls at segment.bytes or segment.ms</text>
+  </svg>
+</Figure>
+
+**Delete policy.** A closed segment goes once its **largest** record timestamp is older than `retention.ms` (default 604800000, 7 days), or once the partition is over `retention.bytes` (default -1, no limit; oldest segments go first). Either condition is enough. `retention.bytes` is **per partition**, so multiply by the partition count for the topic total. The broker checks every `log.retention.check.interval.ms` (default 5 minutes).
+
+**Compact policy.** The log cleaner copies closed segments and drops any record whose key appears again later. Offsets never change and order is kept, so a compacted log has gaps in its offsets. A record with a key and a `null` value is a **tombstone**: it removes the key, and it is itself removed after `delete.retention.ms` (default 86400000, 1 day).
+
+<Figure caption="Compaction keeps the last value per key at its original offset. The tombstone for K3 hides K3, and is later removed itself after delete.retention.ms.">
+  <svg viewBox="0 0 640 190" role="img" aria-label="Log before and after compaction">
+    <text x="20" y="30" fontSize="14" fill="currentColor">before</text>
+    <text x="90" y="56" textAnchor="middle" fontSize="13" fill="currentColor">0 K1=a</text>
+    <text x="180" y="56" textAnchor="middle" fontSize="13" fill="currentColor">1 K2=b</text>
+    <text x="270" y="56" textAnchor="middle" fontSize="13" fill="currentColor">2 K1=c</text>
+    <text x="360" y="56" textAnchor="middle" fontSize="13" fill="currentColor">3 K3=d</text>
+    <text x="450" y="56" textAnchor="middle" fontSize="13" fill="currentColor">4 K2=e</text>
+    <text x="545" y="56" textAnchor="middle" fontSize="13" fill="currentColor">5 K3=null</text>
+    <rect x="45" y="38" width="550" height="28" fill="none" stroke="currentColor" strokeWidth="1.5" />
+    <text x="20" y="110" fontSize="14" fill="currentColor">after</text>
+    <rect x="225" y="118" width="90" height="28" fill="none" stroke="currentColor" strokeWidth="1.5" />
+    <text x="270" y="136" textAnchor="middle" fontSize="13" fill="currentColor">2 K1=c</text>
+    <rect x="405" y="118" width="90" height="28" fill="none" stroke="currentColor" strokeWidth="1.5" />
+    <text x="450" y="136" textAnchor="middle" fontSize="13" fill="currentColor">4 K2=e</text>
+    <rect className="accent" x="500" y="118" width="95" height="28" fill="none" stroke="currentColor" strokeWidth="2.5" strokeDasharray="5 4" />
+    <text x="547" y="136" textAnchor="middle" fontSize="13" fill="currentColor">5 K3=null</text>
+    <text x="320" y="176" textAnchor="middle" fontSize="13" fill="currentColor">Offsets 0, 1 and 3 are gone; 2, 4 and 5 keep their offsets.</text>
+  </svg>
+</Figure>
+
+When the cleaner runs:
+
+- `min.cleanable.dirty.ratio` (default 0.5): clean once at least this share of the log is uncompacted. Higher means fewer, cheaper cleanings but more duplicate data on disk.
+- `min.compaction.lag.ms` (default 0): a record stays uncompacted at least this long.
+- `max.compaction.lag.ms` (default `Long.MAX_VALUE`): a record becomes eligible after this long even if the dirty ratio isn't met. For compacted topics the active segment also rolls at the smaller of `segment.ms` and this value.
+
+## Gotchas the exam loves
+
+- Retention deletes whole segments, never single records. A segment stays until its newest record expires.
+- In 4.4 a `retention.ms` breach rolls the active segment so it can be deleted; it is not compacted while active.
+- "Old values still visible on a compacted topic" usually means they are in the active segment. Lower `segment.ms` or set `max.compaction.lag.ms`.
+- Compaction guarantees **at least** the latest value per key, not exactly one.
+- A consumer that takes longer than `delete.retention.ms` to read from the start can miss tombstones and keep deleted keys.
+- `delete,compact` compacts what retention keeps; keys can still age out.
+- Topic settings override broker defaults (`log.retention.ms`, then `log.retention.minutes`, then `log.retention.hours` = 168).
+- An empty `cleanup.policy` means keep everything.
+
+## Java sample
+
+```java
+try (Admin admin = Admin.create(Map.of("bootstrap.servers", "localhost:9092"))) {
+    NewTopic profiles = new NewTopic("customer-profiles", 6, (short) 3)
+        .configs(Map.of(
+            "cleanup.policy", "compact",
+            "min.compaction.lag.ms", "3600000",   // keep every update for 1 hour
+            "delete.retention.ms", "604800000",   // keep tombstones 7 days
+            "segment.ms", "86400000"));           // roll daily so compaction can run
+    admin.createTopics(List.of(profiles)).all().get();
+}
+// Delete a key: send a tombstone.
+producer.send(new ProducerRecord<>("customer-profiles", "cust-42", null));
+```
+
+## Version notes
+
+<Note>Kafka 4.0 raised the minimum `segment.bytes` from 14 bytes to 1 MiB (KIP-1030), so old tests with tiny segments fail validation. `log.cleaner.enable` is deprecated in 4.x and should be left at `true`.</Note>
+
+Details: [Log compaction](https://kafka.apache.org/44/design/design/#log-compaction) and [log deletes](https://kafka.apache.org/44/implementation/log/#deletes).

@@ -1,0 +1,57 @@
+Every Java client (producer, consumer, Streams, Connect) keeps its own metrics and, by default, registers them as JMX MBeans. The exam expects you to know where a metric lives, what a handful of key metrics mean, and what a combination of them tells you about a struggling application.
+
+## How it works
+
+- **Reporting.** `metric.reporters` defaults to `org.apache.kafka.common.metrics.JmxReporter`. Set it to your own reporter and JMX disappears unless you list `JmxReporter` too. Remote JMX is off by default; enable it with `JMX_PORT` or Java system properties, and secure it.
+- **Naming.** MBeans are named `kafka.<client>:type=<group>,client-id=<id>`, so set a readable `client.id` per instance. Brokers also use `client.id` in server-side request logging.
+- **Recording level.** `metrics.recording.level` accepts `INFO` (default), `DEBUG` and `TRACE`. Most Streams task, processor-node and state-store metrics need `DEBUG`.
+- **Rates and totals.** Every `-rate` metric has a matching `-total` count, for example `records-consumed-rate` and `records-consumed-total`. Rates and averages use a sample window (`metrics.sample.window.ms`, 30 s).
+
+| MBean type | Metrics worth knowing |
+|---|---|
+| `producer-metrics` | `record-send-rate`, `record-error-rate`, `record-retry-rate`, `request-latency-avg`, `batch-size-avg`, `compression-rate-avg`, `record-queue-time-avg`, `buffer-available-bytes`, `bufferpool-wait-ratio`, `buffer-exhausted-rate`, `waiting-threads`, `produce-throttle-time-avg` |
+| `consumer-metrics` | `time-between-poll-avg`/`-max`, `last-poll-seconds-ago`, `poll-idle-ratio-avg` |
+| `consumer-fetch-manager-metrics` | `records-lag-max`, `records-lead-min`, `fetch-latency-avg`, `fetch-rate`, `records-consumed-rate` |
+| `consumer-coordinator-metrics` | `commit-latency-avg`, `commit-rate`, `assigned-partitions`, `rebalance-rate-per-hour`, `rebalance-latency-avg`, `last-rebalance-seconds-ago` |
+| `kafka.streams` `stream-thread-metrics` | `process-rate`, `process-latency-avg`, `poll-ratio`, `process-ratio`, `commit-latency-avg` |
+| `kafka.connect` `task-error-metrics` | `total-record-failures`, `total-records-skipped`, `deadletterqueue-produce-failures`, `last-error-timestamp` |
+
+**Reading patterns:**
+
+- **Buffer full.** `waiting-threads` above 0, `buffer-available-bytes` near 0 and a rising `bufferpool-wait-ratio` mean the application sends faster than the producer delivers. `send()` blocks for up to `max.block.ms` (60 s) and then fails with `BufferExhaustedException`.
+- **Slow processing.** Rising `records-lag-max`, `poll-idle-ratio-avg` near 0 and `time-between-poll-max` approaching `max.poll.interval.ms` (300 s) mean processing is the bottleneck. Expect rebalances when the limit is crossed. Lower `max.poll.records` or process faster.
+- **Retention risk.** `records-lead-min` falling toward 0 means the consumer's position is near the log start, so retention may delete data before it is read.
+- **Quotas.** `produce-throttle-time-avg` (or `fetch-throttle-time-avg`) above 0 means a broker quota is delaying the client.
+
+## Gotchas the exam loves
+
+- `records-lag-max` is published by the consumer, not the broker, and is based on its current position, not its committed offset. For `read_committed` consumers the fetch lag metrics are measured against the last stable offset.
+- `kafka-consumer-groups --describe` computes `LAG = LOG-END-OFFSET - CURRENT-OFFSET` from committed offsets.
+- `compression-rate-avg` is compressed size divided by uncompressed size, so lower is better.
+- `poll-idle-ratio-avg` near 1 means the consumer mostly waits for data; near 0 means it mostly runs your code.
+- Heartbeats keep flowing while processing is stuck. Use `last-poll-seconds-ago` to catch a stuck poll loop.
+- Streams task metrics are `DEBUG`, except `dropped-records-*` and `active-process-ratio`, which are `INFO`. A Streams instance also exposes its embedded producer and consumer metrics.
+- With `errors.tolerance=all`, Connect drops bad records quietly; `task-error-metrics` is where you see them.
+
+## Java sample
+
+```java
+props.put(ProducerConfig.CLIENT_ID_CONFIG, "orders-svc-1");
+KafkaProducer<String, String> producer = new KafkaProducer<>(props);
+
+for (Map.Entry<MetricName, ? extends Metric> e : producer.metrics().entrySet()) {
+    MetricName n = e.getKey();
+    if (n.group().equals("producer-metrics")
+            && (n.name().equals("record-error-rate") || n.name().equals("bufferpool-wait-ratio"))) {
+        log.info("{} = {}", n.name(), e.getValue().metricValue());
+    }
+}
+```
+
+## Version notes
+
+<Note>
+Kafka 4.0 removed `auto.include.jmx.reporter` and made `JmxReporter` the default `metric.reporters` value. It also removed `bufferpool-wait-time-total`, `io-waittime-total` and `iotime-total`; use the `-ns-total` versions.
+</Note>
+
+See the [client and Streams metric tables](https://kafka.apache.org/44/operations/monitoring/#producer-monitoring) in the Apache Kafka monitoring docs.

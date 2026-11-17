@@ -39,3 +39,18 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# markdown notes (topic pages are .mdx and stay tracked)
+*.md
+
+# node
+node_modules/
+.npm/
+.eslintcache
+
+# build output
+dist/
+
+# tooling
+.claude/
+.impeccable/

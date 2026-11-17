@@ -1,0 +1,63 @@
+Kafka only orders records within a partition, so the partition a record goes to decides what ordering you get. The producer picks it from an explicit partition number, the key, or a sticky choice for records without a key. Ordering also depends on retry settings and on the topic's partition count staying the same.
+
+## How it works
+
+The producer chooses a partition in this order:
+
+1. **Explicit partition.** If the `ProducerRecord` has a partition number, that partition is used and no partitioner is called.
+2. **Custom partitioner.** If `partitioner.class` names a class implementing `org.apache.kafka.clients.producer.Partitioner`, its `partition(...)` method decides.
+3. **Key present.** The built-in logic hashes the serialized key with murmur2, modulo the number of partitions. The same key always lands on the same partition while the partition count stays the same.
+4. **No key, or `partitioner.ignore.keys=true`.** The producer sticks to one partition until at least `batch.size` bytes have gone to it, then picks another. With `partitioner.adaptive.partitioning.enable=true` (the default), it sends more to partitions on faster brokers.
+
+`RoundRobinPartitioner` is the other built-in choice. It sends each record to the next partition even if the record has a key, so it breaks per-key ordering.
+
+Order within a partition is safe with the default idempotent producer, for any `max.in.flight.requests.per.connection` up to 5. Without idempotence, a failed batch that is retried can land after a later batch that succeeded first. Setting `max.in.flight.requests.per.connection=1` or `retries=0` avoids that.
+
+## Gotchas the exam loves
+
+- The key is hashed with murmur2 over the serialized key bytes, not Java `hashCode()`.
+- Adding partitions changes hash(key) % partitions, so a key's new records can go to a different partition. Kafka doesn't move existing records, so per-key ordering across the change is lost.
+- `partitioner.ignore.keys` and `partitioner.adaptive.partitioning.enable` have no effect when a custom partitioner is set.
+- `DefaultPartitioner`, `UniformStickyPartitioner` and `Partitioner.onNewBatch()` were removed in 4.0. Leave `partitioner.class` unset to get the built-in behaviour.
+- `send()` is asynchronous. It returns a `Future<RecordMetadata>` once the record is buffered. Calling `.get()` right away makes each send synchronous and cuts throughput.
+- `send()` blocks only to wait for topic metadata or for free buffer space, both bounded by `max.block.ms`.
+- Callbacks for the same partition run in send order, on the producer's I/O thread. Keep them short and move heavy work to your own `Executor`.
+- When a callback gets a non-null exception, the metadata fields are all `-1`. With `acks=0`, a successful send also reports offset `-1`.
+- A `SerializationException` is thrown straight out of `send()`. Broker errors arrive through the future or callback.
+- Retriable errors such as `NotEnoughReplicasException` and `UnknownTopicOrPartitionException` are retried for you. Non-retriable ones such as `RecordTooLargeException` and `AuthorizationException` go straight to the callback.
+
+## Java sample
+
+```java
+public class VipPartitioner implements Partitioner {
+    @Override
+    public void configure(Map<String, ?> configs) {}
+
+    @Override
+    public int partition(String topic, Object key, byte[] keyBytes,
+                         Object value, byte[] valueBytes, Cluster cluster) {
+        int partitions = cluster.partitionsForTopic(topic).size();
+        if (key != null && key.toString().startsWith("vip-")) {
+            return 0;                                   // all VIP traffic on partition 0
+        }
+        if (keyBytes == null) {
+            return ThreadLocalRandom.current().nextInt(partitions);
+        }
+        return Utils.toPositive(Utils.murmur2(keyBytes)) % partitions;
+    }
+
+    @Override
+    public void close() {}
+}
+
+// props.put(ProducerConfig.PARTITIONER_CLASS_CONFIG, VipPartitioner.class);
+producer.send(new ProducerRecord<>("customers", "vip-7", "upgrade"), (md, e) -> {
+    if (e != null) log.error("send failed", e);
+    else log.info("partition {} offset {}", md.partition(), md.offset());
+});
+```
+
+## Version notes
+
+- Kafka 4.0 removed `DefaultPartitioner`, `UniformStickyPartitioner` and `Partitioner.onNewBatch()`.
+- Keyless records used to be spread differently: round-robin per record in early clients, then a partitioner that switched partition on every new batch. The current built-in logic switches after `batch.size` bytes, and some Confluent pages still describe the older behaviour.

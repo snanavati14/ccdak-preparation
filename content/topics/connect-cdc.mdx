@@ -1,0 +1,47 @@
+Change data capture (CDC) turns the inserts, updates and deletes committed to a database into a stream of events in Kafka, without changing the application that writes the data. In Kafka Connect, a CDC connector is a **source** connector; sink connectors then copy the changes on to other systems. The exam asks about the concepts, not about any one connector's settings.
+
+## How it works
+
+- **Query-based CDC** polls the table with a predicate on a timestamp or incrementing column (a JDBC source is the usual example). It's simple, but:
+  - it can't see hard deletes
+  - it misses intermediate changes made between polls
+  - every poll adds load to the database, and latency is at least the poll interval
+- **Log-based CDC** reads the database's transaction log (redo log, binlog), as Debezium connectors do. It sees every insert, update and delete, has low latency, and adds no query load. The log format differs per database.
+- A log-based connector usually takes a **snapshot** of the existing rows first, then **streams** later changes from the log.
+- Each change event is **keyed by the row's primary key**. Same key means same partition, so all changes to one row stay in commit order.
+- A **delete** typically becomes a delete event and then a **tombstone**: the same key with a `null` value. On a compacted topic, the tombstone lets compaction remove that key.
+- The connector's **source offset** is a position in the database log. In distributed mode, the worker commits it to `offset.storage.topic`. A restarted task resumes from the last committed offset.
+- Downstream, a **sink** connector applies the events to the target system: an upsert by key, or a delete when a tombstone arrives.
+
+## Gotchas the exam loves
+
+- CDC topics are often `cleanup.policy=compact`. The topic then keeps at least the latest change per key, so a new consumer can rebuild the table.
+- A consumer that needs more than `delete.retention.ms` (default 1 day) to read a compacted topic from the start can miss tombstones.
+- Offsets are committed every `offset.flush.interval.ms` (default 60000 ms). After a crash, changes since the last commit are written again: **at-least-once**, so expect duplicates.
+- Make sinks idempotent: an upsert by key turns a duplicate into a harmless overwrite.
+- Exactly-once for source connectors (KIP-618, Kafka 3.3+):
+  - Set `exactly.once.source.support=enabled` on every worker (default `disabled`). On an existing cluster, roll through `preparing` first.
+  - It works in **distributed mode only**.
+  - `exactly.once.support=required` on the connector makes creation fail if exactly-once can't be provided.
+  - Consumers need `isolation.level=read_committed` (default `read_uncommitted`).
+- If you add partitions to a CDC topic, keys can move to a different partition, which breaks per-key order around that change.
+
+## Java sample
+
+```java
+// Rebuild the current "customers" table from a compacted CDC topic
+Map<String, String> table = new HashMap<>();
+props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+props.put(ConsumerConfig.ISOLATION_LEVEL_CONFIG, "read_committed");
+try (KafkaConsumer<String, String> consumer = new KafkaConsumer<>(props)) {
+    consumer.subscribe(List.of("db.public.customers"));
+    while (running) {
+        for (ConsumerRecord<String, String> rec : consumer.poll(Duration.ofMillis(500))) {
+            if (rec.value() == null) table.remove(rec.key());   // tombstone = row deleted
+            else table.put(rec.key(), rec.value());             // upsert by primary key
+        }
+    }
+}
+```
+
+See [log compaction](https://kafka.apache.org/44/design/design/#log-compaction-basics) and [exactly-once source connectors](https://kafka.apache.org/44/kafka-connect/user-guide/#source-connectors).

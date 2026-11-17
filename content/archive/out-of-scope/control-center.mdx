@@ -1,0 +1,26 @@
+Confluent Control Center is the web UI for managing and monitoring Confluent Platform. **This topic is low priority:** expect at most a recognition question.
+
+## How it works
+
+- It monitors brokers, topics and consumer group lag. For Connect and ksqlDB it shows status by querying those services.
+- It manages topics, messages, schemas, connectors (through the Connect REST API) and ksqlDB queries, acting as a client that forwards your requests.
+- It runs at `http://localhost:9021/` by default.
+- Reduced infrastructure mode keeps the management features but drops metrics.
+- Confluent Platform 8.0 introduced a new Control Center; earlier versions use "Control Center (Legacy)".
+
+## Gotchas the exam loves
+
+- Control Center is unrelated to the KRaft controller quorum.
+- Consumer lag in the UI is the same idea as `LAG` in `kafka-consumer-groups --describe`.
+
+## Java sample
+
+```java
+// The consumer-lag numbers Control Center shows, computed with the Admin API
+Map<TopicPartition, OffsetAndMetadata> committed =
+    admin.listConsumerGroupOffsets("billing").partitionsToOffsetAndMetadata().get();
+Map<TopicPartition, OffsetSpec> latest = new HashMap<>();
+committed.keySet().forEach(tp -> latest.put(tp, OffsetSpec.latest()));
+var ends = admin.listOffsets(latest).all().get();
+committed.forEach((tp, om) -> System.out.println(tp + " lag=" + (ends.get(tp).offset() - om.offset())));
+```

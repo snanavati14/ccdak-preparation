@@ -1,0 +1,895 @@
+{
+  "resources": [
+    {
+      "title": "Confluent Certification overview",
+      "url": "https://www.confluent.io/certification/",
+      "kind": "official",
+      "topics": [],
+      "trust": "official",
+      "note": "Landing page for all Confluent certifications. Its FAQ states 90-minute remotely proctored exams (Honorlock), multiple-choice, matching and list-order items, a 7-day wait before a retake, and rescheduling only 5+ days ahead.",
+      "lastVerified": "2026-11-05",
+      "group": "exam"
+    },
+    {
+      "title": "CCDAK exam enrollment (training.confluent.io)",
+      "url": "https://training.confluent.io/learn/courses/1102/confluent-certified-developer-for-apache-kafka-r",
+      "kind": "official",
+      "topics": [],
+      "trust": "official",
+      "note": "Where you buy and launch the exam: USD 150, 90 minutes, must be taken within 12 months of purchase and within 48 hours of clicking Start. Your account name must match your government ID.",
+      "lastVerified": "2026-11-05",
+      "group": "exam"
+    },
+    {
+      "title": "CCDAK exam guide (PDF, April 2025)",
+      "url": "https://assets.confluent.io/m/26d0f06b432e68e9/original/20250414-DS-Certified_Developer_Apache_Kafka.pdf",
+      "kind": "official",
+      "topics": [],
+      "trust": "official",
+      "note": "The official blueprint: domain weights (Fundamentals 23%, App Development 28%, Streams 12%, Connect 15%, Testing 8%, Observability 13%), item types, and an out-of-scope list that includes ksqlDB, RBAC and CFK. No question count or pass mark is given.",
+      "lastVerified": "2026-11-05",
+      "group": "exam"
+    },
+    {
+      "title": "Confluent Certified Developer Exam Preparation Guide",
+      "url": "https://training.confluent.io/learn/courses/1072/confluent-certified-developer-exam-preparation-guide",
+      "kind": "course",
+      "topics": [],
+      "trust": "official",
+      "note": "Free e-learning module on exam logistics, fees, discounts and time-management tips. Needs a free training-portal account.",
+      "lastVerified": "2026-11-05",
+      "group": "exam"
+    },
+    {
+      "title": "Producer configs (Kafka 4.4)",
+      "url": "https://kafka.apache.org/44/configuration/producer-configs/",
+      "kind": "official",
+      "topics": [
+        "acks-durability",
+        "idempotence-retries",
+        "batching-compression",
+        "partitioning-ordering"
+      ],
+      "trust": "official",
+      "note": "The source of truth for producer defaults. Note linger.ms now defaults to 5 (changed in 4.0) and acks=all with idempotence on since 3.0.",
+      "lastVerified": "2026-11-05",
+      "group": "official-docs"
+    },
+    {
+      "title": "Consumer configs (Kafka 4.4)",
+      "url": "https://kafka.apache.org/44/configuration/consumer-configs/",
+      "kind": "official",
+      "topics": [
+        "consumer-groups",
+        "offsets-commits",
+        "poll-liveness"
+      ],
+      "trust": "official",
+      "note": "Defaults for session.timeout.ms, max.poll.interval.ms, auto.offset.reset, isolation.level and the rest. Also lists share-consumer configs, which are newer than most study material.",
+      "lastVerified": "2026-11-05",
+      "group": "official-docs"
+    },
+    {
+      "title": "Topic configs (Kafka 4.4)",
+      "url": "https://kafka.apache.org/44/configuration/topic-configs/",
+      "kind": "official",
+      "topics": [
+        "log-retention-compaction",
+        "topic-design",
+        "replication-isr"
+      ],
+      "trust": "official",
+      "note": "cleanup.policy, retention.ms, segment.ms, min.insync.replicas, delete.retention.ms and other per-topic settings with defaults.",
+      "lastVerified": "2026-11-05",
+      "group": "official-docs"
+    },
+    {
+      "title": "Kafka Streams configs (Kafka 4.4)",
+      "url": "https://kafka.apache.org/44/configuration/kafka-streams-configs/",
+      "kind": "official",
+      "topics": [
+        "streams-dsl",
+        "streams-state-eos"
+      ],
+      "trust": "official",
+      "note": "processing.guarantee, num.standby.replicas, state.dir and other Streams settings.",
+      "lastVerified": "2026-11-05",
+      "group": "official-docs"
+    },
+    {
+      "title": "Kafka Connect configs (Kafka 4.4)",
+      "url": "https://kafka.apache.org/44/configuration/kafka-connect-configs/",
+      "kind": "official",
+      "topics": [
+        "connect-architecture",
+        "connect-converters-errors"
+      ],
+      "trust": "official",
+      "note": "Worker, source and sink connector configs, including errors.tolerance and the dead letter queue settings.",
+      "lastVerified": "2026-11-05",
+      "group": "official-docs"
+    },
+    {
+      "title": "Kafka design (Kafka 4.4)",
+      "url": "https://kafka.apache.org/44/design/design/",
+      "kind": "official",
+      "topics": [
+        "replication-isr",
+        "transactions-eos",
+        "log-retention-compaction"
+      ],
+      "trust": "official",
+      "note": "The design chapter: persistence, delivery semantics, replication and ISR, and log compaction. Worth reading end to end once.",
+      "lastVerified": "2026-11-05",
+      "group": "official-docs"
+    },
+    {
+      "title": "Transaction protocol (Kafka 4.4)",
+      "url": "https://kafka.apache.org/44/operations/transaction-protocol/",
+      "kind": "official",
+      "topics": [
+        "transactions-eos"
+      ],
+      "trust": "official",
+      "note": "How the transaction coordinator, producer epochs and markers work in current Kafka.",
+      "lastVerified": "2026-11-05",
+      "group": "official-docs"
+    },
+    {
+      "title": "Consumer rebalance protocol (Kafka 4.4)",
+      "url": "https://kafka.apache.org/44/operations/consumer-rebalance-protocol/",
+      "kind": "official",
+      "topics": [
+        "consumer-groups",
+        "poll-liveness"
+      ],
+      "trust": "official",
+      "note": "Covers the new group.protocol=consumer (KIP-848) alongside the classic protocol; much older study material only knows the classic one.",
+      "lastVerified": "2026-11-05",
+      "group": "official-docs"
+    },
+    {
+      "title": "Upgrade notes (Kafka 4.4)",
+      "url": "https://kafka.apache.org/44/getting-started/upgrade/",
+      "kind": "official",
+      "topics": [
+        "cli-tools"
+      ],
+      "trust": "official",
+      "note": "Lists the default and behaviour changes per release (KRaft-only 4.0, linger.ms change, removed APIs). Use it to check whether a practice answer is dated.",
+      "lastVerified": "2026-11-05",
+      "group": "official-docs"
+    },
+    {
+      "title": "Basic Kafka operations (Kafka 4.4)",
+      "url": "https://kafka.apache.org/44/operations/basic-kafka-operations/",
+      "kind": "official",
+      "topics": [
+        "cli-tools"
+      ],
+      "trust": "official",
+      "note": "CLI usage for topics, consumer groups and offset resets.",
+      "lastVerified": "2026-11-05",
+      "group": "official-docs"
+    },
+    {
+      "title": "Monitoring (Kafka 4.4)",
+      "url": "https://kafka.apache.org/44/operations/monitoring/",
+      "kind": "official",
+      "topics": [
+        "client-metrics",
+        "troubleshooting"
+      ],
+      "trust": "official",
+      "note": "The JMX metrics for producers, consumers, Streams and Connect, including consumer lag (records-lag-max).",
+      "lastVerified": "2026-11-05",
+      "group": "official-docs"
+    },
+    {
+      "title": "Authorization and ACLs (Kafka 4.4)",
+      "url": "https://kafka.apache.org/44/security/authorization-and-acls/",
+      "kind": "official",
+      "topics": [
+        "security-basics"
+      ],
+      "trust": "official",
+      "note": "ACL model and kafka-acls usage.",
+      "lastVerified": "2026-11-05",
+      "group": "official-docs"
+    },
+    {
+      "title": "Authentication using SASL (Kafka 4.4)",
+      "url": "https://kafka.apache.org/44/security/authentication-using-sasl/",
+      "kind": "official",
+      "topics": [
+        "security-basics"
+      ],
+      "trust": "official",
+      "note": "SASL mechanisms and client JAAS configuration.",
+      "lastVerified": "2026-11-05",
+      "group": "official-docs"
+    },
+    {
+      "title": "Streams core concepts (Kafka 4.4)",
+      "url": "https://kafka.apache.org/44/streams/core-concepts/",
+      "kind": "official",
+      "topics": [
+        "streams-dsl",
+        "streams-state-eos"
+      ],
+      "trust": "official",
+      "note": "Stream-table duality, time semantics, state and processing guarantees.",
+      "lastVerified": "2026-11-05",
+      "group": "official-docs"
+    },
+    {
+      "title": "Streams DSL (Kafka 4.4)",
+      "url": "https://kafka.apache.org/44/streams/developer-guide/dsl-api/",
+      "kind": "official",
+      "topics": [
+        "streams-dsl",
+        "streams-joins-windows"
+      ],
+      "trust": "official",
+      "note": "Operator reference including the join and windowing tables (which joins need co-partitioning, grace periods).",
+      "lastVerified": "2026-11-05",
+      "group": "official-docs"
+    },
+    {
+      "title": "Testing a Streams application (Kafka 4.4)",
+      "url": "https://kafka.apache.org/44/streams/developer-guide/testing/",
+      "kind": "official",
+      "topics": [
+        "unit-testing",
+        "streams-dsl"
+      ],
+      "trust": "official",
+      "note": "TopologyTestDriver, TestInputTopic and TestOutputTopic usage.",
+      "lastVerified": "2026-11-05",
+      "group": "official-docs"
+    },
+    {
+      "title": "Kafka Connect user guide (Kafka 4.4)",
+      "url": "https://kafka.apache.org/44/kafka-connect/user-guide/",
+      "kind": "official",
+      "topics": [
+        "connect-architecture",
+        "connect-converters-errors"
+      ],
+      "trust": "official",
+      "note": "Standalone vs distributed workers, the REST API, transforms and exactly-once source support.",
+      "lastVerified": "2026-11-05",
+      "group": "official-docs"
+    },
+    {
+      "title": "Schema evolution and compatibility (Confluent)",
+      "url": "https://docs.confluent.io/platform/current/schema-registry/fundamentals/schema-evolution.html",
+      "kind": "official",
+      "topics": [
+        "schema-compatibility"
+      ],
+      "trust": "official",
+      "note": "The compatibility-type table: which changes each mode allows and whether to upgrade consumers or producers first.",
+      "lastVerified": "2026-11-05",
+      "group": "official-docs"
+    },
+    {
+      "title": "Formats, serializers and deserializers (Confluent)",
+      "url": "https://docs.confluent.io/platform/current/schema-registry/fundamentals/serdes-develop/index.html",
+      "kind": "official",
+      "topics": [
+        "serialization-wire-format",
+        "schema-compatibility"
+      ],
+      "trust": "official",
+      "note": "Wire format (magic byte plus 4-byte schema ID) and subject name strategies.",
+      "lastVerified": "2026-11-05",
+      "group": "official-docs"
+    },
+    {
+      "title": "Kafka Connect for Confluent Platform",
+      "url": "https://docs.confluent.io/platform/current/connect/index.html",
+      "kind": "official",
+      "topics": [
+        "connect-architecture"
+      ],
+      "trust": "official",
+      "note": "Confluent's Connect overview: workers, connectors, tasks and converters.",
+      "lastVerified": "2026-11-05",
+      "group": "official-docs"
+    },
+    {
+      "title": "Kafka Streams basics (Confluent)",
+      "url": "https://docs.confluent.io/platform/current/streams/concepts.html",
+      "kind": "official",
+      "topics": [
+        "streams-dsl"
+      ],
+      "trust": "official",
+      "note": "Confluent's concepts page for Streams; good companion to the Apache pages.",
+      "lastVerified": "2026-11-05",
+      "group": "official-docs"
+    },
+    {
+      "title": "Message delivery guarantees (Confluent)",
+      "url": "https://docs.confluent.io/kafka/design/delivery-semantics.html",
+      "kind": "official",
+      "topics": [
+        "transactions-eos"
+      ],
+      "trust": "official",
+      "note": "Short explanation of at-most-once, at-least-once and exactly-once in Kafka terms.",
+      "lastVerified": "2026-11-05",
+      "group": "official-docs"
+    },
+    {
+      "title": "ksqlDB for Confluent Platform",
+      "url": "https://docs.confluent.io/platform/current/ksqldb/overview.html",
+      "kind": "official",
+      "topics": [],
+      "trust": "official",
+      "note": "Official ksqlDB overview. Out of scope: the April 2025 exam guide excludes Confluent components (RBAC, ksqlDB, CFK).",
+      "lastVerified": "2026-11-05",
+      "group": "official-docs"
+    },
+    {
+      "title": "Confluent REST Proxy",
+      "url": "https://docs.confluent.io/platform/current/kafka-rest/index.html",
+      "kind": "official",
+      "topics": [],
+      "trust": "official",
+      "note": "Out of scope for the CCDAK: the exam guide lists Confluent components such as ksqlDB as out of scope. What REST Proxy does and its API versions.",
+      "lastVerified": "2026-11-05",
+      "group": "official-docs"
+    },
+    {
+      "title": "Confluent Control Center",
+      "url": "https://docs.confluent.io/control-center/current/index.html",
+      "kind": "official",
+      "topics": [],
+      "trust": "official",
+      "note": "Out of scope for the CCDAK: the exam guide lists Confluent components such as ksqlDB as out of scope. Control Center docs (moved out of the Platform tree). Only for background; not in the current blueprint.",
+      "lastVerified": "2026-11-05",
+      "group": "official-docs"
+    },
+    {
+      "title": "Apache Kafka 101",
+      "url": "https://developer.confluent.io/courses/apache-kafka/events/",
+      "kind": "course",
+      "topics": [
+        "acks-durability",
+        "consumer-groups",
+        "replication-isr"
+      ],
+      "trust": "official",
+      "note": "Free Confluent course; listed in the exam guide's learning path. Start here.",
+      "lastVerified": "2026-11-05",
+      "group": "courses"
+    },
+    {
+      "title": "Apache Kafka Internal Architecture",
+      "url": "https://developer.confluent.io/courses/architecture/get-started/",
+      "kind": "course",
+      "topics": [
+        "replication-isr",
+        "log-retention-compaction"
+      ],
+      "trust": "official",
+      "note": "Free deep dive on brokers, replication, compaction and the consumer group protocol.",
+      "lastVerified": "2026-11-05",
+      "group": "courses"
+    },
+    {
+      "title": "Kafka transactions (Internal Architecture module)",
+      "url": "https://developer.confluent.io/courses/architecture/transactions/",
+      "kind": "course",
+      "topics": [
+        "transactions-eos"
+      ],
+      "trust": "official",
+      "note": "How transactions give exactly-once semantics, with a hands-on module after it.",
+      "lastVerified": "2026-11-05",
+      "group": "courses"
+    },
+    {
+      "title": "Kafka Streams 101",
+      "url": "https://developer.confluent.io/courses/kafka-streams/get-started/",
+      "kind": "course",
+      "topics": [
+        "streams-dsl",
+        "streams-joins-windows",
+        "streams-state-eos"
+      ],
+      "trust": "official",
+      "note": "Free course named in the exam guide; covers KTable, joins, windowing, time and testing.",
+      "lastVerified": "2026-11-05",
+      "group": "courses"
+    },
+    {
+      "title": "Kafka Connect 101",
+      "url": "https://developer.confluent.io/courses/kafka-connect/intro/",
+      "kind": "course",
+      "topics": [
+        "connect-architecture",
+        "connect-converters-errors"
+      ],
+      "trust": "official",
+      "note": "Free course named in the exam guide; includes error handling and dead letter queues.",
+      "lastVerified": "2026-11-05",
+      "group": "courses"
+    },
+    {
+      "title": "Schema Registry 101",
+      "url": "https://developer.confluent.io/courses/schema-registry/key-concepts/",
+      "kind": "course",
+      "topics": [
+        "schema-compatibility",
+        "serialization-wire-format"
+      ],
+      "trust": "official",
+      "note": "Free course on subjects, formats and compatibility.",
+      "lastVerified": "2026-11-05",
+      "group": "courses"
+    },
+    {
+      "title": "Designing Events and Event Streams",
+      "url": "https://developer.confluent.io/courses/event-design/intro/",
+      "kind": "course",
+      "topics": [
+        "topic-design"
+      ],
+      "trust": "official",
+      "note": "Recommended in the exam guide for data-modelling questions.",
+      "lastVerified": "2026-11-05",
+      "group": "courses"
+    },
+    {
+      "title": "Apache Kafka Security",
+      "url": "https://developer.confluent.io/courses/security/intro/",
+      "kind": "course",
+      "topics": [
+        "security-basics"
+      ],
+      "trust": "official",
+      "note": "Free course on SSL, SASL, ACLs and encryption. One module covers ZooKeeper, which is legacy in Kafka 4.x.",
+      "lastVerified": "2026-11-05",
+      "group": "courses"
+    },
+    {
+      "title": "Kafka: The Definitive Guide (free from Confluent)",
+      "url": "https://www.confluent.io/resources/ebook/kafka-the-definitive-guide/",
+      "kind": "book",
+      "topics": [
+        "acks-durability",
+        "consumer-groups",
+        "replication-isr",
+        "transactions-eos"
+      ],
+      "trust": "high",
+      "note": "Free download after a form. The page text still names the first-edition authors, so confirm you get the 2nd edition (2021). Even the 2nd edition predates the 3.0 and 4.0 default changes.",
+      "lastVerified": "2026-11-05",
+      "group": "books"
+    },
+    {
+      "title": "OpenExamPrep: Confluent Kafka Developer practice questions",
+      "url": "https://open-exam-prep.com/practice/confluent-kafka",
+      "kind": "practice",
+      "topics": [],
+      "trust": "community",
+      "note": "Free, no-signup question bank (200+). It says its items are original, not recalled exam items. Check every answer against the 4.4 docs.",
+      "lastVerified": "2026-11-05",
+      "group": "practice"
+    },
+    {
+      "title": "Confluent Community: CCDAK Preparation Tips",
+      "url": "https://forum.confluent.io/t/ccdak-preparation-tips/10715",
+      "kind": "forum",
+      "topics": [],
+      "trust": "community",
+      "note": "2024 thread asking for resources beyond Confluent's own. The only reply points to GitHub study repos; not much detail.",
+      "lastVerified": "2026-11-05",
+      "group": "practice"
+    },
+    {
+      "title": "Confluent Community: Training required for success exam",
+      "url": "https://forum.confluent.io/t/training-required-for-success-exam/825",
+      "kind": "forum",
+      "topics": [],
+      "trust": "community",
+      "note": "2021 thread with prep advice: the Confluent developer course, the free Fundamentals accreditation and hands-on experience.",
+      "lastVerified": "2026-11-05",
+      "group": "practice"
+    },
+    {
+      "title": "Radu Pana: CCDAK Study Guide (Hashnode, 2025)",
+      "url": "https://radupana.hashnode.dev/confluent-certified-developer-for-apache-kafka-ccdak-study-guide",
+      "kind": "blog",
+      "topics": [
+        "acks-durability",
+        "consumer-groups",
+        "streams-dsl",
+        "connect-architecture",
+        "schema-compatibility"
+      ],
+      "trust": "caution",
+      "note": "Long study guide from someone who passed in July 2025. Conflicts with the docs: it calls acks=1 the common default and linger.ms=0 the default (4.x: acks=all, linger.ms=5).",
+      "lastVerified": "2026-11-05",
+      "group": "practice"
+    },
+    {
+      "title": "danielsobrado/CCDAK-Exam-Questions",
+      "url": "https://github.com/danielsobrado/CCDAK-Exam-Questions",
+      "kind": "github",
+      "topics": [
+        "acks-durability",
+        "consumer-groups",
+        "streams-dsl",
+        "connect-architecture"
+      ],
+      "trust": "caution",
+      "note": "Large set of AI-assisted practice questions and notes. Licence CC BY-NC-ND 4.0, so don't copy. Its producer notes give pre-3.0 defaults (acks=1, enable.idempotence=false, linger.ms=0).",
+      "lastVerified": "2026-11-05",
+      "group": "repos"
+    },
+    {
+      "title": "vaquarkhan/CCDAK-Exam-Practice-Test-2",
+      "url": "https://github.com/vaquarkhan/CCDAK-Exam-Practice-Test-2",
+      "kind": "github",
+      "topics": [
+        "acks-durability",
+        "consumer-groups"
+      ],
+      "trust": "caution",
+      "note": "No licence file; last updated 2020. The description matches a paid Udemy course, so treat it as dated and don't copy. Covers ZooKeeper and KSQL, which no longer apply.",
+      "lastVerified": "2026-11-05",
+      "group": "repos"
+    },
+    {
+      "title": "Exactly-once Semantics is Possible (Confluent)",
+      "url": "https://www.confluent.io/blog/exactly-once-semantics-are-possible-heres-how-apache-kafka-does-it/",
+      "kind": "blog",
+      "topics": [
+        "transactions-eos",
+        "idempotence-retries"
+      ],
+      "trust": "high",
+      "note": "Neha Narkhede's original EOS post. The concepts hold up, but the configs date from 0.11.",
+      "lastVerified": "2026-11-05",
+      "group": "articles"
+    },
+    {
+      "title": "Transactions in Apache Kafka (Confluent)",
+      "url": "https://www.confluent.io/blog/transactions-apache-kafka/",
+      "kind": "blog",
+      "topics": [
+        "transactions-eos"
+      ],
+      "trust": "high",
+      "note": "Classic explanation of the transaction coordinator, markers and read_committed.",
+      "lastVerified": "2026-11-05",
+      "group": "articles"
+    },
+    {
+      "title": "Hands-Free Kafka Replication (Confluent)",
+      "url": "https://www.confluent.io/blog/hands-free-kafka-replication-a-lesson-in-operational-simplicity/",
+      "kind": "blog",
+      "topics": [
+        "replication-isr"
+      ],
+      "trust": "high",
+      "note": "Explains how ISR membership is decided by replica.lag.time.max.ms.",
+      "lastVerified": "2026-11-05",
+      "group": "articles"
+    },
+    {
+      "title": "How to choose the number of topics/partitions (Confluent)",
+      "url": "https://www.confluent.io/blog/how-choose-number-topics-partitions-kafka-cluster/",
+      "kind": "blog",
+      "topics": [
+        "topic-design"
+      ],
+      "trust": "high",
+      "note": "Jun Rao's partition-count guidance. Some limits are ZooKeeper-era; KRaft raises them.",
+      "lastVerified": "2026-11-05",
+      "group": "articles"
+    },
+    {
+      "title": "Sticky partitioner (Confluent)",
+      "url": "https://www.confluent.io/blog/apache-kafka-producer-improvements-sticky-partitioner/",
+      "kind": "blog",
+      "topics": [
+        "partitioning-ordering",
+        "batching-compression"
+      ],
+      "trust": "high",
+      "note": "Why keyless records stick to one partition per batch (KIP-480) instead of round-robin.",
+      "lastVerified": "2026-11-05",
+      "group": "articles"
+    },
+    {
+      "title": "Apache Kafka message compression (Confluent)",
+      "url": "https://www.confluent.io/blog/apache-kafka-message-compression/",
+      "kind": "blog",
+      "topics": [
+        "batching-compression"
+      ],
+      "trust": "high",
+      "note": "Producer vs broker compression.type and the codec trade-offs.",
+      "lastVerified": "2026-11-05",
+      "group": "articles"
+    },
+    {
+      "title": "Multi-threaded messaging with the Kafka consumer (Confluent)",
+      "url": "https://www.confluent.io/blog/kafka-consumer-multi-threaded-messaging/",
+      "kind": "blog",
+      "topics": [
+        "poll-liveness",
+        "offsets-commits"
+      ],
+      "trust": "high",
+      "note": "Poll loop, max.poll.interval.ms and safe offset commits with worker threads.",
+      "lastVerified": "2026-11-05",
+      "group": "articles"
+    },
+    {
+      "title": "KIP-848: new consumer rebalance protocol (Confluent)",
+      "url": "https://www.confluent.io/blog/kip-848-consumer-rebalance-protocol/",
+      "kind": "blog",
+      "topics": [
+        "consumer-groups"
+      ],
+      "trust": "high",
+      "note": "The broker-driven rebalance protocol that became GA in Kafka 4.0.",
+      "lastVerified": "2026-11-05",
+      "group": "articles"
+    },
+    {
+      "title": "Apache Kafka 4.0 release (Confluent)",
+      "url": "https://www.confluent.io/blog/latest-apache-kafka-release/",
+      "kind": "blog",
+      "topics": [
+        "cli-tools"
+      ],
+      "trust": "high",
+      "note": "Summary of 4.0: KRaft only, KIP-848, queues. Useful for spotting outdated study material.",
+      "lastVerified": "2026-11-05",
+      "group": "articles"
+    },
+    {
+      "title": "Crossing the Streams: Joins in Apache Kafka (Confluent)",
+      "url": "https://www.confluent.io/blog/crossing-streams-joins-apache-kafka/",
+      "kind": "blog",
+      "topics": [
+        "streams-joins-windows"
+      ],
+      "trust": "high",
+      "note": "Worked examples of every join type. Written before grace periods became mandatory in the windowing APIs.",
+      "lastVerified": "2026-11-05",
+      "group": "articles"
+    },
+    {
+      "title": "Kafka Streams' take on watermarks and triggers (Confluent)",
+      "url": "https://www.confluent.io/blog/kafka-streams-take-on-watermarks-and-triggers/",
+      "kind": "blog",
+      "topics": [
+        "streams-joins-windows"
+      ],
+      "trust": "high",
+      "note": "Grace periods and suppress() for final window results.",
+      "lastVerified": "2026-11-05",
+      "group": "articles"
+    },
+    {
+      "title": "Tuning RocksDB for Kafka Streams state stores (Confluent)",
+      "url": "https://www.confluent.io/blog/how-to-tune-rocksdb-kafka-streams-state-stores-performance/",
+      "kind": "blog",
+      "topics": [
+        "streams-state-eos"
+      ],
+      "trust": "high",
+      "note": "How state stores use RocksDB; deeper than the exam needs.",
+      "lastVerified": "2026-11-05",
+      "group": "articles"
+    },
+    {
+      "title": "Kafka Connect deep dive: converters and serialization (Confluent)",
+      "url": "https://www.confluent.io/blog/kafka-connect-deep-dive-converters-serialization-explained/",
+      "kind": "blog",
+      "topics": [
+        "connect-converters-errors",
+        "serialization-wire-format"
+      ],
+      "trust": "high",
+      "note": "Robin Moffatt on converters, schemas.enable and common errors.",
+      "lastVerified": "2026-11-05",
+      "group": "articles"
+    },
+    {
+      "title": "Kafka Connect deep dive: error handling and DLQs (Confluent)",
+      "url": "https://www.confluent.io/blog/kafka-connect-deep-dive-error-handling-dead-letter-queues/",
+      "kind": "blog",
+      "topics": [
+        "connect-converters-errors"
+      ],
+      "trust": "high",
+      "note": "errors.tolerance and dead letter queue configs with examples.",
+      "lastVerified": "2026-11-05",
+      "group": "articles"
+    },
+    {
+      "title": "Common mistakes configuring multiple Connect workers (rmoff)",
+      "url": "https://rmoff.net/2019/11/22/common-mistakes-made-when-configuring-multiple-kafka-connect-workers/",
+      "kind": "blog",
+      "topics": [
+        "connect-architecture"
+      ],
+      "trust": "community",
+      "note": "Robin Moffatt on group.id and the internal storage topics in distributed mode.",
+      "lastVerified": "2026-11-05",
+      "group": "articles"
+    },
+    {
+      "title": "Should you put several event types in one topic? (Confluent)",
+      "url": "https://www.confluent.io/blog/put-several-event-types-kafka-topic/",
+      "kind": "blog",
+      "topics": [
+        "topic-design",
+        "schema-compatibility"
+      ],
+      "trust": "high",
+      "note": "Martin Kleppmann on subject name strategies and topic design.",
+      "lastVerified": "2026-11-05",
+      "group": "articles"
+    },
+    {
+      "title": "Yes, Virginia, you really do need a Schema Registry (Confluent)",
+      "url": "https://www.confluent.io/blog/schema-registry-kafka-stream-processing-yes-virginia-you-really-need-one/",
+      "kind": "blog",
+      "topics": [
+        "schema-compatibility"
+      ],
+      "trust": "high",
+      "note": "Why schemas and compatibility checks matter.",
+      "lastVerified": "2026-11-05",
+      "group": "articles"
+    },
+    {
+      "title": "Why Avro for Kafka data? (Confluent)",
+      "url": "https://www.confluent.io/blog/avro-kafka-data/",
+      "kind": "blog",
+      "topics": [
+        "serialization-wire-format"
+      ],
+      "trust": "high",
+      "note": "Jay Kreps' case for Avro with Kafka.",
+      "lastVerified": "2026-11-05",
+      "group": "articles"
+    },
+    {
+      "title": "Apache Kafka Security 101 (Confluent)",
+      "url": "https://www.confluent.io/blog/apache-kafka-security-authorization-authentication-encryption/",
+      "kind": "blog",
+      "topics": [
+        "security-basics"
+      ],
+      "trust": "high",
+      "note": "Overview of TLS, SASL and ACLs. Older examples use ZooKeeper-based tooling.",
+      "lastVerified": "2026-11-05",
+      "group": "articles"
+    },
+    {
+      "title": "Kafka listeners explained (Confluent)",
+      "url": "https://www.confluent.io/blog/kafka-listeners-explained/",
+      "kind": "blog",
+      "topics": [
+        "security-basics",
+        "cli-tools"
+      ],
+      "trust": "high",
+      "note": "Robin Moffatt on listeners and advertised.listeners, a common cause of client connection failures.",
+      "lastVerified": "2026-11-05",
+      "group": "articles"
+    },
+    {
+      "title": "Error handling patterns in Kafka (Confluent)",
+      "url": "https://www.confluent.io/blog/error-handling-patterns-in-kafka/",
+      "kind": "blog",
+      "topics": [
+        "acks-durability",
+        "consumer-groups"
+      ],
+      "trust": "high",
+      "note": "Retryable vs non-retryable errors and DLQ patterns, which the exam guide lists explicitly.",
+      "lastVerified": "2026-11-05",
+      "group": "articles"
+    },
+    {
+      "title": "Kafka acks explained (Conduktor)",
+      "url": "https://www.conduktor.io/kafka/kafka-producer-acks-deep-dive",
+      "kind": "blog",
+      "topics": [
+        "acks-durability"
+      ],
+      "trust": "community",
+      "note": "Clear diagrams of acks=0/1/all with min.insync.replicas.",
+      "lastVerified": "2026-11-05",
+      "group": "articles"
+    },
+    {
+      "title": "Kafka storage internals: segments, rolling and retention (Strimzi)",
+      "url": "https://strimzi.io/blog/2021/12/17/kafka-segment-retention/",
+      "kind": "blog",
+      "topics": [
+        "log-retention-compaction"
+      ],
+      "trust": "community",
+      "note": "Hands-on look at how retention deletes whole segments, never the active one.",
+      "lastVerified": "2026-11-05",
+      "group": "articles"
+    },
+    {
+      "title": "Testing Kafka Streams code (Confluent docs)",
+      "url": "https://docs.confluent.io/platform/current/streams/developer-guide/test-streams.html",
+      "kind": "blog",
+      "topics": [
+        "unit-testing"
+      ],
+      "trust": "high",
+      "note": "TopologyTestDriver and mock clients from Confluent's docs.",
+      "lastVerified": "2026-11-05",
+      "group": "articles"
+    },
+    {
+      "title": "My experience getting CCDAK (dev.to, 2021)",
+      "url": "https://dev.to/sougat818/my-experience-getting-confluent-certification-for-apache-kafka-ccdak-582",
+      "kind": "blog",
+      "topics": [],
+      "trust": "community",
+      "note": "First-hand 2021 report: proctored online, 90 minutes, some very specific config questions. Older exam version, so question count and format may differ.",
+      "lastVerified": "2026-11-05",
+      "group": "practice"
+    }
+  ],
+  "examReports": [
+    {
+      "theme": "Exact config behaviour, not just concepts",
+      "detail": "Candidates say some questions turn on precise settings and defaults, so learn the config reference pages, not just the ideas.",
+      "sources": [
+        "https://dev.to/sougat818/my-experience-getting-confluent-certification-for-apache-kafka-ccdak-582",
+        "https://radupana.hashnode.dev/confluent-certified-developer-for-apache-kafka-ccdak-study-guide"
+      ]
+    },
+    {
+      "theme": "Hands-on experience matters",
+      "detail": "People who passed and forum regulars both say real use of producers, consumers and the CLI helps more than reading alone.",
+      "sources": [
+        "https://forum.confluent.io/t/training-required-for-success-exam/825",
+        "https://dev.to/sougat818/my-experience-getting-confluent-certification-for-apache-kafka-ccdak-582"
+      ]
+    },
+    {
+      "theme": "Practice tests are often dated",
+      "detail": "Candidates find many paid and free question banks out of date after Kafka's recent changes. Check every answer against current docs.",
+      "sources": [
+        "https://forum.confluent.io/t/ccdak-preparation-tips/10715",
+        "https://radupana.hashnode.dev/confluent-certified-developer-for-apache-kafka-ccdak-study-guide"
+      ]
+    },
+    {
+      "theme": "No published question count or pass mark",
+      "detail": "Confluent publishes 90 minutes and the domain weights but no question count or pass mark. Third-party numbers (60 questions, ~70-75%) are guesses.",
+      "sources": [
+        "https://open-exam-prep.com/practice/confluent-kafka",
+        "https://dev.to/sougat818/my-experience-getting-confluent-certification-for-apache-kafka-ccdak-582"
+      ]
+    },
+    {
+      "theme": "Streams and Connect get real weight",
+      "detail": "Prep write-ups put serious time on Streams (KTable, joins, windows, state) and Connect (converters, errors), in line with the 12% and 15% blueprint weights.",
+      "sources": [
+        "https://radupana.hashnode.dev/confluent-certified-developer-for-apache-kafka-ccdak-study-guide",
+        "https://forum.confluent.io/t/training-required-for-success-exam/825"
+      ]
+    }
+  ]
+}

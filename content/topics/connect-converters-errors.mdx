@@ -1,0 +1,50 @@
+Converters decide how Connect records are turned into bytes in Kafka. Single message transforms (SMTs) make small changes to one record at a time. The `errors.*` settings decide whether a bad record stops the task or is skipped.
+
+## How it works
+
+- **Source path:** connector → SMT chain → converter → Kafka.
+- **Sink path:** Kafka → converter → SMT chain → connector.
+- `key.converter` and `value.converter` are set on the worker and can be overridden per connector. Examples:
+  - `AvroConverter` and `ProtobufConverter` need Schema Registry.
+  - `JsonConverter` doesn't use Schema Registry.
+  - `StringConverter` and `ByteArrayConverter` are simple pass-throughs.
+- SMTs are listed in `transforms` and applied in that order. Each alias needs `transforms.<alias>.type`. Built-in examples:
+  - `InsertField`
+  - `ReplaceField`
+  - `RegexRouter`
+  - `ValueToKey`
+  - `Filter`
+  - `Cast`
+- SMTs are lightweight and work on one record at a time. Use Kafka Streams or ksqlDB for joins and aggregations.
+
+## Gotchas the exam loves
+
+- `errors.tolerance` defaults to `none`: the first conversion or transform error fails the task. `all` skips bad records.
+- With `all` and nothing else configured, failures are silent; only metrics such as `total-records-skipped` show them.
+- `errors.deadletterqueue.topic.name` is empty by default and works **only for sink connectors**.
+- `errors.deadletterqueue.context.headers.enable=true` adds error headers whose keys start with `__connect.errors.`.
+- `errors.log.enable` and `errors.log.include.messages` both default to `false`. The second can write keys and values to the log.
+- `errors.retry.timeout` defaults to 0 (no retries). `-1` retries forever.
+- `JsonConverter` with `schemas.enable=true` expects a JSON envelope holding both schema and payload. Plain JSON data then fails to convert.
+
+## Java sample
+
+```java
+// Sink connector config: tolerate bad records and park them in a DLQ
+Map<String, String> config = Map.of(
+    "connector.class", "FileStreamSink",
+    "topics", "orders",
+    "value.converter", "org.apache.kafka.connect.json.JsonConverter",
+    "value.converter.schemas.enable", "false",
+    "errors.tolerance", "all",
+    "errors.deadletterqueue.topic.name", "orders-dlq",
+    "errors.deadletterqueue.context.headers.enable", "true",
+    "transforms", "addSource",
+    "transforms.addSource.type", "org.apache.kafka.connect.transforms.InsertField$Value",
+    "transforms.addSource.static.field", "source",
+    "transforms.addSource.static.value", "orders-sink");
+```
+
+## Version notes
+
+<Note>Confluent's guide calls `schemas.enable=false` the default, but the Apache sample worker files set it to `true`. Set it explicitly.</Note>

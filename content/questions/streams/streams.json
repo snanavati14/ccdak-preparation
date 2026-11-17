@@ -1,0 +1,2841 @@
+[
+  {
+    "id": "kstr-duality-001",
+    "domain": "streams",
+    "topics": [
+      "streams-dsl"
+    ],
+    "type": "single",
+    "stem": "A topic contains two records for the same key, in this order: `(\"alice\", 1)` then `(\"alice\", 3)`. Application X reads the topic with `builder.stream(...)`, application Y reads it with `builder.table(...)`. Each then sums the values per key. Which results do X and Y report for `alice`?",
+    "options": [
+      {
+        "id": "a",
+        "text": "X reports 4 and Y reports 3"
+      },
+      {
+        "id": "b",
+        "text": "X reports 3 and Y reports 4"
+      },
+      {
+        "id": "c",
+        "text": "Both report 4"
+      },
+      {
+        "id": "d",
+        "text": "Both report 3"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "A `KStream` is a **record stream**: every record is an independent \"INSERT\", so summing gives `1 + 3 = 4`.\n\nA `KTable` is a **changelog stream**: a record is an \"UPSERT\" of the latest value for its key, so `(\"alice\", 3)` replaces `(\"alice\", 1)` and the sum is 3.\n\nThe other combinations mix up the two abstractions. This exact example is used in the DSL guide to contrast `KStream` and `KTable`.",
+    "references": [
+      {
+        "title": "Streams DSL: KTable",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/dsl-api/#ktable",
+        "kind": "official"
+      },
+      {
+        "title": "Streams DSL: KStream",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/dsl-api/#kstream",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "kstr-duality-002",
+    "domain": "streams",
+    "topics": [
+      "streams-dsl"
+    ],
+    "type": "multi",
+    "stem": "Which statements about a `KTable` are true? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "A record with a `null` value is treated as a delete (tombstone) for its key"
+      },
+      {
+        "id": "b",
+        "text": "A record is interpreted as an upsert of the latest value for its key"
+      },
+      {
+        "id": "c",
+        "text": "Enabling log compaction on its source topic would change its results, so compaction must stay off"
+      },
+      {
+        "id": "d",
+        "text": "Every application instance holds the data of all partitions of its source topic"
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "A `KTable` is an abstraction of a changelog stream: each record is an UPSERT (INSERT/UPDATE) for its key, and a `null` value means DELETE (a tombstone).\n\n- Log compaction is *safe* for a `KTable`, because only the latest value per key matters. It is the `KStream` (record stream) where compaction would change results.\n- Holding all partitions on every instance describes a `GlobalKTable`. A `KTable` instance holds only the partitions assigned to that instance.",
+    "references": [
+      {
+        "title": "Streams DSL: KTable",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/dsl-api/#ktable",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "kstr-globalktable-001",
+    "domain": "streams",
+    "topics": [
+      "streams-dsl"
+    ],
+    "type": "single",
+    "stem": "An input topic has 5 partitions and the application runs as 5 instances. If the topic is read with `builder.globalTable(...)` instead of `builder.table(...)`, what does each instance's local table contain?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Data from all 5 partitions of the topic"
+      },
+      {
+        "id": "b",
+        "text": "Data from the 1 partition assigned to that instance"
+      },
+      {
+        "id": "c",
+        "text": "Data from the partitions that match the partitions of the stream it is joined with"
+      },
+      {
+        "id": "d",
+        "text": "Only the keys that have been looked up by a join so far"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "A `GlobalKTable` is populated with data from **all** partitions of its topic on every instance, so each instance has a full copy. With a `KTable`, each instance's local table holds only the partitions assigned to it (here, one each).\n\nThe table is not filled lazily by lookups. It is bootstrapped from the whole topic when the instance starts.",
+    "references": [
+      {
+        "title": "Streams DSL: GlobalKTable",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/dsl-api/#globalktable",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "kstr-globalktable-002",
+    "domain": "streams",
+    "topics": [
+      "streams-dsl",
+      "streams-joins-windows"
+    ],
+    "type": "multi",
+    "stem": "A team plans to replace a partitioned `KTable` of reference data with a `GlobalKTable`. Which statements about that change are true? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "Joins from a `KStream` against the `GlobalKTable` do not need the inputs to be co-partitioned"
+      },
+      {
+        "id": "b",
+        "text": "Each instance uses more local storage and reads more from the brokers, because the whole topic is read"
+      },
+      {
+        "id": "c",
+        "text": "A `KStream`-`GlobalKTable` outer join becomes available"
+      },
+      {
+        "id": "d",
+        "text": "Updates to the `GlobalKTable` now trigger join results, not just stream records"
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "Benefits of a `GlobalKTable`: joins against it need no co-partitioning, it supports lookups by a value field (via a `KeyValueMapper`), and it can broadcast data to every instance.\n\nDownsides: more local storage and more network and broker load, because each instance tracks the entire topic.\n\n- `KStream`-`GlobalKTable` joins support inner and left joins only, not outer.\n- As with a `KStream`-`KTable` join, only stream-side records trigger the join. Table updates only change the lookup state.",
+    "references": [
+      {
+        "title": "Streams DSL: GlobalKTable",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/dsl-api/#globalktable",
+        "kind": "official"
+      },
+      {
+        "title": "Streams DSL: KStream-GlobalKTable join",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/dsl-api/#kstream-globalktable-join",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "kstr-stateless-001",
+    "domain": "streams",
+    "topics": [
+      "streams-dsl"
+    ],
+    "type": "multi",
+    "stem": "Which of these DSL operations are stateless, that is, need no state store? (Choose three.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "`filter`"
+      },
+      {
+        "id": "b",
+        "text": "`mapValues`"
+      },
+      {
+        "id": "c",
+        "text": "`selectKey`"
+      },
+      {
+        "id": "d",
+        "text": "`count`"
+      },
+      {
+        "id": "e",
+        "text": "`reduce`"
+      },
+      {
+        "id": "f",
+        "text": "`join`"
+      }
+    ],
+    "correct": [
+      "a",
+      "b",
+      "c"
+    ],
+    "explanation": "The DSL guide lists `filter`, `map`, `mapValues`, `flatMap`, `flatMapValues`, `selectKey`, `peek`, `foreach`, `split` and similar as **stateless** transformations: they process one record at a time without a state store.\n\n`count` and `reduce` (aggregations) and joins are **stateful**: they need a state store to remember earlier records or running results. (`selectKey` is stateless, though it marks the stream for repartitioning if a grouping or join follows.)",
+    "references": [
+      {
+        "title": "Streams DSL: stateless transformations",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/dsl-api/#stateless-transformations",
+        "kind": "official"
+      },
+      {
+        "title": "Streams DSL: stateful transformations",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/dsl-api/#stateful-transformations",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "kstr-repartition-001",
+    "domain": "streams",
+    "topics": [
+      "streams-dsl"
+    ],
+    "type": "single",
+    "stem": "Consider this topology:\n\n```java\nbuilder.stream(\"orders\", Consumed.with(Serdes.String(), orderSerde))\n       .map((orderId, order) -> KeyValue.pair(order.customerId(), order))\n       .groupByKey(Grouped.with(Serdes.String(), orderSerde))\n       .count();\n```\n\nWhat does Kafka Streams do between `map` and `count`?",
+    "options": [
+      {
+        "id": "a",
+        "text": "It writes the records to an internal repartition topic and reads them back, so each customer id lands in one task"
+      },
+      {
+        "id": "b",
+        "text": "Nothing extra: `groupByKey` never repartitions"
+      },
+      {
+        "id": "c",
+        "text": "It throws an exception because `groupByKey` cannot follow `map`"
+      },
+      {
+        "id": "d",
+        "text": "It repartitions only if the `orders` topic has more than one partition, and decides this per record"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`map` can change the key, so it **marks the stream for repartitioning**. `groupByKey` repartitions \"if and only if the stream was marked for re-partitioning\", which it is here. Streams inserts an internal repartition topic so all records with the same new key (customer id) reach the same task before `count`.\n\n- `groupByKey` does repartition when the stream was marked.\n- The combination is valid and common.\n- The decision is made when the topology is built, not per record.",
+    "references": [
+      {
+        "title": "Streams DSL: stateless transformations (map, groupByKey)",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/dsl-api/#stateless-transformations",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "kstr-repartition-002",
+    "domain": "streams",
+    "topics": [
+      "streams-dsl"
+    ],
+    "type": "single",
+    "stem": "A developer upper-cases each value before counting per key:\n\n```java\nstream.map((k, v) -> KeyValue.pair(k, v.toUpperCase()))\n      .groupByKey()\n      .count();\n```\n\nThe key is returned unchanged. A reviewer suggests replacing `map` with `mapValues(v -> v.toUpperCase())`. What is the effect of the change?",
+    "options": [
+      {
+        "id": "a",
+        "text": "It removes an unnecessary repartition topic, because `mapValues` does not mark the stream for repartitioning"
+      },
+      {
+        "id": "b",
+        "text": "No effect: Streams detects that the key was not modified and skips repartitioning anyway"
+      },
+      {
+        "id": "c",
+        "text": "It makes `count` stateless"
+      },
+      {
+        "id": "d",
+        "text": "It changes the result, because `mapValues` drops records whose key is `null`"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`map` may change the key, so Streams marks the stream for repartitioning whatever the lambda actually returns. A following `groupByKey` then adds a repartition topic. `mapValues` cannot change the key, so the stream is not marked and no repartition topic is created. The DSL guide says: \"If possible use `mapValues` instead, which will not cause data re-partitioning.\"\n\n- Streams does not inspect lambdas to see if the key changed.\n- `count` is always stateful.\n- `mapValues` does not filter records.",
+    "references": [
+      {
+        "title": "Streams DSL: map and mapValues",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/dsl-api/#stateless-transformations",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "kstr-repartition-003",
+    "domain": "streams",
+    "topics": [
+      "streams-dsl"
+    ],
+    "type": "multi",
+    "stem": "Each option is applied to a `KStream` read straight from a topic, and is followed by `groupByKey().count()`. Which operations cause Kafka Streams to create a repartition topic? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "`selectKey((k, v) -> v.getUserId())`"
+      },
+      {
+        "id": "b",
+        "text": "`flatMap((k, v) -> ...)`"
+      },
+      {
+        "id": "c",
+        "text": "`flatMapValues(v -> ...)`"
+      },
+      {
+        "id": "d",
+        "text": "`filter((k, v) -> v != null)`"
+      },
+      {
+        "id": "e",
+        "text": "`peek((k, v) -> log.info(...))`"
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "`selectKey`, `map` and `flatMap` can change the key, so they **mark the stream for repartitioning**; a following grouping or join then creates a repartition topic.\n\n`flatMapValues`, `mapValues`, `filter` and `peek` keep the key, so they do not mark the stream, and `groupByKey` reuses the existing partitioning.",
+    "references": [
+      {
+        "title": "Streams DSL: stateless transformations",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/dsl-api/#stateless-transformations",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "kstr-repartition-004",
+    "domain": "streams",
+    "topics": [
+      "streams-dsl"
+    ],
+    "type": "single",
+    "stem": "Records are already keyed by `userId` in the input topic, and the code needs a per-user count. Which grouping call avoids an unnecessary repartition topic?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`stream.groupByKey()`"
+      },
+      {
+        "id": "b",
+        "text": "`stream.groupBy((k, v) -> k)`"
+      },
+      {
+        "id": "c",
+        "text": "`stream.selectKey((k, v) -> k).groupByKey()`"
+      },
+      {
+        "id": "d",
+        "text": "`stream.repartition().groupByKey()`"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`groupByKey` repartitions only if the stream was already marked for repartitioning, which a stream read straight from a topic is not.\n\n- `groupBy` **always** causes repartitioning. It is shorthand for `selectKey(...).groupByKey()`.\n- `selectKey` marks the stream even when it returns the same key.\n- `repartition()` always triggers repartitioning.",
+    "references": [
+      {
+        "title": "Streams DSL: groupByKey and groupBy",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/dsl-api/#stateless-transformations",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "kstr-appid-001",
+    "domain": "streams",
+    "topics": [
+      "streams-dsl"
+    ],
+    "type": "multi",
+    "stem": "What is `application.id` used for in a Kafka Streams application? (Choose three.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "As the `group.id` of the application's consumers"
+      },
+      {
+        "id": "b",
+        "text": "As the prefix of internal topic names, such as changelog and repartition topics"
+      },
+      {
+        "id": "c",
+        "text": "As the name of the application's subdirectory under `state.dir`"
+      },
+      {
+        "id": "d",
+        "text": "As the replication factor source for internal topics"
+      },
+      {
+        "id": "e",
+        "text": "As the name of the output topic written by `to()`"
+      }
+    ],
+    "correct": [
+      "a",
+      "b",
+      "c"
+    ],
+    "explanation": "The Streams developer guide lists where `application.id` is used: as the default `client.id` prefix, as the consumer `group.id`, as the subdirectory name under `state.dir`, and as the prefix of internal topic names.\n\n- Internal topic replication comes from the Streams `replication.factor` setting (default `-1`, meaning the broker default).\n- Output topics are named explicitly in `to()`.\n\n`application.id` has no default and must be unique in the cluster. All instances of the same application must use the same value.",
+    "references": [
+      {
+        "title": "Streams developer guide: application.id",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/config-streams/#applicationid",
+        "kind": "official"
+      },
+      {
+        "title": "Kafka Streams Configs: application.id",
+        "url": "https://kafka.apache.org/44/configuration/kafka-streams-configs/#streamsconfigs_application.id",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "kstr-appid-002",
+    "domain": "streams",
+    "topics": [
+      "streams-dsl"
+    ],
+    "type": "single",
+    "stem": "Version 2 of a Streams application changes its topology. The team wants it to start with fresh internal topics and state instead of reusing what version 1 left behind. What does the Streams developer guide recommend?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Change `application.id`, for example by embedding a version such as `my-app-v2`"
+      },
+      {
+        "id": "b",
+        "text": "Keep `application.id` and set `num.standby.replicas=0`"
+      },
+      {
+        "id": "c",
+        "text": "Keep `application.id` and set `auto.offset.reset=latest`"
+      },
+      {
+        "id": "d",
+        "text": "Keep `application.id` and change `client.id`"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`application.id` scopes the consumer group, internal topics and local state. The developer guide says that when an application is updated, `application.id` should be changed unless you want to reuse the existing internal topics and state stores, for example by embedding the version (`my-app-v1.0.0`, `my-app-v1.0.2`).\n\n- Standbys, `auto.offset.reset` and `client.id` do not change which group, internal topics or state directory are used.\n- To reuse the same id but start over, the separate Streams application reset tool exists.",
+    "references": [
+      {
+        "title": "Streams developer guide: application.id",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/config-streams/#applicationid",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "kstr-internal-topics-001",
+    "domain": "streams",
+    "topics": [
+      "streams-dsl",
+      "streams-state-eos"
+    ],
+    "type": "single",
+    "stem": "An application with `application.id=payments` aggregates into a store named with `Materialized.as(\"totals\")`. Under the documented naming convention for internal topics, what is the backing changelog topic called?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`payments-totals-changelog`"
+      },
+      {
+        "id": "b",
+        "text": "`totals-payments-changelog`"
+      },
+      {
+        "id": "c",
+        "text": "`__payments_totals_changelog`"
+      },
+      {
+        "id": "d",
+        "text": "`payments-changelog-totals`"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "Internal topics follow the convention `<application.id>-<operatorName>-<suffix>`. For a store's changelog the name part is the store name and the suffix is `changelog`, giving `payments-totals-changelog`. Repartition topics use the `-repartition` suffix in the same way.\n\nThis is also why ACLs for a Streams application are usually granted on the **prefix** `application.id`: all internal topics and the consumer group start with it.\n\nThe docs note the convention is not guaranteed to stay the same in future releases. Naming stores yourself keeps these names stable when the topology changes.",
+    "references": [
+      {
+        "title": "Managing Streams application topics: internal topics",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/manage-topics/#internal-topics",
+        "kind": "official"
+      },
+      {
+        "title": "Naming operators in a Streams DSL application",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/dsl-topology-naming/#changing-names",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "likely",
+    "source": "original"
+  },
+  {
+    "id": "kstr-internal-topics-002",
+    "domain": "streams",
+    "topics": [
+      "streams-dsl",
+      "streams-state-eos"
+    ],
+    "type": "multi",
+    "stem": "Kafka Streams creates its internal topics with default settings. Which statements about those defaults are true? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "Repartition topics use `cleanup.policy=delete` with infinite retention (`-1`); Streams purges records once they are consumed"
+      },
+      {
+        "id": "b",
+        "text": "Changelog topics for key-value stores use `cleanup.policy=compact`"
+      },
+      {
+        "id": "c",
+        "text": "Changelog topics for windowed stores use `cleanup.policy=compact` only"
+      },
+      {
+        "id": "d",
+        "text": "Repartition topics use `cleanup.policy=compact`"
+      },
+      {
+        "id": "e",
+        "text": "All internal topics use `message.timestamp.type=LogAppendTime`"
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "From \"Managing Streams Application Topics\":\n\n- Repartition topics: `cleanup.policy=delete`, retention `-1` (infinite). Streams deletes fully consumed records itself, every `repartition.purge.interval.ms` (default 30000).\n- Key-value store changelogs: `compact`.\n- Windowed store changelogs: `delete,compact`, with retention set to the store's retention plus 24 hours (`windowstore.changelog.additional.retention.ms`, default 1 day). Compaction alone would not bound the topic, because window keys include the window timestamp.\n- All internal topics use `message.timestamp.type=CreateTime`.",
+    "references": [
+      {
+        "title": "Managing Streams application topics: internal topics",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/manage-topics/#internal-topics",
+        "kind": "official"
+      },
+      {
+        "title": "Kafka Streams Configs: repartition.purge.interval.ms",
+        "url": "https://kafka.apache.org/44/configuration/kafka-streams-configs/#streamsconfigs_repartition.purge.interval.ms",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "kstr-parallelism-001",
+    "domain": "streams",
+    "topics": [
+      "streams-dsl"
+    ],
+    "type": "single",
+    "stem": "A Streams application reads one input topic with 10 partitions. The team starts 12 instances, each with `num.stream.threads=1`. What happens?",
+    "options": [
+      {
+        "id": "a",
+        "text": "10 instances process data and 2 stay idle; an idle instance takes over if a busy one fails"
+      },
+      {
+        "id": "b",
+        "text": "All 12 instances process data, because Streams splits partitions between instances"
+      },
+      {
+        "id": "c",
+        "text": "The 2 extra instances fail to start with an assignment error"
+      },
+      {
+        "id": "d",
+        "text": "Streams adds 2 partitions to the input topic so every instance gets work"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "Streams creates a fixed number of tasks from the input partitions, here 10, and a task is the unit of parallelism. The maximum parallelism is bounded by the number of input partitions. The architecture page says that with more instances than partitions, the extra instances \"will launch but remain idle\", and one of them resumes the work if a busy instance goes down.\n\nStreams never splits a partition between tasks and never changes the partition count of a user topic.",
+    "references": [
+      {
+        "title": "Kafka Streams architecture: stream partitions and tasks",
+        "url": "https://kafka.apache.org/44/streams/architecture/#stream-partitions-and-tasks",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "kstr-parallelism-002",
+    "domain": "streams",
+    "topics": [
+      "streams-dsl"
+    ],
+    "type": "single",
+    "stem": "An input topic has 6 partitions. Two instances of the application run, each with `num.stream.threads=4`. Assuming one sub-topology, how is the work spread?",
+    "options": [
+      {
+        "id": "a",
+        "text": "6 tasks are spread over the 8 threads, so 2 threads have no task"
+      },
+      {
+        "id": "b",
+        "text": "8 tasks are created, one per thread"
+      },
+      {
+        "id": "c",
+        "text": "Each thread runs all 6 tasks for redundancy"
+      },
+      {
+        "id": "d",
+        "text": "24 tasks are created (6 partitions times 4 threads)"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The number of tasks is fixed by the input partitions (6), not by the number of threads. Tasks are assigned across all threads of all instances, so 6 tasks land on 6 of the 8 threads and 2 threads have nothing to do. The architecture page says you can start as many threads as there are input partitions so that every thread has at least one partition. Threads beyond that add no parallelism.\n\n`num.stream.threads` defaults to 1. Threads share no state, and adding threads works like adding instances.",
+    "references": [
+      {
+        "title": "Kafka Streams architecture: threading model",
+        "url": "https://kafka.apache.org/44/streams/architecture/#threading-model",
+        "kind": "official"
+      },
+      {
+        "title": "Kafka Streams Configs: num.stream.threads",
+        "url": "https://kafka.apache.org/44/configuration/kafka-streams-configs/#streamsconfigs_num.stream.threads",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "likely",
+    "source": "original"
+  },
+  {
+    "id": "kstr-split-001",
+    "domain": "streams",
+    "topics": [
+      "streams-dsl"
+    ],
+    "type": "single",
+    "stem": "```java\nMap<String, KStream<String, Order>> branches = orders\n    .split(Named.as(\"b-\"))\n    .branch((k, v) -> v.amount() > 1000, Branched.as(\"large\"))\n    .branch((k, v) -> v.country().equals(\"DE\"), Branched.as(\"de\"))\n    .defaultBranch(Branched.as(\"other\"));\n```\n\nAn order from `DE` with `amount = 5000` arrives. Where does it go?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Only to `b-large`"
+      },
+      {
+        "id": "b",
+        "text": "To both `b-large` and `b-de`"
+      },
+      {
+        "id": "c",
+        "text": "Only to `b-de`, because the last matching predicate wins"
+      },
+      {
+        "id": "d",
+        "text": "Only to `b-other`, because it matches more than one predicate"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`split()` evaluates predicates **in order** and puts each record into **one** branch only, the first one that matches. The order matches the first predicate, so it goes to `b-large` and the second predicate is never checked for it.\n\nRecords that match no predicate go to the default branch, or are dropped if there is none. To send one record to several downstream streams, apply several operators (for example several `filter` calls) to the same `KStream` instead; that is a multicast.",
+    "references": [
+      {
+        "title": "Streams DSL: stateless transformations (branch/split)",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/dsl-api/#stateless-transformations",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original",
+    "kafkaVersionNote": "The old `KStream#branch(Predicate...)` was removed in Kafka Streams 4.0; use `split()` with `branch()` and `defaultBranch()`."
+  },
+  {
+    "id": "kstr-split-002",
+    "domain": "streams",
+    "topics": [
+      "streams-dsl"
+    ],
+    "type": "multi",
+    "stem": "Which statements about `KStream#split()` are true? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "Records that match no predicate are dropped when no `defaultBranch()` is defined"
+      },
+      {
+        "id": "b",
+        "text": "Predicates are checked in the order the branches were added"
+      },
+      {
+        "id": "c",
+        "text": "Each branch gets its own repartition topic"
+      },
+      {
+        "id": "d",
+        "text": "A record is copied to every branch whose predicate matches"
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "Per the DSL guide, predicates are evaluated in order. A record goes to one and only one output stream, the first match. If nothing matches, it goes to the default branch, or is dropped if there is no default branch.\n\n`split` is a stateless operation and does not repartition. Sending a record to several streams is a multicast (several operators on one `KStream`), not a branch.",
+    "references": [
+      {
+        "title": "Streams DSL: stateless transformations (branch/split)",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/dsl-api/#stateless-transformations",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "kstr-peek-001",
+    "domain": "streams",
+    "topics": [
+      "streams-dsl"
+    ],
+    "type": "single",
+    "stem": "A developer wants to log every record for debugging and then keep processing the same stream with further operators. Which operation fits?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`peek`"
+      },
+      {
+        "id": "b",
+        "text": "`foreach`"
+      },
+      {
+        "id": "c",
+        "text": "`print`"
+      },
+      {
+        "id": "d",
+        "text": "`mapValues` that returns `null`"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`peek` runs a side effect for each record and returns the stream **unchanged**, so further operators can follow.\n\n- `foreach` and `print` are **terminal** operations: nothing can be chained after them.\n- `mapValues` returning `null` changes the values.\n\nThe DSL guide also notes that side effects in `peek` and `foreach`, such as writing to an external system, cannot be tracked by Kafka and so do not benefit from its processing guarantees.",
+    "references": [
+      {
+        "title": "Streams DSL: stateless transformations (peek, foreach)",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/dsl-api/#stateless-transformations",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "kstr-removed-api-001",
+    "domain": "streams",
+    "topics": [
+      "streams-dsl"
+    ],
+    "type": "single",
+    "stem": "A Kafka Streams 3.x application uses `KStream#branch(...)` and `KStream#through(\"topic\")`. After upgrading to Kafka Streams 4.x, both calls no longer compile. What are the replacements?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`split()` with `branch()`/`defaultBranch()`, and `repartition()`"
+      },
+      {
+        "id": "b",
+        "text": "`filter()` with a `Predicate[]`, and `to()` followed by `stream()` in a second application"
+      },
+      {
+        "id": "c",
+        "text": "`selectKey()` and `groupByKey()`"
+      },
+      {
+        "id": "d",
+        "text": "`transform()` and `through()` with a `Produced` argument"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "Kafka Streams 4.0 removed all APIs deprecated up to and including 3.5. That includes `KStream#through()`, `KStream#branch`, the \"transformer\" methods and classes (`transform`, `transformValues`, ...), and the old window builder methods such as `TimeWindows.of(...)`.\n\n- `branch` was replaced by `split()`, which returns a `BranchedKStream`.\n- `through` was replaced by `repartition()`, which uses a topic managed by Streams.\n- Transformers were replaced by `process()` and `processValues()`.",
+    "references": [
+      {
+        "title": "Kafka Streams upgrade guide: API changes in 4.0.0",
+        "url": "https://kafka.apache.org/44/streams/upgrade-guide/#streams-api-changes-in-400",
+        "kind": "official"
+      },
+      {
+        "title": "Streams DSL: repartition",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/dsl-api/#stateless-transformations",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original",
+    "kafkaVersionNote": "Removed in Kafka Streams 4.0 (KAFKA-12822). Older study material may still show `branch()`, `through()` and `transform()`."
+  },
+  {
+    "id": "kstr-processor-001",
+    "domain": "streams",
+    "topics": [
+      "streams-dsl"
+    ],
+    "type": "single",
+    "stem": "In a Processor API `Processor<String, String, String, Long>`, where should a periodic punctuation be scheduled, and how is a result record sent downstream?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Schedule it in `init()` with `ProcessorContext#schedule()`; send records with `ProcessorContext#forward()`"
+      },
+      {
+        "id": "b",
+        "text": "Schedule it in `process()` on every record; send records by returning them from `process()`"
+      },
+      {
+        "id": "c",
+        "text": "Schedule it in the constructor with `Thread.sleep`; send records with `KafkaProducer#send()`"
+      },
+      {
+        "id": "d",
+        "text": "Schedule it in `close()`; send records with `ProcessorContext#commit()`"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`init()` is called once when the task is built and receives the `ProcessorContext`. There you can call `context.schedule(interval, PunctuationType, punctuator)`, look up state stores, and keep the context for later. Results go downstream with `context.forward(record)`. `process()` returns `void`.\n\n`commit()` only *requests* a commit of processing progress. A separate `KafkaProducer` would bypass Streams' processing guarantees.",
+    "references": [
+      {
+        "title": "Processor API: defining a stream processor",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/processor-api/#defining-a-stream-processor",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "kstr-processor-002",
+    "domain": "streams",
+    "topics": [
+      "streams-dsl"
+    ],
+    "type": "single",
+    "stem": "A processor calls `context.schedule(Duration.ofSeconds(10), PunctuationType.STREAM_TIME, ts -> flush())`. After a burst of records the input topic goes quiet, and no new records arrive for 5 minutes of wall-clock time. How often does `flush()` run during those 5 minutes?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Not at all, because stream time only advances when new records are processed"
+      },
+      {
+        "id": "b",
+        "text": "About 30 times, once every 10 seconds"
+      },
+      {
+        "id": "c",
+        "text": "Once, at the end of the 5 minutes"
+      },
+      {
+        "id": "d",
+        "text": "Every 10 seconds, but only if the default timestamp extractor is replaced with `WallclockTimestampExtractor`"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`STREAM_TIME` punctuation is driven by data: stream time comes from record timestamps and moves only when records are processed. With no input, stream time stands still and `punctuate()` is not called. The docs add that even `WallclockTimestampExtractor` does not make stream-time punctuations fire on the wall clock.\n\nTo run on a timer whether or not data arrives, schedule with `PunctuationType.WALL_CLOCK_TIME`.",
+    "references": [
+      {
+        "title": "Processor API: defining a stream processor",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/processor-api/#defining-a-stream-processor",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "kstr-processor-003",
+    "domain": "streams",
+    "topics": [
+      "streams-dsl"
+    ],
+    "type": "multi",
+    "stem": "A DSL application needs the source topic, partition and offset of each record. Which statements about meeting this need are true? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "Only the Processor API exposes record metadata such as topic, partition and offset"
+      },
+      {
+        "id": "b",
+        "text": "The DSL can embed Processor API logic with `KStream#process()` or `KStream#processValues()`"
+      },
+      {
+        "id": "c",
+        "text": "A `FixedKeyProcessor` used with `processValues()` may change the record key"
+      },
+      {
+        "id": "d",
+        "text": "`mapValues` receives the record offset as a third lambda argument"
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "The DSL guide says only the Processor API gives access to a record's metadata (topic, partition, offset). You don't have to rewrite the whole application: `process()` (with a `Processor`) and `processValues()` (with a `FixedKeyProcessor`) plug Processor API logic into a DSL topology.\n\n`processValues()` uses a `FixedKeyProcessor` precisely so the key **cannot** be changed, which avoids repartitioning. `mapValues` gets the value (or the key and value), not metadata.",
+    "references": [
+      {
+        "title": "Streams DSL: applying processors",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/dsl-api/#applying-processors",
+        "kind": "official"
+      },
+      {
+        "title": "Processor API overview",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/processor-api/#overview",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "kstr-aggregate-001",
+    "domain": "streams",
+    "topics": [
+      "streams-dsl"
+    ],
+    "type": "single",
+    "stem": "A `KTable<String, String>` maps a user to a region. The code counts users per region with `table.groupBy((user, region) -> KeyValue.pair(region, user)).count()`. User `alice` moves from region `E` to region `A`. What does the aggregation do?",
+    "options": [
+      {
+        "id": "a",
+        "text": "It calls the subtractor for `E` with the old value and the adder for `A` with the new value, so `E` goes down by 1 and `A` goes up by 1"
+      },
+      {
+        "id": "b",
+        "text": "It only calls the adder for `A`, so `alice` is counted in both regions"
+      },
+      {
+        "id": "c",
+        "text": "It resets every count to zero and recomputes them from the changelog"
+      },
+      {
+        "id": "d",
+        "text": "It ignores the update because `KGroupedTable` aggregations count only inserts"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "Aggregations on a `KGroupedTable` handle updates with an **adder** and a **subtractor**. When a key's value changes, Streams calls the subtractor with the old value (removing `alice` from `E`) and the adder with the new value (adding her to `A`). A tombstone calls only the subtractor.\n\nThat's why `aggregate`/`reduce` on a grouped table need both functions; on a grouped stream only the adder is needed, because stream records are never updates.",
+    "references": [
+      {
+        "title": "Streams DSL: aggregating",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/dsl-api/#aggregating",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "kstr-aggregate-002",
+    "domain": "streams",
+    "topics": [
+      "streams-dsl"
+    ],
+    "type": "single",
+    "stem": "A `KGroupedStream<String, Payment>` is counted with `count()`. Some input records have a `null` key and some have a `null` value. How are they handled?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Records with a `null` key or a `null` value are ignored"
+      },
+      {
+        "id": "b",
+        "text": "Records with a `null` value are counted as tombstones and reset the count"
+      },
+      {
+        "id": "c",
+        "text": "Records with a `null` key are counted under a special `null` group"
+      },
+      {
+        "id": "d",
+        "text": "The application fails with a `NullPointerException`"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "For `count()` on a `KGroupedStream`, the DSL guide says input records with `null` keys or values are ignored.\n\nOn a `KGroupedTable` it is different: `null` keys are ignored, but `null` values are **tombstones** that delete the key from the table, and that changes the count.",
+    "references": [
+      {
+        "title": "Streams DSL: aggregating (count)",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/dsl-api/#aggregating",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "kstr-aggregate-003",
+    "domain": "streams",
+    "topics": [
+      "streams-dsl",
+      "streams-joins-windows"
+    ],
+    "type": "single",
+    "stem": "What type does `stream.groupByKey().windowedBy(TimeWindows.ofSizeWithNoGrace(Duration.ofMinutes(5))).count()` return for a `KStream<String, Click>`?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`KTable<Windowed<String>, Long>`"
+      },
+      {
+        "id": "b",
+        "text": "`KStream<String, Long>`"
+      },
+      {
+        "id": "c",
+        "text": "`KTable<String, Long>`"
+      },
+      {
+        "id": "d",
+        "text": "`KStream<Windowed<String>, Long>`"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "Aggregations always produce a `KTable`, so the result can be updated when more (or out-of-order) records arrive. A windowed aggregation keys the table by `Windowed<K>`, which holds the original key and the window; use `Windowed#key()` and `Windowed#window()`. Call `toStream()` to get a `KStream`.\n\nA plain (non-windowed) `count()` would return `KTable<String, Long>`.",
+    "references": [
+      {
+        "title": "Streams DSL: aggregating (count, windowed)",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/dsl-api/#aggregating",
+        "kind": "official"
+      },
+      {
+        "title": "Kafka Streams core concepts: aggregations",
+        "url": "https://kafka.apache.org/44/streams/core-concepts/#aggregations",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "kstr-join-ss-001",
+    "domain": "streams",
+    "topics": [
+      "streams-joins-windows"
+    ],
+    "type": "single",
+    "stem": "Why must a `KStream`-`KStream` join always be given a `JoinWindows`?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Without a window, the store buffering records from each side would grow without bound"
+      },
+      {
+        "id": "b",
+        "text": "Windows are needed to co-partition the two input topics"
+      },
+      {
+        "id": "c",
+        "text": "`KStream`-`KStream` joins only work on windowed keys of type `Windowed<K>`"
+      },
+      {
+        "id": "d",
+        "text": "The window sets how often join results are committed"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "Each side of a stream-stream join is an unbounded sequence of events. To match records, Streams buffers each side in a window store. The DSL guide says these joins are always windowed \"because otherwise the size of the internal state store ... would grow indefinitely\". `JoinWindows` sets how close in time two records must be to join.\n\nThe result is a plain `KStream<K, ...>`, not keyed by `Windowed<K>`. Co-partitioning is a separate requirement, and commits are controlled by `commit.interval.ms`.",
+    "references": [
+      {
+        "title": "Streams DSL: KStream-KStream join",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/dsl-api/#kstream-kstream-join",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "kstr-join-st-001",
+    "domain": "streams",
+    "topics": [
+      "streams-joins-windows"
+    ],
+    "type": "single",
+    "stem": "`orders` (a `KStream`) is joined with `customers` (a `KTable`) using `orders.join(customers, joiner)`. An order for customer `c7` is processed. One minute later, an update to customer `c7` arrives on the table side. What does the join emit when the customer update arrives?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Nothing. Table updates only change the join state; only stream-side records trigger output"
+      },
+      {
+        "id": "b",
+        "text": "A new result joining the earlier order with the updated customer"
+      },
+      {
+        "id": "c",
+        "text": "A tombstone for the earlier result"
+      },
+      {
+        "id": "d",
+        "text": "It depends on whether the update is within the default 5-minute join window"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "In a `KStream`-`KTable` join, only records on the left (stream) side trigger the join. Records on the table side \"update only the internal right-side join state\". Later orders for `c7` see the new customer data; earlier results are not re-emitted.\n\n`KStream`-`KTable` joins are not windowed, so there is no join window. They emit `KStream` records, not table updates with tombstones.",
+    "references": [
+      {
+        "title": "Streams DSL: KStream-KTable join",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/dsl-api/#kstream-ktable-join",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "kstr-join-st-002",
+    "domain": "streams",
+    "topics": [
+      "streams-joins-windows"
+    ],
+    "type": "multi",
+    "stem": "An order for customer `c9` arrives on a `KStream` before any record for `c9` exists in the `customers` `KTable` (an unversioned table). The `c9` customer record arrives a few seconds later. Which statements are true? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "With `leftJoin`, the joiner is called for the order with `null` for the customer"
+      },
+      {
+        "id": "b",
+        "text": "With `join` (inner), no result is produced for that order, and the later customer record does not produce one either"
+      },
+      {
+        "id": "c",
+        "text": "With `join` (inner), the order is buffered until the customer record arrives, then joined"
+      },
+      {
+        "id": "d",
+        "text": "Switching to `outerJoin` would emit a result when the customer record arrives"
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "Only stream records trigger a stream-table join, and the lookup sees the table's state at that moment.\n\n- **Inner join:** the lookup finds nothing, so nothing is emitted. The later table record only updates state.\n- **Left join:** the joiner runs with `(order, null)`.\n- An inner join does not buffer stream records. A grace period on `Joined` that buffers stream records exists only for **versioned** tables.\n- `KStream`-`KTable` joins support inner and left joins, not outer joins.",
+    "references": [
+      {
+        "title": "Streams DSL: KStream-KTable join",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/dsl-api/#kstream-ktable-join",
+        "kind": "official"
+      },
+      {
+        "title": "Streams DSL: joining",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/dsl-api/#joining",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "kstr-copartition-001",
+    "domain": "streams",
+    "topics": [
+      "streams-joins-windows"
+    ],
+    "type": "multi",
+    "stem": "A `KStream`-`KTable` primary-key join needs its inputs to be co-partitioned. What does co-partitioning require? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "Both input topics have the same number of partitions"
+      },
+      {
+        "id": "b",
+        "text": "All producers to both topics use the same partitioning strategy for the key"
+      },
+      {
+        "id": "c",
+        "text": "Both input topics have the same replication factor"
+      },
+      {
+        "id": "d",
+        "text": "Both input topics have the same `cleanup.policy`"
+      },
+      {
+        "id": "e",
+        "text": "Both input topics have their leaders on the same brokers"
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "For key-based joins, records with the same key from both sides must reach the same task. That needs:\n\n1. the same number of partitions on both input topics, and\n2. the same partitioning strategy in every writer (for example the same `partitioner.class`, or the same `StreamPartitioner` in `to()`).\n\nReplication factor, cleanup policy and leader placement do not affect which partition a key lands in.",
+    "references": [
+      {
+        "title": "Streams DSL: join co-partitioning requirements",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/dsl-api/#join-co-partitioning-requirements",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "kstr-copartition-002",
+    "domain": "streams",
+    "topics": [
+      "streams-joins-windows"
+    ],
+    "type": "single",
+    "stem": "A `KStream` read from a 6-partition topic is joined with a `KTable` read from a 3-partition topic. Both topics are user topics and no repartitioning happens before the join. What happens when the application starts?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Streams detects the different partition counts during partition assignment and throws an exception"
+      },
+      {
+        "id": "b",
+        "text": "The join works, but some records silently fail to match"
+      },
+      {
+        "id": "c",
+        "text": "Streams adds 3 partitions to the table's topic automatically"
+      },
+      {
+        "id": "d",
+        "text": "Streams falls back to a broadcast join, as with a `GlobalKTable`"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "Kafka Streams partly checks co-partitioning at runtime: during partition assignment it verifies that both sides of a join have the same number of partitions, and throws an exception if they don't.\n\nIt cannot check that both sides use the same partitioning *strategy*; that is up to you. To fix a mismatch, repartition one side, for example with `KStream#repartition(Repartitioned.numberOfPartitions(...))`. Streams never changes the partition count of user topics.",
+    "references": [
+      {
+        "title": "Streams DSL: join co-partitioning requirements",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/dsl-api/#join-co-partitioning-requirements",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "kstr-copartition-003",
+    "domain": "streams",
+    "topics": [
+      "streams-joins-windows"
+    ],
+    "type": "multi",
+    "stem": "Which joins do **not** require the inputs to be co-partitioned? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "`KStream`-`GlobalKTable` join"
+      },
+      {
+        "id": "b",
+        "text": "`KTable`-`KTable` foreign-key join"
+      },
+      {
+        "id": "c",
+        "text": "`KStream`-`KTable` join"
+      },
+      {
+        "id": "d",
+        "text": "`KStream`-`KStream` join"
+      },
+      {
+        "id": "e",
+        "text": "`KTable`-`KTable` primary-key join"
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "The DSL guide names two exceptions:\n\n- **`KStream`-`GlobalKTable`:** every instance has a full copy of the global table, so any stream partition can look up any key.\n- **`KTable`-`KTable` foreign-key join:** Streams handles the co-partitioning internally.\n\nAll other equi-joins (`KStream`-`KStream`, `KStream`-`KTable`, `KTable`-`KTable` on the primary key) need co-partitioned inputs.",
+    "references": [
+      {
+        "title": "Streams DSL: join co-partitioning requirements",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/dsl-api/#join-co-partitioning-requirements",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "kstr-join-fk-001",
+    "domain": "streams",
+    "topics": [
+      "streams-joins-windows"
+    ],
+    "type": "single",
+    "stem": "An `orders` `KTable` is keyed by `orderId`, and each value has a `productId`. A `products` `KTable` is keyed by `productId`. The team needs an always-current table of orders enriched with product data. Which approach fits, and what happens when one product changes?",
+    "options": [
+      {
+        "id": "a",
+        "text": "A foreign-key join, `orders.join(products, (orderId, order) -> order.productId(), joiner)`; a product update produces an updated result for every order that references it"
+      },
+      {
+        "id": "b",
+        "text": "A primary-key `KTable`-`KTable` join after re-keying `orders` by `productId` with `selectKey`"
+      },
+      {
+        "id": "c",
+        "text": "A `KStream`-`KStream` join with a 24-hour `JoinWindows`; a product update joins only orders inside the window"
+      },
+      {
+        "id": "d",
+        "text": "A foreign-key join; a product update has no effect until each order is updated again"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`KTable`-`KTable` **foreign-key** joins (since 2.4) extract a key from the left table's records (from the value, or since 4.0 from key and value with a `BiFunction`) and join it with the right table's primary key. Many left records can point to the same right key, and the DSL guide says an update to a right record produces an update for every left record with that foreign key. Inner and left FK joins are supported; co-partitioning is not required.\n\n- `KTable` has no `selectKey`, and grouping the orders by product would aggregate them rather than join them.\n- A stream-stream join loses the table semantics.",
+    "references": [
+      {
+        "title": "Streams DSL: KTable-KTable foreign-key join",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/dsl-api/#ktable-ktable-foreign-key-join",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "kstr-join-types-001",
+    "domain": "streams",
+    "topics": [
+      "streams-joins-windows"
+    ],
+    "type": "single",
+    "stem": "Which of these join combinations does the Kafka Streams DSL support?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`KStream`-`KStream` outer join"
+      },
+      {
+        "id": "b",
+        "text": "`KStream`-`KTable` outer join"
+      },
+      {
+        "id": "c",
+        "text": "`KStream`-`GlobalKTable` outer join"
+      },
+      {
+        "id": "d",
+        "text": "`KTable`-`GlobalKTable` inner join"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "From the DSL join table:\n\n| Join | Inner | Left | Outer |\n|---|---|---|---|\n| `KStream`-`KStream` (windowed) | yes | yes | yes |\n| `KTable`-`KTable` | yes | yes | yes |\n| `KTable`-`KTable` foreign key | yes | yes | no |\n| `KStream`-`KTable` | yes | yes | no |\n| `KStream`-`GlobalKTable` | yes | yes | no |\n| `KTable`-`GlobalKTable` | no | no | no |",
+    "references": [
+      {
+        "title": "Streams DSL: joining",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/dsl-api/#joining",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "kstr-join-ss-002",
+    "domain": "streams",
+    "topics": [
+      "streams-joins-windows"
+    ],
+    "type": "single",
+    "stem": "A stream-stream `leftJoin` uses `JoinWindows.ofTimeDifferenceAndGrace(Duration.ofMinutes(5), Duration.ofMinutes(1))`. A left-side record arrives and no right-side record ever matches it. When is the `(left, null)` result emitted?",
+    "options": [
+      {
+        "id": "a",
+        "text": "After the join window and grace period have passed for that record, as stream time advances"
+      },
+      {
+        "id": "b",
+        "text": "Immediately when the left record arrives, and again if a match arrives later"
+      },
+      {
+        "id": "c",
+        "text": "Never; left joins emit only matched pairs"
+      },
+      {
+        "id": "d",
+        "text": "On the next commit, controlled by `commit.interval.ms`"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "With the `JoinWindows.ofTimeDifference...` builders (KIP-633), left and outer stream-stream joins emit the unmatched `(left, null)` result only **after the window closes**, that is after the grace period, to avoid \"spurious\" left results that a later match would contradict. Window closing is based on stream time, so later records must arrive to move it forward.\n\nThe old eager behaviour, which emitted `(left, null)` at once and then the match as well, came from the deprecated `JoinWindows.of(...)`, which was removed in 4.0.",
+    "references": [
+      {
+        "title": "Streams DSL: KStream-KStream join",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/dsl-api/#kstream-kstream-join",
+        "kind": "official"
+      },
+      {
+        "title": "Kafka Streams upgrade guide: API changes in 3.0.0",
+        "url": "https://kafka.apache.org/44/streams/upgrade-guide/#streams-api-changes-in-300",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "verified",
+    "source": "original",
+    "kafkaVersionNote": "Changed in 3.0 (KIP-633): the new builders emit unmatched left/outer results only after the grace period. The old `JoinWindows.of()` builder was removed in 4.0."
+  },
+  {
+    "id": "kstr-join-ts-001",
+    "domain": "streams",
+    "topics": [
+      "streams-joins-windows"
+    ],
+    "type": "single",
+    "stem": "What timestamp does Kafka Streams give an output record of a `KStream`-`KTable` join, and of a `KStream`-`KStream` join?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Stream-table: the stream record's timestamp. Stream-stream: the larger of the two input timestamps"
+      },
+      {
+        "id": "b",
+        "text": "Both: the wall-clock time when the result is produced"
+      },
+      {
+        "id": "c",
+        "text": "Stream-table: the table record's timestamp. Stream-stream: the smaller of the two input timestamps"
+      },
+      {
+        "id": "d",
+        "text": "Both: the timestamp of the record that arrived first"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "Core concepts, \"Time\": for joins with a left and a right input record (stream-stream, table-table), the output timestamp is `max(left.ts, right.ts)`. For stream-table joins, the output gets the stream record's timestamp. Stateless operations pass the input timestamp through, and aggregations use the largest timestamp of the contributing records.",
+    "references": [
+      {
+        "title": "Kafka Streams core concepts: time",
+        "url": "https://kafka.apache.org/44/streams/core-concepts/#time",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "kstr-window-tumbling-001",
+    "domain": "streams",
+    "topics": [
+      "streams-joins-windows"
+    ],
+    "type": "single",
+    "stem": "A count uses `TimeWindows.ofSizeWithNoGrace(Duration.ofMinutes(5))`. A record's timestamp is exactly 12:10:00.000. Which window does it fall into?",
+    "options": [
+      {
+        "id": "a",
+        "text": "[12:10:00, 12:15:00)"
+      },
+      {
+        "id": "b",
+        "text": "[12:05:00, 12:10:00]"
+      },
+      {
+        "id": "c",
+        "text": "Both [12:05, 12:10) and [12:10, 12:15)"
+      },
+      {
+        "id": "d",
+        "text": "A window that starts at the record's own timestamp, whatever it is"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "Tumbling windows are hopping windows whose advance equals their size. They don't overlap and are **aligned to the epoch**, with an **inclusive** lower bound and an **exclusive** upper bound. With a 5-minute size the windows are ..., [12:05, 12:10), [12:10, 12:15), ..., so a record at exactly 12:10:00 belongs only to [12:10, 12:15).\n\nWindows aligned to record timestamps, with both bounds inclusive, are sliding windows.",
+    "references": [
+      {
+        "title": "Streams DSL: tumbling time windows",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/dsl-api/#tumbling-time-windows",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "kstr-window-hopping-001",
+    "domain": "streams",
+    "topics": [
+      "streams-joins-windows"
+    ],
+    "type": "single",
+    "stem": "An aggregation uses `TimeWindows.ofSizeWithNoGrace(Duration.ofMinutes(5)).advanceBy(Duration.ofMinutes(1))`. Long after time zero, how many windows does a single record fall into?",
+    "options": [
+      {
+        "id": "a",
+        "text": "5"
+      },
+      {
+        "id": "b",
+        "text": "1"
+      },
+      {
+        "id": "c",
+        "text": "4"
+      },
+      {
+        "id": "d",
+        "text": "It depends on how many records share its key"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "Hopping windows have a size (5 minutes) and an advance (1 minute). A new window starts every minute, aligned to the epoch, and each lasts 5 minutes, so at any moment 5 windows overlap: a record falls into size / advance = 5 windows. The DSL guide notes that because hopping windows overlap, a record may belong to more than one window.\n\nExactly one window per record is the tumbling case (advance = size). Window boundaries don't depend on the data or on keys.",
+    "references": [
+      {
+        "title": "Streams DSL: hopping time windows",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/dsl-api/#hopping-time-windows",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "likely",
+    "source": "original"
+  },
+  {
+    "id": "kstr-window-types-001",
+    "domain": "streams",
+    "topics": [
+      "streams-joins-windows"
+    ],
+    "type": "multi",
+    "stem": "Which window types have boundaries aligned to the epoch, rather than to record timestamps or activity? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "Tumbling windows (`TimeWindows` with advance = size)"
+      },
+      {
+        "id": "b",
+        "text": "Hopping windows (`TimeWindows` with `advanceBy`)"
+      },
+      {
+        "id": "c",
+        "text": "Sliding windows (`SlidingWindows`)"
+      },
+      {
+        "id": "d",
+        "text": "Session windows (`SessionWindows`)"
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "Tumbling and hopping windows are aligned to the epoch: the first window starts at timestamp 0, so the boundaries are predictable (for a 5000 ms size and 3000 ms hop: [0;5000), [3000;8000), ...).\n\n- **Sliding windows** are aligned to record timestamps, and both bounds are inclusive.\n- **Session windows** are not fixed in size: a session grows while records keep arriving within the inactivity gap, so start and end vary by key.",
+    "references": [
+      {
+        "title": "Streams DSL: windowing",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/dsl-api/#windowing",
+        "kind": "official"
+      },
+      {
+        "title": "Streams DSL: sliding time windows",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/dsl-api/#sliding-time-windows",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "kstr-window-session-001",
+    "domain": "streams",
+    "topics": [
+      "streams-joins-windows"
+    ],
+    "type": "single",
+    "stem": "A count uses `SessionWindows.ofInactivityGapWithNoGrace(Duration.ofMinutes(5))`. For key `K`, records arrive with timestamps t=0 min and t=6 min, so there are two sessions. Then an out-of-order record for `K` arrives with t=4 min. What happens?",
+    "options": [
+      {
+        "id": "a",
+        "text": "The two sessions merge into one session from t=0 to t=6 holding three records"
+      },
+      {
+        "id": "b",
+        "text": "A third session is created for t=4"
+      },
+      {
+        "id": "c",
+        "text": "The t=4 record is dropped because it is out of order"
+      },
+      {
+        "id": "d",
+        "text": "The t=4 record joins the t=0 session, and the t=6 session stays separate"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "Session windows group records separated by less than the inactivity gap. The record at t=4 is within 5 minutes of t=0 and of t=6, so it bridges the two sessions, and Streams **merges** them into one session [0, 6] with three records. For aggregations, the session *merger* function combines the two aggregates.\n\nThis mirrors the example in the DSL guide, which also uses a no-grace session window: the out-of-order record is not dropped, because the session it extends has not closed yet.",
+    "references": [
+      {
+        "title": "Streams DSL: session windows",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/dsl-api/#session-windows",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "kstr-window-grace-001",
+    "domain": "streams",
+    "topics": [
+      "streams-joins-windows"
+    ],
+    "type": "single",
+    "stem": "An hourly tumbling count uses `TimeWindows.ofSizeAndGrace(Duration.ofHours(1), Duration.ofMinutes(10))`. Stream time for the task has reached 10:12. A record with timestamp 09:58 arrives. What happens?",
+    "options": [
+      {
+        "id": "a",
+        "text": "It is dropped as late, because stream time is past window end (10:00) plus grace (10 minutes)"
+      },
+      {
+        "id": "b",
+        "text": "It is added to the [09:00, 10:00) window and an updated count is emitted"
+      },
+      {
+        "id": "c",
+        "text": "It is placed in the current [10:00, 11:00) window instead"
+      },
+      {
+        "id": "d",
+        "text": "It is held in a buffer until the window is reopened"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "A record is discarded if the window it belongs to has closed, that is, if current **stream time** is greater than window end + grace. Here the window is [09:00, 10:00) and grace is 10 minutes, so it closed at 10:10. Stream time is 10:12, so the record is dropped.\n\nHad stream time been 10:05, the record would have been accepted and the count for [09:00, 10:00) updated. Records are never moved to another window.",
+    "references": [
+      {
+        "title": "Kafka Streams core concepts: windowing",
+        "url": "https://kafka.apache.org/44/streams/core-concepts/#windowing",
+        "kind": "official"
+      },
+      {
+        "title": "Streams DSL: window final results",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/dsl-api/#window-final-results",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "kstr-window-grace-002",
+    "domain": "streams",
+    "topics": [
+      "streams-joins-windows"
+    ],
+    "type": "multi",
+    "stem": "Which statements about grace periods in Kafka Streams 4.x are true? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "`ofSizeWithNoGrace(...)` sets the grace period to zero"
+      },
+      {
+        "id": "b",
+        "text": "A window closes when stream time passes window end plus the grace period"
+      },
+      {
+        "id": "c",
+        "text": "If no grace is given, windows default to a 24-hour grace period"
+      },
+      {
+        "id": "d",
+        "text": "The grace period is measured in wall-clock time from when the window opened"
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "Since 3.0 (KIP-633), you must choose a grace period explicitly: `ofSizeAndGrace(size, grace)` or `ofSizeWithNoGrace(size)`, which sets it to 0. The old implicit 24-hour default was dropped, and the old `of(...)` builders were removed in 4.0.\n\nGrace is based on **stream time** (from record timestamps), not wall-clock time. A record is dropped once stream time is past window end + grace.",
+    "references": [
+      {
+        "title": "Kafka Streams upgrade guide: API changes in 3.0.0",
+        "url": "https://kafka.apache.org/44/streams/upgrade-guide/#streams-api-changes-in-300",
+        "kind": "official"
+      },
+      {
+        "title": "Kafka Streams core concepts: windowing",
+        "url": "https://kafka.apache.org/44/streams/core-concepts/#windowing",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original",
+    "kafkaVersionNote": "The implicit 24-hour grace default was dropped in 3.0; the `TimeWindows.of()` style builders were removed in 4.0."
+  },
+  {
+    "id": "kstr-suppress-001",
+    "domain": "streams",
+    "topics": [
+      "streams-joins-windows"
+    ],
+    "type": "single",
+    "stem": "```java\nstream.groupByKey()\n      .windowedBy(TimeWindows.ofSizeAndGrace(Duration.ofHours(1), Duration.ofMinutes(10)))\n      .count()\n      .suppress(Suppressed.untilWindowCloses(Suppressed.BufferConfig.unbounded()))\n      .toStream()\n      .filter((windowedUser, count) -> count < 3)\n      .foreach(alerts::send);\n```\n\nUser U has 10 events between 09:00 and 10:10. What does the `filter` receive for the window U@09:00-10:00?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Nothing until stream time reaches 10:10, then exactly one record with count 10"
+      },
+      {
+        "id": "b",
+        "text": "Ten records with counts 1 to 10, as each event arrives"
+      },
+      {
+        "id": "c",
+        "text": "One record at 10:00 with the count so far, then corrections until 10:10"
+      },
+      {
+        "id": "d",
+        "text": "One record every `commit.interval.ms` with the latest count"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "Without `suppress`, windowed aggregations emit continuous updates (shaped by caching and commits). `suppress(untilWindowCloses(...))` holds them back and emits **only the final result** once the window closes at window end + grace = 10:10 in stream time. This is the DSL guide's own example: no events for U@09:00-10:00 until 10:10, then exactly one with value 10.\n\nHere that matters: without suppress, every user would trigger an alert while their count was still below 3.",
+    "references": [
+      {
+        "title": "Streams DSL: window final results",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/dsl-api/#window-final-results",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "kstr-suppress-002",
+    "domain": "streams",
+    "topics": [
+      "streams-joins-windows",
+      "streams-state-eos"
+    ],
+    "type": "single",
+    "stem": "In a `TopologyTestDriver` test, records for one hour are piped into a windowed count that uses `suppress(Suppressed.untilWindowCloses(...))` and a grace period of zero. The output topic stays empty. What is the most likely reason?",
+    "options": [
+      {
+        "id": "a",
+        "text": "No record with a later timestamp was piped, so stream time never passed the window end and the window never closed"
+      },
+      {
+        "id": "b",
+        "text": "`suppress` only works against a real broker"
+      },
+      {
+        "id": "c",
+        "text": "`TopologyTestDriver` does not support windowed aggregations"
+      },
+      {
+        "id": "d",
+        "text": "`commit.interval.ms` must be set to 0 for `suppress` to emit"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`suppress(untilWindowCloses)` emits when the window closes, and closing depends on **stream time**, which only moves when new records are processed. In the test, pipe one more record with a timestamp past window end + grace (any key on the same partition) to push stream time forward. Then the final result comes out.\n\n`TopologyTestDriver` runs the full topology, including windowed aggregations and `suppress`, without a broker.",
+    "references": [
+      {
+        "title": "Kafka Streams core concepts: time",
+        "url": "https://kafka.apache.org/44/streams/core-concepts/#time",
+        "kind": "official"
+      },
+      {
+        "title": "Streams DSL: window final results",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/dsl-api/#window-final-results",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "likely",
+    "source": "original"
+  },
+  {
+    "id": "kstr-window-sliding-001",
+    "domain": "streams",
+    "topics": [
+      "streams-joins-windows"
+    ],
+    "type": "single",
+    "stem": "How do `SlidingWindows` (used for windowed aggregations) differ from hopping windows?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Sliding windows are aligned to record timestamps, and both bounds are inclusive"
+      },
+      {
+        "id": "b",
+        "text": "Sliding windows are aligned to the epoch, and the upper bound is exclusive"
+      },
+      {
+        "id": "c",
+        "text": "Sliding windows have no fixed size and close after an inactivity gap"
+      },
+      {
+        "id": "d",
+        "text": "Sliding windows are the same as hopping windows with an advance of 1 ms, and are created with `TimeWindows`"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "A sliding window has a fixed size (the time difference) and moves continuously along the time axis. Two records are in the same window if their timestamps are within the time difference. Unlike hopping and tumbling windows, sliding windows are **aligned to record timestamps** and **both bounds are inclusive**. Each distinct combination of records appears in only one window. Create them with `SlidingWindows.ofTimeDifferenceAndGrace(...)` or `...WithNoGrace(...)`.\n\nThe inactivity gap describes session windows. The DSL guide also warns that what other tools call a \"sliding window\" is often a hopping window.",
+    "references": [
+      {
+        "title": "Streams DSL: sliding time windows",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/dsl-api/#sliding-time-windows",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "kstr-state-store-001",
+    "domain": "streams",
+    "topics": [
+      "streams-state-eos"
+    ],
+    "type": "single",
+    "stem": "A DSL application calls `groupByKey().count()` without passing a store supplier. Which kind of state store backs the count by default?",
+    "options": [
+      {
+        "id": "a",
+        "text": "A persistent RocksDB store on local disk, backed up to a changelog topic"
+      },
+      {
+        "id": "b",
+        "text": "An in-memory hash map with no backup"
+      },
+      {
+        "id": "c",
+        "text": "A compacted Kafka topic that is queried directly on each lookup"
+      },
+      {
+        "id": "d",
+        "text": "A store kept by the broker inside the consumer group metadata"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`default.dsl.store` defaults to `rocksDB` (the other value is `in_memory`), and the developer guide says Kafka Streams uses RocksDB as the default storage engine for persistent stores. Stores are fault-tolerant by default: each one has a compacted changelog topic that Streams writes to and replays to restore it.\n\nThe changelog is a backup; lookups go to the local store, not to Kafka. Brokers do not hold Streams state.",
+    "references": [
+      {
+        "title": "Kafka Streams Configs: default.dsl.store",
+        "url": "https://kafka.apache.org/44/configuration/kafka-streams-configs/#streamsconfigs_default.dsl.store",
+        "kind": "official"
+      },
+      {
+        "title": "Streams developer guide: rocksdb.config.setter",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/config-streams/#rocksdbconfigsetter",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original",
+    "kafkaVersionNote": "In recent releases the default DSL store can also be set with `dsl.store.suppliers.class` (default `RocksDBDslStoreSuppliers`)."
+  },
+  {
+    "id": "kstr-changelog-001",
+    "domain": "streams",
+    "topics": [
+      "streams-state-eos"
+    ],
+    "type": "multi",
+    "stem": "Which statements about state store changelog topics are true? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "A changelog for a key-value store is compacted, so it does not grow without bound"
+      },
+      {
+        "id": "b",
+        "text": "When a task moves to another instance, Streams replays the changelog to restore the store before processing resumes"
+      },
+      {
+        "id": "c",
+        "text": "Changelog records are written only when the application shuts down cleanly"
+      },
+      {
+        "id": "d",
+        "text": "If logging is disabled for a store with `withLoggingDisabled()`, the store can still have standby replicas"
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "Every fault-tolerant store has a changelog topic that records every update. It is compacted so old versions of a key can be removed. If a task restarts elsewhere, Streams replays the changelog to rebuild the store before the task resumes processing.\n\n- Updates are sent to the changelog continuously as part of processing, not at shutdown.\n- With logging disabled, the store is no longer fault-tolerant and **cannot** have standby replicas, because standbys are kept up to date from the changelog.",
+    "references": [
+      {
+        "title": "Kafka Streams architecture: fault tolerance",
+        "url": "https://kafka.apache.org/44/streams/architecture/#fault-tolerance",
+        "kind": "official"
+      },
+      {
+        "title": "Processor API: fault-tolerant state stores",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/processor-api/#fault-tolerant-state-stores",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "kstr-standby-001",
+    "domain": "streams",
+    "topics": [
+      "streams-state-eos"
+    ],
+    "type": "single",
+    "stem": "A stateful Streams application keeps 200 GB of state per instance. When an instance crashes, its tasks take about 20 minutes to restore on another instance before processing resumes. Which setting most directly reduces this failover time?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`num.standby.replicas=1`"
+      },
+      {
+        "id": "b",
+        "text": "`num.stream.threads=4`"
+      },
+      {
+        "id": "c",
+        "text": "`commit.interval.ms=100`"
+      },
+      {
+        "id": "d",
+        "text": "`replication.factor=3`"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "Standby replicas are shadow copies of a task's state stores, kept up to date on another instance from the changelog. On failover, Streams prefers to place the task where a standby already exists, so little or no restoration is needed. `num.standby.replicas` defaults to **0**.\n\n- More threads do not shorten the replay of a large changelog.\n- A shorter commit interval doesn't change how much must be restored after a move.\n- `replication.factor` protects internal topics against *broker* failures, not the restore time of a Streams instance.",
+    "references": [
+      {
+        "title": "Kafka Streams Configs: num.standby.replicas",
+        "url": "https://kafka.apache.org/44/configuration/kafka-streams-configs/#streamsconfigs_num.standby.replicas",
+        "kind": "official"
+      },
+      {
+        "title": "Kafka Streams architecture: fault tolerance",
+        "url": "https://kafka.apache.org/44/streams/architecture/#fault-tolerance",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "kstr-standby-002",
+    "domain": "streams",
+    "topics": [
+      "streams-state-eos"
+    ],
+    "type": "multi",
+    "stem": "A team sets `num.standby.replicas=1`. Which statements are true? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "At least 2 Kafka Streams instances are needed for a standby to be placed on a different instance from its active task"
+      },
+      {
+        "id": "b",
+        "text": "Client-side storage for state roughly doubles"
+      },
+      {
+        "id": "c",
+        "text": "Standby tasks also process input records and write to output topics"
+      },
+      {
+        "id": "d",
+        "text": "This is the default value"
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "The developer guide: with *n* standbys you need *n+1* instances, and with 1 standby about 2x storage is needed. Standbys only copy state from the changelog; they don't process input or produce output until promoted to active.\n\nThe default for `num.standby.replicas` is 0.",
+    "references": [
+      {
+        "title": "Streams developer guide: num.standby.replicas",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/config-streams/#numstandbyreplicas-1",
+        "kind": "official"
+      },
+      {
+        "title": "Kafka Streams Configs: num.standby.replicas",
+        "url": "https://kafka.apache.org/44/configuration/kafka-streams-configs/#streamsconfigs_num.standby.replicas",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "kstr-eos-001",
+    "domain": "streams",
+    "topics": [
+      "streams-state-eos"
+    ],
+    "type": "single",
+    "stem": "Which setting enables exactly-once processing in a Kafka Streams 4.x application?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`processing.guarantee=exactly_once_v2`"
+      },
+      {
+        "id": "b",
+        "text": "`processing.guarantee=exactly_once`"
+      },
+      {
+        "id": "c",
+        "text": "`enable.idempotence=true` on the Streams config only"
+      },
+      {
+        "id": "d",
+        "text": "`isolation.level=read_committed` on the Streams config only"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "In Kafka Streams 4.x, `processing.guarantee` accepts `at_least_once` (the default) and `exactly_once_v2`. EOS v2 needs brokers on 2.5 or newer.\n\n- `exactly_once` (EOS v1) was deprecated in 3.0 and is no longer supported in 4.0.\n- Setting idempotence or `read_committed` alone does not give atomic commits across output topics, state changelogs and input offsets. Streams sets both for you when EOS is on.",
+    "references": [
+      {
+        "title": "Kafka Streams Configs: processing.guarantee",
+        "url": "https://kafka.apache.org/44/configuration/kafka-streams-configs/#streamsconfigs_processing.guarantee",
+        "kind": "official"
+      },
+      {
+        "title": "Kafka Streams upgrade guide: API changes in 4.0.0",
+        "url": "https://kafka.apache.org/44/streams/upgrade-guide/#streams-api-changes-in-400",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original",
+    "kafkaVersionNote": "`exactly_once` (EOS v1) was deprecated in 3.0 and is no longer supported from 4.0. `exactly_once_beta` was renamed to `exactly_once_v2` in 3.0."
+  },
+  {
+    "id": "kstr-eos-002",
+    "domain": "streams",
+    "topics": [
+      "streams-state-eos"
+    ],
+    "type": "single",
+    "stem": "With `processing.guarantee=exactly_once_v2` and no explicit `commit.interval.ms`, what commit interval does Kafka Streams use?",
+    "options": [
+      {
+        "id": "a",
+        "text": "100 ms"
+      },
+      {
+        "id": "b",
+        "text": "30000 ms"
+      },
+      {
+        "id": "c",
+        "text": "5000 ms"
+      },
+      {
+        "id": "d",
+        "text": "1000 ms"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The default for `commit.interval.ms` is 30000 ms (30 s), but when `processing.guarantee` is `exactly_once_v2` the default changes to **100 ms**. Under EOS a commit means committing the transaction, which makes the output visible to `read_committed` consumers. A short interval keeps end-to-end latency low.\n\n`repartition.purge.interval.ms` (default 30000) does *not* change under EOS.",
+    "references": [
+      {
+        "title": "Kafka Streams Configs: commit.interval.ms",
+        "url": "https://kafka.apache.org/44/configuration/kafka-streams-configs/#streamsconfigs_commit.interval.ms",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "kstr-eos-003",
+    "domain": "streams",
+    "topics": [
+      "streams-state-eos"
+    ],
+    "type": "multi",
+    "stem": "When `processing.guarantee=exactly_once_v2` is set, which client settings does Kafka Streams apply to its internal clients by default? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "Consumer `isolation.level=read_committed`"
+      },
+      {
+        "id": "b",
+        "text": "Producer `enable.idempotence=true`"
+      },
+      {
+        "id": "c",
+        "text": "Consumer `enable.auto.commit=true`"
+      },
+      {
+        "id": "d",
+        "text": "Producer `acks=1`"
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "The Streams developer guide lists, for EOS: consumers use `isolation.level=read_committed` and producers use `enable.idempotence=true`. Streams also sets producer `transaction.timeout.ms=10000` and `delivery.timeout.ms=Integer.MAX_VALUE` by default.\n\n`enable.auto.commit` is always `false` in Streams (it commits explicitly), and idempotence requires `acks=all`, not `acks=1`.",
+    "references": [
+      {
+        "title": "Streams developer guide: parameters controlled by Kafka Streams",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/config-streams/#parameters-controlled-by-kafka-streams",
+        "kind": "official"
+      },
+      {
+        "title": "Streams developer guide: processing.guarantee",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/config-streams/#processingguarantee",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "kstr-eos-004",
+    "domain": "streams",
+    "topics": [
+      "streams-state-eos"
+    ],
+    "type": "single",
+    "stem": "An application written for Kafka Streams 2.8 sets `processing.guarantee=exactly_once_beta`. It is upgraded to Kafka Streams 4.x without changing the config. What should the team expect?",
+    "options": [
+      {
+        "id": "a",
+        "text": "The value is not accepted in 4.x; it must be changed to `exactly_once_v2`"
+      },
+      {
+        "id": "b",
+        "text": "It keeps working and silently runs EOS v1"
+      },
+      {
+        "id": "c",
+        "text": "It keeps working and silently falls back to `at_least_once`"
+      },
+      {
+        "id": "d",
+        "text": "It keeps working unchanged, because `exactly_once_beta` is the 4.x name for EOS v2"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "In 3.0, `exactly_once_beta` was renamed `exactly_once_v2` and both `exactly_once` and `exactly_once_beta` were deprecated, to be removed in 4.0. The 4.x config reference lists only `at_least_once` and `exactly_once_v2` as valid values, and the 4.0 upgrade notes say config parameters deprecated up to 3.5 were removed. Switching from `exactly_once_beta` to `exactly_once_v2` needs no special steps beyond a rolling bounce.\n\nStreams does not silently map an invalid value to another guarantee.",
+    "references": [
+      {
+        "title": "Kafka Streams Configs: processing.guarantee",
+        "url": "https://kafka.apache.org/44/configuration/kafka-streams-configs/#streamsconfigs_processing.guarantee",
+        "kind": "official"
+      },
+      {
+        "title": "Kafka Streams upgrade guide: API changes in 3.0.0",
+        "url": "https://kafka.apache.org/44/streams/upgrade-guide/#streams-api-changes-in-300",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "unsure",
+    "source": "original",
+    "kafkaVersionNote": "The 4.4 config reference lists only `at_least_once` and `exactly_once_v2`, and the upgrade guide says eos-v1 is unsupported from 4.0. But the 4.4 developer-guide text for `processing.guarantee` still mentions `exactly_once` and `exactly_once_beta` as \"deprecated\" options, so the docs disagree. The exact startup error is not documented."
+  },
+  {
+    "id": "kstr-eos-005",
+    "domain": "streams",
+    "topics": [
+      "streams-state-eos"
+    ],
+    "type": "single",
+    "stem": "An application runs with `processing.guarantee=exactly_once_v2`. A `peek` step calls an external REST API for every record, and the results are written with `to(\"out\")`. An instance crashes mid-transaction and its task is retried on another instance. What does EOS guarantee?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Output in `out`, state store updates and input offsets are committed atomically, but the REST calls may be repeated"
+      },
+      {
+        "id": "b",
+        "text": "Neither the REST calls nor the writes to `out` are ever repeated"
+      },
+      {
+        "id": "c",
+        "text": "Nothing, because `peek` turns EOS off for the whole topology"
+      },
+      {
+        "id": "d",
+        "text": "Only that input offsets are committed once; `out` may contain duplicates visible to `read_committed` consumers"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "Kafka Streams EOS makes reading input (committing offsets), updating state stores (changelogs) and writing to output topics one atomic transaction. If a transaction aborts, its output is never visible to `read_committed` consumers, and processing is retried.\n\nSide effects outside Kafka, such as the REST call in `peek`, can't be part of that transaction. The DSL guide warns that such side effects \"will typically not benefit from Kafka's processing guarantees\", so they may run again on retry. Make external calls idempotent, or use Kafka Connect for external writes.",
+    "references": [
+      {
+        "title": "Kafka Streams core concepts: processing guarantees",
+        "url": "https://kafka.apache.org/44/streams/core-concepts/#processing-guarantees",
+        "kind": "official"
+      },
+      {
+        "title": "Streams DSL: stateless transformations (peek)",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/dsl-api/#stateless-transformations",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "kstr-eos-006",
+    "domain": "streams",
+    "topics": [
+      "streams-state-eos"
+    ],
+    "type": "single",
+    "stem": "A developer enables `processing.guarantee=exactly_once_v2` against a single-broker development cluster with default broker settings, and the application cannot make progress. According to the `processing.guarantee` reference, what is the cause?",
+    "options": [
+      {
+        "id": "a",
+        "text": "By default exactly-once needs at least three brokers; for development, lower the broker's `transaction.state.log.replication.factor` and `transaction.state.log.min.isr`"
+      },
+      {
+        "id": "b",
+        "text": "Exactly-once needs `num.standby.replicas` of at least 1"
+      },
+      {
+        "id": "c",
+        "text": "Exactly-once needs `num.stream.threads` equal to the number of input partitions"
+      },
+      {
+        "id": "d",
+        "text": "Exactly-once needs `commit.interval.ms=0`"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The `processing.guarantee` reference says exactly-once \"requires a cluster of at least three brokers by default\", which is the recommended production setting. For development you change the broker settings `transaction.state.log.replication.factor` and `transaction.state.log.min.isr`, because the transaction state topic can't be created or written with the default replication on one broker.\n\nStandbys, thread count and commit interval are unrelated to this requirement.",
+    "references": [
+      {
+        "title": "Kafka Streams Configs: processing.guarantee",
+        "url": "https://kafka.apache.org/44/configuration/kafka-streams-configs/#streamsconfigs_processing.guarantee",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "kstr-state-dir-001",
+    "domain": "streams",
+    "topics": [
+      "streams-state-eos"
+    ],
+    "type": "single",
+    "stem": "Two instances of the same Streams application run on one host, both with the default `state.dir`. Which change does the documentation require?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Give each instance its own `state.dir`"
+      },
+      {
+        "id": "b",
+        "text": "Give each instance its own `application.id`"
+      },
+      {
+        "id": "c",
+        "text": "Set `num.standby.replicas=1`"
+      },
+      {
+        "id": "d",
+        "text": "Nothing; instances on one host share one state directory safely"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`state.dir` (default `${java.io.tmpdir}`) holds local state under a subdirectory named after `application.id`. The config reference says the path \"must be unique for each streams instance sharing the same underlying filesystem\". With the same `state.dir` and `application.id`, two instances would use the same directory.\n\nChanging `application.id` would make them two separate applications, not two instances of one. Standbys don't affect directory layout.",
+    "references": [
+      {
+        "title": "Kafka Streams Configs: state.dir",
+        "url": "https://kafka.apache.org/44/configuration/kafka-streams-configs/#streamsconfigs_state.dir",
+        "kind": "official"
+      },
+      {
+        "title": "Streams developer guide: state.dir",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/config-streams/#statedir",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "kstr-cache-001",
+    "domain": "streams",
+    "topics": [
+      "streams-state-eos"
+    ],
+    "type": "single",
+    "stem": "A test pipes `<A,1>`, `<A,20>`, `<A,300>` into a `groupByKey().reduce(Integer::sum)` and expects three updates downstream: 1, 21 and 321. In production, with default settings, only one update of 321 sometimes appears. Why, and how can every update be seen?",
+    "options": [
+      {
+        "id": "a",
+        "text": "The record cache compacts updates per key until a commit or cache pressure; set the cache size (`statestore.cache.max.bytes`) to 0 to disable it"
+      },
+      {
+        "id": "b",
+        "text": "Records are lost under at-least-once; set `processing.guarantee=exactly_once_v2`"
+      },
+      {
+        "id": "c",
+        "text": "`reduce` emits only on window close; use `aggregate` instead"
+      },
+      {
+        "id": "d",
+        "text": "The changelog topic is compacted; set its `cleanup.policy=delete`"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "DSL aggregations use a record cache by default (`statestore.cache.max.bytes`, default 10485760 bytes, shared across threads). Updates to the same key are compacted in memory, and the latest value is flushed and forwarded when `commit.interval.ms` passes or the cache fills. So `<A,321>` may be the only update you see.\n\nThe memory-management guide shows setting the cache size to 0 to disable caching (its example uses the older `cache.max.bytes.buffering`, deprecated since 3.4 in favour of `statestore.cache.max.bytes`). A store can also opt out with `withCachingDisabled()`.\n\nNo data is lost; changelog compaction does not affect what is forwarded downstream.",
+    "references": [
+      {
+        "title": "Streams memory management: record caches in the DSL",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/memory-mgmt/#record-caches-in-the-dsl",
+        "kind": "official"
+      },
+      {
+        "title": "Kafka Streams Configs: statestore.cache.max.bytes",
+        "url": "https://kafka.apache.org/44/configuration/kafka-streams-configs/#streamsconfigs_statestore.cache.max.bytes",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "likely",
+    "source": "original",
+    "kafkaVersionNote": "`cache.max.bytes.buffering` was deprecated in 3.4 (KIP-770) in favour of `statestore.cache.max.bytes`; the memory-management page still shows the old name."
+  },
+  {
+    "id": "kstr-restore-001",
+    "domain": "streams",
+    "topics": [
+      "streams-state-eos"
+    ],
+    "type": "single",
+    "stem": "A stateful task ran on instance 1 with `num.standby.replicas=0`. Instance 1 dies and the task is reassigned to instance 2, which has no local copy of the state. What happens before the task processes new input on instance 2?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Instance 2 rebuilds the state store by replaying the store's changelog topic"
+      },
+      {
+        "id": "b",
+        "text": "Instance 2 starts with an empty store and the old state is lost"
+      },
+      {
+        "id": "c",
+        "text": "Instance 2 reprocesses the input topic from the earliest offset"
+      },
+      {
+        "id": "d",
+        "text": "Instance 2 copies the RocksDB files from instance 1's disk over the network"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The architecture page: \"If tasks run on a machine that fails and are restarted on another machine, Kafka Streams guarantees to restore their associated state stores to the content before the failure by replaying the corresponding changelog topics prior to resuming the processing.\"\n\nRestore time depends mainly on how much changelog must be replayed. Standby replicas exist to shorten it. Streams doesn't reprocess input from the beginning or copy files between hosts.",
+    "references": [
+      {
+        "title": "Kafka Streams architecture: fault tolerance",
+        "url": "https://kafka.apache.org/44/streams/architecture/#fault-tolerance",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "kstr-iq-001",
+    "domain": "streams",
+    "topics": [
+      "streams-state-eos"
+    ],
+    "type": "multi",
+    "stem": "A service wants to answer HTTP requests with the current count for any key, using interactive queries on a Streams application that runs as several instances. Which statements are true? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "A local store query returns only the data for partitions hosted on that instance"
+      },
+      {
+        "id": "b",
+        "text": "Setting `application.server` to each instance's `host:port` lets instances find which one hosts a key"
+      },
+      {
+        "id": "c",
+        "text": "Kafka Streams ships a built-in REST server that exposes all stores across instances"
+      },
+      {
+        "id": "d",
+        "text": "Interactive queries can also write corrections into the store"
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "Each instance holds only part of the application's state. `KafkaStreams#store(...)` queries only the local part. To answer for any key, add your own RPC layer (for example REST) and set `application.server` (default empty) so Streams' metadata can tell you which instance hosts a key.\n\nKafka Streams does not provide the RPC layer, and interactive queries are **read-only**.",
+    "references": [
+      {
+        "title": "Interactive queries: querying remote state stores",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/interactive-queries/#querying-remote-state-stores-for-the-entire-app",
+        "kind": "official"
+      },
+      {
+        "title": "Kafka Streams Configs: application.server",
+        "url": "https://kafka.apache.org/44/configuration/kafka-streams-configs/#streamsconfigs_application.server",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "kstr-replication-001",
+    "domain": "streams",
+    "topics": [
+      "streams-state-eos"
+    ],
+    "type": "single",
+    "stem": "A 3-broker cluster has the broker setting `default.replication.factor=1`. A Streams application does not set `replication.factor`. What replication factor do its changelog and repartition topics get, and what fixes it?",
+    "options": [
+      {
+        "id": "a",
+        "text": "1, because the Streams default `-1` means \"use the broker default\"; set Streams `replication.factor=3` or raise the broker default"
+      },
+      {
+        "id": "b",
+        "text": "3, because Streams always matches the number of brokers"
+      },
+      {
+        "id": "c",
+        "text": "3, because Streams internal topics are hard-coded to replication factor 3"
+      },
+      {
+        "id": "d",
+        "text": "1, and it cannot be changed because internal topics are managed by Streams"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The Streams `replication.factor` config sets the replication of changelog and repartition topics. Its default `-1` means \"use the broker default replication factor\" (brokers 2.4+). The developer guide recommends 3 for resilience, set either in Streams or through the broker's `default.replication.factor`.\n\nWith replication factor 1, one broker failure can stop the application's progress. Under EOS, the docs say a replication factor below 3 \"effectively voids EOS\".",
+    "references": [
+      {
+        "title": "Kafka Streams Configs: replication.factor",
+        "url": "https://kafka.apache.org/44/configuration/kafka-streams-configs/#streamsconfigs_replication.factor",
+        "kind": "official"
+      },
+      {
+        "title": "Streams developer guide: replication.factor",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/config-streams/#replicationfactor",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "kstr-assignment-001",
+    "domain": "streams",
+    "topics": [
+      "streams-state-eos"
+    ],
+    "type": "single",
+    "stem": "After a rebalance, a stateful task could go to instance X, whose local copy of the state is 2 million offsets behind, or instance Y, which has a standby that is caught up. How does Kafka Streams (2.6 and later) handle this?",
+    "options": [
+      {
+        "id": "a",
+        "text": "It assigns the active task to the caught-up instance Y, and may warm up state on X in the background before moving the task"
+      },
+      {
+        "id": "b",
+        "text": "It always assigns the task to the instance with the fewest tasks, whatever its state"
+      },
+      {
+        "id": "c",
+        "text": "It assigns the task to both instances, and the faster one wins"
+      },
+      {
+        "id": "d",
+        "text": "It pauses the whole application until X catches up"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "Since 2.6, Streams assigns a task only to an instance with a fully caught-up local copy of its state, if one exists. An instance counts as caught up when its lag is within `acceptable.recovery.lag` (default 10000 offsets). To rebalance load, it can add **warmup replicas** (`max.warmup.replicas`) that restore state in the background, then move the task with a probing rebalance (`probing.rebalance.interval.ms`) once caught up.\n\nA task is active on one instance at a time.",
+    "references": [
+      {
+        "title": "Kafka Streams architecture: fault tolerance",
+        "url": "https://kafka.apache.org/44/streams/architecture/#fault-tolerance",
+        "kind": "official"
+      },
+      {
+        "title": "Kafka Streams Configs: acceptable.recovery.lag",
+        "url": "https://kafka.apache.org/44/configuration/kafka-streams-configs/#streamsconfigs_acceptable.recovery.lag",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "likely",
+    "source": "original"
+  },
+  {
+    "id": "kstr-defaults-001",
+    "domain": "streams",
+    "topics": [
+      "streams-state-eos"
+    ],
+    "type": "single",
+    "stem": "Kafka Streams overrides some consumer and producer defaults. Which pair matches the defaults documented for Kafka Streams?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`auto.offset.reset=earliest` and `max.poll.records=1000`"
+      },
+      {
+        "id": "b",
+        "text": "`auto.offset.reset=latest` and `max.poll.records=500`"
+      },
+      {
+        "id": "c",
+        "text": "`enable.auto.commit=true` and `isolation.level=read_committed`"
+      },
+      {
+        "id": "d",
+        "text": "`auto.offset.reset=none` and `max.poll.records=1`"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The Streams developer guide's \"Default Values\" table: consumer `auto.offset.reset=earliest` (plain consumer default: `latest`) and `max.poll.records=1000` (plain consumer default: 500).\n\nStreams forces `enable.auto.commit=false`, and the consumer's `group.id` is the `application.id`. `isolation.level=read_committed` is set only when exactly-once is enabled.",
+    "references": [
+      {
+        "title": "Streams developer guide: default values",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/config-streams/#default-values",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "kstr-iq-002",
+    "domain": "streams",
+    "topics": [
+      "streams-state-eos"
+    ],
+    "type": "single",
+    "stem": "A Streams app counts clicks into state store `click-counts`. A REST handler gets the store with `streams.store(StoreQueryParameters.fromNameAndType(\"click-counts\", QueryableStoreTypes.keyValueStore()))` and wants to reset one user's count to 0 through it. What happens?",
+    "options": [
+      {
+        "id": "a",
+        "text": "It can't: the returned store is a `ReadOnlyKeyValueStore`, and interactive queries never mutate state"
+      },
+      {
+        "id": "b",
+        "text": "The `put` succeeds and is written to the changelog topic"
+      },
+      {
+        "id": "c",
+        "text": "The `put` succeeds locally but is lost on the next restore"
+      },
+      {
+        "id": "d",
+        "text": "The `put` succeeds only if `processing.guarantee=exactly_once_v2`"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "From the interactive queries guide: \"Querying state stores is always read-only to guarantee that the underlying state stores will never be mutated out-of-band (e.g., you cannot add new entries). State stores should only be mutated by the corresponding processor topology.\" `keyValueStore()` gives a `ReadOnlyKeyValueStore`, which has no `put`.\n\nTo reset a count, send an event (for example a reset command record) into the topology so the processor updates the store. The processing guarantee doesn't change this.",
+    "references": [
+      {
+        "title": "Interactive queries: querying local state stores",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/interactive-queries/#querying-local-state-stores-for-an-app-instance",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "kstr-iq-003",
+    "domain": "streams",
+    "topics": [
+      "streams-state-eos"
+    ],
+    "type": "single",
+    "stem": "A Streams app runs as 3 instances. Instance B was deployed without `application.server`. A REST layer uses the metadata methods (`allMetadataForStore` and the key-lookup variant) to find which instance holds a key. What is the effect?",
+    "options": [
+      {
+        "id": "a",
+        "text": "The metadata methods return no `StreamsMetadata` for instance B, so keys hosted on B can't be routed to it"
+      },
+      {
+        "id": "b",
+        "text": "Instance B fails to start, because `application.server` is required"
+      },
+      {
+        "id": "c",
+        "text": "Streams assigns B a random port and advertises it automatically"
+      },
+      {
+        "id": "d",
+        "text": "Queries for B's keys are answered by A and C from their standby copies"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`application.server` is \"a host:port pair pointing to a user-defined endpoint that can be used for state store discovery and interactive queries\", default empty. The guide warns: \"If `application.server` is not configured for an application instance, then the above methods will not find any StreamsMetadata for it.\" The setting must be unique per instance.\n\n- It's optional; the app starts fine without it.\n- Streams doesn't create or advertise endpoints; you build the RPC layer.\n- Standbys aren't used automatically just because discovery fails.",
+    "references": [
+      {
+        "title": "Interactive queries: discovering application instances",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/interactive-queries/#discovering-and-accessing-application-instances-and-their-local-state-stores",
+        "kind": "official"
+      },
+      {
+        "title": "Streams configs: application.server",
+        "url": "https://kafka.apache.org/44/configuration/kafka-streams-configs/#streamsconfigs_application.server",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "kstr-iq-004",
+    "domain": "streams",
+    "topics": [
+      "streams-state-eos"
+    ],
+    "type": "single",
+    "stem": "A Streams app runs on several instances and must answer HTTP `GET /count/{key}` for any key. Which order of steps is correct?\n\n1. Set a unique `application.server` on each instance and start it\n2. On request, ask Streams which instance hosts the key in the store\n3. If it's this instance, read the local store via `streams.store(...)`\n4. Otherwise, forward the request to the other instance's RPC endpoint",
+    "options": [
+      {
+        "id": "a",
+        "text": "1, 2, 3, 4"
+      },
+      {
+        "id": "b",
+        "text": "2, 1, 3, 4"
+      },
+      {
+        "id": "c",
+        "text": "1, 3, 2, 4"
+      },
+      {
+        "id": "d",
+        "text": "3, 4, 1, 2"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "Each instance holds only part of the state. Discovery needs `application.server` set before startup so Streams can share endpoints in the group metadata. A request then looks up which instance hosts the key, queries the local store if it's local, and otherwise calls the hosting instance over the application's own RPC layer.\n\n- Lookup before configuring `application.server` finds no metadata for that instance.\n- Reading the local store before the lookup returns nothing for keys hosted elsewhere.",
+    "references": [
+      {
+        "title": "Interactive queries: querying remote state stores",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/interactive-queries/#querying-remote-state-stores-for-the-entire-app",
+        "kind": "official"
+      },
+      {
+        "title": "Interactive queries: exposing RPC endpoints",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/interactive-queries/#exposing-the-rpc-endpoints-of-your-application",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  }
+]

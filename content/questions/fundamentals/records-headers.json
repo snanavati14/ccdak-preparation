@@ -1,0 +1,693 @@
+[
+  {
+    "id": "fund-rec-001",
+    "domain": "fundamentals",
+    "topics": [
+      "records-headers"
+    ],
+    "type": "multi",
+    "stem": "Besides the topic, key and value, which three can a producer application set when it builds a `ProducerRecord`? (Choose three.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "Headers"
+      },
+      {
+        "id": "b",
+        "text": "A timestamp"
+      },
+      {
+        "id": "c",
+        "text": "A partition number"
+      },
+      {
+        "id": "d",
+        "text": "The offset"
+      },
+      {
+        "id": "e",
+        "text": "The leader epoch"
+      }
+    ],
+    "correct": [
+      "a",
+      "b",
+      "c"
+    ],
+    "explanation": "`ProducerRecord` constructors take `topic`, an optional `partition`, an optional `timestamp`, `key`, `value` and `Iterable<Header> headers`. If no timestamp is given, \"the producer will stamp the record with its current time\"; if no partition is given, the partitioner chooses one.\n\nThe offset is assigned when the partition leader appends the record, and the producer learns it from `RecordMetadata.offset()`. The leader epoch is broker metadata that a consumer can read with `ConsumerRecord.leaderEpoch()`; producers never set it.",
+    "references": [
+      {
+        "title": "ProducerRecord javadoc (Kafka 4.4)",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/producer/ProducerRecord.html",
+        "kind": "official"
+      },
+      {
+        "title": "RecordMetadata javadoc (Kafka 4.4)",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/producer/RecordMetadata.html",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "fund-rec-002",
+    "domain": "fundamentals",
+    "topics": [
+      "records-headers"
+    ],
+    "type": "single",
+    "stem": "Topic `payments` has 6 partitions. Partition 0 and partition 4 both contain a record with offset 1200. What does this tell you?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Nothing unusual: offsets are numbered separately in each partition, so the same offset exists in many partitions and identifies a record only together with the partition."
+      },
+      {
+        "id": "b",
+        "text": "One of the two records is a duplicate written by a retrying producer."
+      },
+      {
+        "id": "c",
+        "text": "The two records were written at the same moment, because offsets are timestamps."
+      },
+      {
+        "id": "d",
+        "text": "The topic is corrupt: offsets must be unique across all partitions of a topic."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The `KafkaConsumer` javadoc: \"Kafka maintains a numerical offset for each record in a partition. This offset acts as a unique identifier of a record within that partition.\" Every partition has its own sequence, so (topic, partition, offset) identifies a record. Offsets carry no time information, and there is no ordering across partitions.",
+    "references": [
+      {
+        "title": "KafkaConsumer javadoc: Offsets and Consumer Position",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html#offsets-and-consumer-position-heading",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "fund-rec-003",
+    "domain": "fundamentals",
+    "topics": [
+      "records-headers",
+      "log-retention-compaction"
+    ],
+    "type": "single",
+    "stem": "A consumer of a compacted topic calls `seek(partition, 37)`. Compaction has removed offsets 36 and 37 from that partition; the next remaining record has offset 38. What does the next `poll()` return?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Records starting at offset 38; a compacted-away offset is still a valid position and reads as the next higher offset."
+      },
+      {
+        "id": "b",
+        "text": "Nothing: `OffsetOutOfRangeException` is raised and `auto.offset.reset` decides where to restart."
+      },
+      {
+        "id": "c",
+        "text": "The record now stored at offset 37, because compaction renumbers the remaining records."
+      },
+      {
+        "id": "d",
+        "text": "A placeholder record with a `null` value for offset 37, followed by offset 38."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The design docs: records in the compacted tail \"retain the original offset assigned when they were first written–that never changes\", and \"all offsets remain valid positions in the log, even if the message with that offset has been compacted away; in this case this position is indistinguishable from the next highest offset that does appear in the log\". The `KafkaConsumer` javadoc agrees: if there is no record at the position, \"the consumer will return the record with the next higher offset\".\n\nCompaction never renumbers, and it leaves no placeholder records. The offset is inside the log's range, so there's no out-of-range error.",
+    "references": [
+      {
+        "title": "Kafka design: Log Compaction Basics",
+        "url": "https://kafka.apache.org/44/design/design/#log-compaction-basics",
+        "kind": "official"
+      },
+      {
+        "title": "KafkaConsumer javadoc: Offsets and Consumer Position",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html#offsets-and-consumer-position-heading",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "fund-rec-004",
+    "domain": "fundamentals",
+    "topics": [
+      "records-headers"
+    ],
+    "type": "single",
+    "stem": "Topic `clicks` sets `message.timestamp.type=LogAppendTime`. The producer puts each click's event time into the `ProducerRecord` timestamp. Which timestamp do consumers see, and what does `RecordMetadata.timestamp()` return to the producer?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Consumers see the broker's local time at append; the producer's timestamp is overwritten, and `RecordMetadata` returns the broker's time."
+      },
+      {
+        "id": "b",
+        "text": "Consumers see the producer's event time; `LogAppendTime` only applies to records sent without a timestamp."
+      },
+      {
+        "id": "c",
+        "text": "The send fails, because records with an explicit timestamp can't go to a `LogAppendTime` topic."
+      },
+      {
+        "id": "d",
+        "text": "Consumers see both timestamps: `timestamp()` for the event time and `timestampType()` for the append time."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The `ProducerRecord` javadoc: with `CreateTime` \"the timestamp in the producer record will be used by the broker\"; with `LogAppendTime` it \"will be overwritten by the broker with the broker local time when it appends the message to its log\". Either way, \"the timestamp that has actually been used will be returned to user in `RecordMetadata`\".\n\n`message.timestamp.type` defaults to `CreateTime` (broker default `log.message.timestamp.type`). `ConsumerRecord.timestampType()` only says which kind of timestamp the record has; it doesn't hold a second time. To keep event time on a `LogAppendTime` topic, put it in the value or a header.",
+    "references": [
+      {
+        "title": "ProducerRecord javadoc (Kafka 4.4)",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/producer/ProducerRecord.html",
+        "kind": "official"
+      },
+      {
+        "title": "Topic configs: message.timestamp.type",
+        "url": "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_message.timestamp.type",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "fund-rec-005",
+    "domain": "fundamentals",
+    "topics": [
+      "records-headers"
+    ],
+    "type": "single",
+    "stem": "A producer host's clock runs 2 hours fast. It sends records without setting a timestamp to a topic that uses the default `message.timestamp.type` and default timestamp bounds on a Kafka 4.4 cluster. What happens?",
+    "options": [
+      {
+        "id": "a",
+        "text": "The broker rejects the records, because their timestamps are more than `message.timestamp.after.max.ms` (default 1 hour) ahead of the broker's clock."
+      },
+      {
+        "id": "b",
+        "text": "The broker accepts them and silently replaces the timestamp with its own time."
+      },
+      {
+        "id": "c",
+        "text": "The broker accepts them unchanged, because timestamps in the future are never checked."
+      },
+      {
+        "id": "d",
+        "text": "The producer corrects the timestamp using the broker's clock before sending."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "With no explicit timestamp the producer stamps each record with its own (wrong) clock. The default `message.timestamp.type` is `CreateTime`. `message.timestamp.after.max.ms` sets how far a record's timestamp may be *ahead* of the broker's: \"if `message.timestamp.type=CreateTime`, the message will be rejected if the difference in timestamps exceeds this specified threshold\". Its default is 3600000 (1 hour), so records 2 hours ahead are rejected.\n\n- Only `LogAppendTime` replaces timestamps, and that setting ignores these bounds.\n- Before 4.0 the default was `Long.MAX_VALUE`, so future timestamps were accepted unchanged.\n- `message.timestamp.before.max.ms` (timestamps in the past) still defaults to `Long.MAX_VALUE`.\n- The producer never adjusts timestamps itself.",
+    "references": [
+      {
+        "title": "Topic configs: message.timestamp.after.max.ms",
+        "url": "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_message.timestamp.after.max.ms",
+        "kind": "official"
+      },
+      {
+        "title": "Upgrade notes: Notable changes in 4.0.0",
+        "url": "https://kafka.apache.org/44/getting-started/upgrade/#notable-changes-in-400",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "verified",
+    "source": "original",
+    "kafkaVersionNote": "Kafka 4.0 changed the default of `message.timestamp.after.max.ms` from `Long.MAX_VALUE` to 1 hour (KIP-1030)."
+  },
+  {
+    "id": "fund-rec-006",
+    "domain": "fundamentals",
+    "topics": [
+      "records-headers"
+    ],
+    "type": "multi",
+    "stem": "A producer adds headers with `record.headers().add(\"trace-id\", bytesA)` and later `record.headers().add(\"trace-id\", bytesB)`. Which two statements about the `Headers` API are true? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "Both headers are kept; `Headers` allows duplicate keys and keeps them in the order they were added."
+      },
+      {
+        "id": "b",
+        "text": "`lastHeader(\"trace-id\")` returns the header holding `bytesB`, and `headers(\"trace-id\")` returns both."
+      },
+      {
+        "id": "c",
+        "text": "The second `add()` replaces the first, because header keys are unique."
+      },
+      {
+        "id": "d",
+        "text": "Header values are serialized with the producer's `value.serializer`, so they can be any Java object."
+      },
+      {
+        "id": "e",
+        "text": "Headers are sorted by key before the record is sent."
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "The `Headers` javadoc: \"A mutable ordered collection of `Header` objects. Note that multiple headers may have the same key. The order of headers is preserved in the order they were added.\" `lastHeader(key)` returns \"just one (the very last) header for the given key\", and `headers(key)` returns all of them in insertion order. `remove(key)` removes every header with that key.\n\n`add(String key, byte[] value)` takes raw bytes. The key must not be null; the value may be null. The application encodes header values itself; serializers don't touch them. The message format confirms that header keys are strings and values are bytes, and that header order is preserved when producing and consuming.",
+    "references": [
+      {
+        "title": "Headers javadoc (Kafka 4.4)",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/common/header/Headers.html",
+        "kind": "official"
+      },
+      {
+        "title": "Message format: Record Header",
+        "url": "https://kafka.apache.org/44/implementation/message-format/#record-header",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "fund-rec-007",
+    "domain": "fundamentals",
+    "topics": [
+      "records-headers",
+      "partitioning-ordering"
+    ],
+    "type": "single",
+    "stem": "A multi-tenant service sends records with `null` keys and puts the tenant ID in a `tenant` header. It uses the default partitioner and expects all records of one tenant to land in the same partition. What actually happens?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Headers play no part in partitioning; with `null` keys, records of one tenant spread across partitions. Use the tenant ID as the key, or set the partition explicitly."
+      },
+      {
+        "id": "b",
+        "text": "The default partitioner hashes the first header when the key is `null`, so each tenant gets its own partition."
+      },
+      {
+        "id": "c",
+        "text": "The default partitioner hashes any header named `key` in place of the record key."
+      },
+      {
+        "id": "d",
+        "text": "The broker reassigns records to partitions by their headers when it appends them."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The partitioner decides using the key: `Partitioner.partition(topic, key, keyBytes, value, valueBytes, cluster)` doesn't receive the headers at all, and the `ProducerRecord` javadoc describes partitions as chosen from an explicit partition number or \"a hash of the key\". Records with a `null` key and no partition are spread across partitions, so a tenant's records don't stay together.\n\nPartitions are chosen on the client; the broker appends records to the partition the producer chose. To keep a tenant's records together (and in order), make the tenant ID the key.",
+    "references": [
+      {
+        "title": "Partitioner javadoc (Kafka 4.4)",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/producer/Partitioner.html",
+        "kind": "official"
+      },
+      {
+        "title": "ProducerRecord javadoc (Kafka 4.4)",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/producer/ProducerRecord.html",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "likely",
+    "source": "original"
+  },
+  {
+    "id": "fund-rec-008",
+    "domain": "fundamentals",
+    "topics": [
+      "records-headers",
+      "log-retention-compaction"
+    ],
+    "type": "single",
+    "stem": "To delete user `u-42` from a compacted topic, a service sends a record with key `u-42`, value `\"DELETED\"` and header `op=delete`. After compaction runs, what is left for `u-42`?",
+    "options": [
+      {
+        "id": "a",
+        "text": "The `\"DELETED\"` record stays as the latest value for `u-42`; only a record with a `null` value is a tombstone, and headers don't change that."
+      },
+      {
+        "id": "b",
+        "text": "Nothing: compaction recognises the `op=delete` header and removes all records for the key."
+      },
+      {
+        "id": "c",
+        "text": "All earlier records for `u-42` are kept, because the newest record has different headers from them."
+      },
+      {
+        "id": "d",
+        "text": "The topic rejects the record, because records with headers can't be written to compacted topics."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "Compaction keeps the latest record per key: it removes records \"where we have a more recent update with the same primary key\". A delete needs a tombstone: \"a message with a key and a null payload will be treated as a delete from the log\". This record has a non-null value, so it is simply the newest value for `u-42` and is kept. Older records for the key are cleaned away as usual.\n\nTo delete the key, send key `u-42` with a `null` value. Headers may still be attached, for example for auditing. Compacted topics accept records with headers.",
+    "references": [
+      {
+        "title": "Kafka design: Log Compaction Basics",
+        "url": "https://kafka.apache.org/44/design/design/#log-compaction-basics",
+        "kind": "official"
+      },
+      {
+        "title": "Kafka design: Log Compaction",
+        "url": "https://kafka.apache.org/44/design/design/#log-compaction",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "fund-rec-009",
+    "domain": "fundamentals",
+    "topics": [
+      "records-headers"
+    ],
+    "type": "multi",
+    "stem": "A producer sends records with a `null` key. Which two statements are true? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "If the topic has `cleanup.policy=compact`, the broker rejects them; brokers count these as validation failures in `NoKeyCompactedTopicRecordsPerSec`."
+      },
+      {
+        "id": "b",
+        "text": "On a normal (delete-policy) topic they are accepted, and the consumer's `ConsumerRecord.key()` returns `null`."
+      },
+      {
+        "id": "c",
+        "text": "The broker generates a random key, so they can still be compacted."
+      },
+      {
+        "id": "d",
+        "text": "They are treated as tombstones and removed by the log cleaner."
+      },
+      {
+        "id": "e",
+        "text": "The default partitioner always writes them to partition 0."
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "Compaction works per key, so compacted topics need keys. The broker monitoring table lists `kafka.server:type=BrokerTopicMetrics,name=NoKeyCompactedTopicRecordsPerSec` as the \"message validation failure rate due to no key specified for compacted topic\", with a normal value of 0. On other topics a key is optional: `ProducerRecord(topic, value)` \"create[s] a record with no key\", and `ConsumerRecord.key()` returns \"the key (or null if no key is specified)\".\n\n- Brokers never invent keys.\n- A tombstone is a record with a key and a `null` *value*.\n- Keyless records are spread across partitions, not pinned to partition 0.",
+    "references": [
+      {
+        "title": "Apache Kafka monitoring (broker metrics table)",
+        "url": "https://kafka.apache.org/44/operations/monitoring/",
+        "kind": "official"
+      },
+      {
+        "title": "ConsumerRecord javadoc (Kafka 4.4)",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/ConsumerRecord.html",
+        "kind": "official"
+      },
+      {
+        "title": "ProducerRecord javadoc (Kafka 4.4)",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/producer/ProducerRecord.html",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "likely",
+    "source": "original"
+  },
+  {
+    "id": "fund-rec-010",
+    "domain": "fundamentals",
+    "topics": [
+      "records-headers"
+    ],
+    "type": "single",
+    "stem": "An order service publishes `OrderPlaced` events. Each event carries: the customer ID (all of a customer's events must stay in order), the order details, the time the order was placed, and a distributed-tracing ID used only by observability tooling. Which pairing is correct?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Customer ID → key; order details → value; time placed → timestamp; tracing ID → header"
+      },
+      {
+        "id": "b",
+        "text": "Customer ID → header; order details → value; time placed → key; tracing ID → timestamp"
+      },
+      {
+        "id": "c",
+        "text": "Customer ID → value; order details → key; time placed → header; tracing ID → key"
+      },
+      {
+        "id": "d",
+        "text": "Customer ID → timestamp; order details → header; time placed → value; tracing ID → key"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "Conceptually an event \"has a key, value, timestamp, and optional metadata headers\":\n\n- **Key**: events with the same key go to the same partition, and Kafka keeps their order within the partition, so the customer ID belongs here.\n- **Value**: the business payload.\n- **Timestamp**: event time; with the default `CreateTime` the producer's timestamp is kept.\n- **Headers**: metadata that doesn't belong in the payload, such as tracing IDs. Headers don't affect partitioning, so they suit data that shouldn't change where a record goes.",
+    "references": [
+      {
+        "title": "Introduction: Main Concepts and Terminology",
+        "url": "https://kafka.apache.org/44/getting-started/introduction/#main-concepts-and-terminology",
+        "kind": "official"
+      },
+      {
+        "title": "ProducerRecord javadoc (Kafka 4.4)",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/producer/ProducerRecord.html",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "likely",
+    "source": "original"
+  },
+  {
+    "id": "fund-rec-011",
+    "domain": "fundamentals",
+    "topics": [
+      "records-headers"
+    ],
+    "type": "single",
+    "stem": "Put these steps for one record sent with `producer.send(record, callback)` in order. Which order is correct?\n\n1. The partition leader appends the record and assigns its offset.\n2. The key and value serializers turn the key and value into bytes.\n3. The callback receives `RecordMetadata` with the offset and timestamp.\n4. The partitioner chooses a partition from the serialized key (if no partition was set).",
+    "options": [
+      {
+        "id": "a",
+        "text": "2, 4, 1, 3"
+      },
+      {
+        "id": "b",
+        "text": "4, 2, 1, 3"
+      },
+      {
+        "id": "c",
+        "text": "2, 1, 4, 3"
+      },
+      {
+        "id": "d",
+        "text": "4, 1, 2, 3"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "Serialization comes first: `Partitioner.partition()` receives `keyBytes` and `valueBytes`, so the partitioner runs on serialized data (`Serializer.serialize(topic, headers, data)` can also read or add headers here). The record is then batched and sent to the leader of the chosen partition, which appends it and assigns the offset. Offsets exist only after the append. Finally the callback gets the `RecordMetadata`: \"the metadata for a record that has been acknowledged by the server\", including `offset()` and the timestamp actually used.",
+    "references": [
+      {
+        "title": "Partitioner javadoc (Kafka 4.4)",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/producer/Partitioner.html",
+        "kind": "official"
+      },
+      {
+        "title": "Serializer javadoc (Kafka 4.4)",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/common/serialization/Serializer.html",
+        "kind": "official"
+      },
+      {
+        "title": "RecordMetadata javadoc (Kafka 4.4)",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/producer/RecordMetadata.html",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "likely",
+    "source": "original"
+  },
+  {
+    "id": "fund-rec-012",
+    "domain": "fundamentals",
+    "topics": [
+      "records-headers",
+      "transactions-eos"
+    ],
+    "type": "multi",
+    "stem": "A consumer logging offsets from one partition sees 100, 101, 104, 105. Nothing went wrong in the application. Which two could explain the missing offsets 102 and 103? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "The topic is compacted, and the cleaner removed records 102 and 103 because later records have the same keys."
+      },
+      {
+        "id": "b",
+        "text": "The partition contains transactional writes; commit or abort markers occupy offsets but are never returned to applications."
+      },
+      {
+        "id": "c",
+        "text": "Time-based retention deleted records 102 and 103 from the middle of the partition."
+      },
+      {
+        "id": "d",
+        "text": "The idempotent producer skipped offsets 102 and 103 when it retried a batch."
+      },
+      {
+        "id": "e",
+        "text": "`max.poll.records` cut off the batch, so those records will never be delivered."
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "The `KafkaConsumer` javadoc: \"offsets are not guaranteed to be consecutive (such as compacted topic or when records have been produced using transactions)\". Compaction removes older records per key but never renumbers the rest. Transaction markers \"are not returned to applications, yet have an offset in the log\", and a `read_committed` consumer also skips aborted records.\n\n- Retention deletes data \"one log segment at a time\", oldest first, which moves the log start offset forward; it doesn't remove two records from between surviving ones.\n- Offsets are assigned when the partition leader appends records, not by the producer, so a producer retry can't skip offsets.\n- `max.poll.records` only limits how many records one `poll()` returns; the rest come on the next poll.",
+    "references": [
+      {
+        "title": "KafkaConsumer javadoc: Offsets and Consumer Position",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html#offsets-and-consumer-position-heading",
+        "kind": "official"
+      },
+      {
+        "title": "KafkaConsumer javadoc: Reading Transactional Messages",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html#reading-transactional-messages-heading",
+        "kind": "official"
+      },
+      {
+        "title": "Kafka implementation: log deletes",
+        "url": "https://kafka.apache.org/44/implementation/log/#deletes",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "fund-ts-001",
+    "domain": "fundamentals",
+    "topics": [
+      "records-headers"
+    ],
+    "type": "single",
+    "stem": "A backfill job writes historical events to a topic with default timestamp settings, setting each `ProducerRecord` timestamp to the event time, which is up to 3 years in the past. What happens on a Kafka 4.4 broker?",
+    "options": [
+      {
+        "id": "a",
+        "text": "The records are accepted with their original timestamps, because `message.timestamp.before.max.ms` defaults to `Long.MAX_VALUE`"
+      },
+      {
+        "id": "b",
+        "text": "The records are rejected, because `message.timestamp.before.max.ms` defaults to 1 hour"
+      },
+      {
+        "id": "c",
+        "text": "The broker replaces the timestamps with its append time, because they are older than `retention.ms`"
+      },
+      {
+        "id": "d",
+        "text": "The producer drops the timestamps and uses its current time"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "With the default `message.timestamp.type=CreateTime`, the broker keeps the producer's timestamp but checks it against two bounds. `message.timestamp.after.max.ms` (default 3600000, 1 hour) limits timestamps in the future; `message.timestamp.before.max.ms` limits timestamps in the past and defaults to 9223372036854775807, so past timestamps are effectively never rejected.\n\n- The 1-hour default applies to the future bound, not the past one.\n- The broker only overwrites timestamps under `LogAppendTime`.\n- The producer only stamps its current time when the record has no timestamp.\n\nOld timestamps do matter for retention: time-based retention uses the largest timestamp in a segment, so very old records can become eligible for deletion soon after they are written.",
+    "references": [
+      {
+        "title": "Topic configs: message.timestamp.before.max.ms",
+        "url": "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_message.timestamp.before.max.ms",
+        "kind": "official"
+      },
+      {
+        "title": "Topic configs: message.timestamp.after.max.ms",
+        "url": "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_message.timestamp.after.max.ms",
+        "kind": "official"
+      },
+      {
+        "title": "Log implementation: retention by timestamp",
+        "url": "https://kafka.apache.org/44/implementation/log/",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original",
+    "kafkaVersionNote": "KIP-937 (Kafka 3.6) added the separate `before` and `after` bounds; Kafka 4.0 removed the old `message.timestamp.difference.max.ms`."
+  },
+  {
+    "id": "fund-ts-002",
+    "domain": "fundamentals",
+    "topics": [
+      "records-headers"
+    ],
+    "type": "multi",
+    "stem": "Which statements about record timestamps are true? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "If a `ProducerRecord` has no timestamp, the producer stamps it with its current time"
+      },
+      {
+        "id": "b",
+        "text": "`message.timestamp.type` is a topic config with valid values `CreateTime` and `LogAppendTime`, defaulting to `CreateTime`"
+      },
+      {
+        "id": "c",
+        "text": "`message.timestamp.type` is a producer config that tells the broker which timestamp to keep"
+      },
+      {
+        "id": "d",
+        "text": "With `LogAppendTime`, `message.timestamp.after.max.ms` rejects records whose producer timestamp is in the future"
+      },
+      {
+        "id": "e",
+        "text": "Records sent to a `LogAppendTime` topic must not carry a timestamp"
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "The `ProducerRecord` Javadoc: \"If the user did not provide a timestamp, the producer will stamp the record with its current time. The timestamp eventually used by Kafka depends on the timestamp type configured for the topic.\" `message.timestamp.type` is a topic config (broker default `log.message.timestamp.type`), `CreateTime` by default.\n\n- There's no producer-side `message.timestamp.type`.\n- The timestamp bounds are \"ignored if message.timestamp.type=LogAppendTime\", since the broker overwrites the timestamp anyway.\n- Records with a timestamp are fine on `LogAppendTime` topics; the timestamp is just replaced.",
+    "references": [
+      {
+        "title": "Topic configs: message.timestamp.type",
+        "url": "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_message.timestamp.type",
+        "kind": "official"
+      },
+      {
+        "title": "ProducerRecord javadoc",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/producer/ProducerRecord.html",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  }
+]

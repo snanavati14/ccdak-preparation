@@ -1,0 +1,61 @@
+Most Kafka application failures announce themselves with a specific exception or log line, and the message usually names the setting involved. Troubleshooting questions give you the symptom and ask for the cause and the fix, so learn to read each error back to the limit or timer that produced it.
+
+## How it works
+
+Work from the symptom to the setting that controls it.
+
+| Symptom | Likely cause | Fix |
+|---|---|---|
+| `send()` blocks, then `TimeoutException: Topic X not present in metadata after 60000 ms` | Topic missing or misnamed, auto-creation off; the wait is bounded by `max.block.ms` | Fix the name or create the topic |
+| `BufferExhaustedException` (a `TimeoutException`) | `buffer.memory` stayed full for `max.block.ms` | Find why brokers are slow, or raise `buffer.memory` |
+| `RecordTooLargeException ... value of the max.request.size configuration` | Uncompressed record over the producer limit | Raise `max.request.size` |
+| `RecordTooLargeException` from the broker | Compressed batch over the topic's `max.message.bytes` | Raise the topic limit |
+| Retries with `NOT_ENOUGH_REPLICAS` | ISR smaller than `min.insync.replicas` with `acks=all` | Restore replicas; check replication factor against `min.insync.replicas` |
+| Poll timeout in the log, then `CommitFailedException` | Processing a batch took longer than `max.poll.interval.ms` | Lower `max.poll.records`, speed up processing, or raise the interval |
+| Empty polls, no errors | New group with `auto.offset.reset=latest`, a borrowed `group.id`, or `assign()` to the wrong partitions | Pick the right reset policy, group and assignment |
+| `NoOffsetForPartitionException` | No committed offset and `auto.offset.reset=none` | Reset offsets explicitly or choose a policy |
+| Same `RecordDeserializationException` on every poll | Poison pill: the position stays on the bad record | `seek()` to `offset() + 1` |
+| `SaslAuthenticationException` | Wrong credentials or SASL settings | Fix `sasl.jaas.config` and `sasl.mechanism` |
+| `TopicAuthorizationException`, `GroupAuthorizationException` | Missing ACL on the topic, or READ on the group | Add the ACL |
+| `ProducerFencedException` | Another producer started with the same `transactional.id` | Close it; give each instance its own stable id |
+
+Kafka Streams wraps these in its own handlers. Bad input bytes go to `deserialization.exception.handler` (default `LogAndFailExceptionHandler`). Exceptions from your processing logic go to `processing.exception.handler` (default `LogAndFailProcessingExceptionHandler`). Failures writing output go to `production.exception.handler` (default `DefaultProductionExceptionHandler`, which always fails). Anything that still kills a stream thread reaches the `StreamsUncaughtExceptionHandler`, which returns `REPLACE_THREAD`, `SHUTDOWN_CLIENT` or `SHUTDOWN_APPLICATION`. Without one, the client shuts down and moves to the `ERROR` state.
+
+## Gotchas the exam loves
+
+- `max.block.ms` (default 60000) covers both the metadata wait and buffer allocation in `send()`. `delivery.timeout.ms` (default 120000) starts after `send()` returns.
+- `max.request.size` (default 1048576) caps the uncompressed size; topic `max.message.bytes` (default 1048588) caps the compressed batch. A record that compresses well can fail on the producer and still fit on the broker.
+- `NotEnoughReplicasException` is retriable, so the producer keeps retrying until `delivery.timeout.ms`. A topic whose replication factor is below `min.insync.replicas` can never accept `acks=all` writes.
+- A consumer can heartbeat happily and still be thrown out: exceeding `max.poll.interval.ms` (default 300000) makes the client leave the group. With 500 records per poll, each record gets about 600 ms.
+- Committed offsets of an empty group expire after `offsets.retention.minutes` (default 10080, 7 days). With `auto.offset.reset=none` the consumer then throws `NoOffsetForPartitionException`.
+- Restarting a consumer doesn't skip a poison pill; it resumes from the committed offset and fails again.
+- `enable.idempotence=false` with more than one request in flight risks duplicates and reordering on retries.
+- `REPLACE_THREAD` helps with transient errors only. A bad record fails the new thread too.
+- `errors.tolerance` and `errors.deadletterqueue.topic.name` belong to Kafka Connect, not Streams.
+
+## Java sample
+
+```java
+while (running) {
+    try {
+        ConsumerRecords<String, Payment> records = consumer.poll(Duration.ofSeconds(1));
+        records.forEach(this::handle);
+        consumer.commitSync();
+    } catch (RecordDeserializationException e) {
+        // Poison pill: park the raw bytes, then move past the bad record.
+        deadLetters.send(new ProducerRecord<>("payments-dlq", e.keyBuffer(), e.valueBuffer()));
+        consumer.seek(e.topicPartition(), e.offset() + 1);
+    } catch (CommitFailedException e) {
+        // We were removed from the group; these records will be redelivered.
+        log.warn("Commit failed after a rebalance; check max.poll.interval.ms", e);
+    }
+}
+```
+
+## Version notes
+
+<Note>
+Kafka 3.9 added `processing.exception.handler` (KIP-1033) and the raw key, value and header accessors on `RecordDeserializationException`. Kafka 4.0 deprecated `default.deserialization.exception.handler` and `default.production.exception.handler` in favour of `deserialization.exception.handler` and `production.exception.handler` (KIP-1056), and removed the old `Thread.UncaughtExceptionHandler` overload. Kafka 4.2 added a Streams dead letter queue, `errors.dead.letter.queue.topic.name`.
+</Note>
+
+See [Detecting Consumer Failures](https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html#detecting-consumer-failures-heading) and the [Kafka Streams exception handler settings](https://kafka.apache.org/44/streams/developer-guide/config-streams/#processingexceptionhandler).

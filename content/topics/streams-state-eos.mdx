@@ -1,0 +1,86 @@
+Stateful Kafka Streams operators keep their data in local state stores, and Kafka itself is the backup. Know how a store is restored after a failure, what standby replicas buy you, and what `processing.guarantee=exactly_once_v2` changes. The test tooling (`TopologyTestDriver`) also comes up.
+
+## How it works
+
+Every stateful task owns one or more **state stores**. DSL operators use persistent **RocksDB** stores on local disk by default (`default.dsl.store=rocksDB`), under `state.dir/<application.id>/`. In-memory stores are an option. Every write to a fault-tolerant store also goes to its **changelog topic**, an internal topic named with the `application.id` prefix. Key-value changelogs are compacted; window store changelogs use `delete,compact`.
+
+<Figure caption="A task's store is backed by a compacted changelog topic. A standby on another instance replays the same changelog, so failover needs little restoration.">
+<svg viewBox="0 0 600 190" role="img" aria-label="State store, changelog and standby">
+  <rect x="10" y="20" width="170" height="70" fill="none" stroke="currentColor" />
+  <text x="22" y="42" fontSize="13" fill="currentColor">Instance A</text>
+  <text x="22" y="62" fontSize="13" fill="currentColor">active task 0_1</text>
+  <text x="22" y="80" fontSize="13" fill="currentColor">RocksDB store</text>
+  <rect className="accent" x="215" y="35" width="170" height="40" fill="none" stroke="currentColor" />
+  <text x="225" y="59" fontSize="13" fill="currentColor">app-store-changelog</text>
+  <rect x="420" y="20" width="170" height="70" fill="none" stroke="currentColor" />
+  <text x="432" y="42" fontSize="13" fill="currentColor">Instance B</text>
+  <text x="432" y="62" fontSize="13" fill="currentColor">standby task 0_1</text>
+  <text x="432" y="80" fontSize="13" fill="currentColor">RocksDB copy</text>
+  <line x1="180" y1="55" x2="215" y2="55" stroke="currentColor" />
+  <line x1="385" y1="55" x2="420" y2="55" stroke="currentColor" />
+  <text x="150" y="130" fontSize="13" fill="currentColor">writes</text>
+  <text x="360" y="130" fontSize="13" fill="currentColor">replays</text>
+  <text x="10" y="170" fontSize="13" fill="currentColor">On failover, B becomes active with its state almost caught up.</text>
+</svg>
+</Figure>
+
+**Restoration.** When a task moves to an instance without its state, Streams replays the changelog into a fresh store **before** processing resumes. With large state this can take a long time. **Standby replicas** (`num.standby.replicas`, default 0) keep shadow copies up to date on other instances, so failover is nearly instant. *n* standbys need *n+1* instances and about *(n+1)* times the disk. A store with logging disabled can't have standbys. Since 2.6, a stateful task is assigned only to an instance whose state is caught up (within `acceptable.recovery.lag`, default 10000), if one exists; **warmup replicas** catch up in the background before a task moves.
+
+**Record cache.** DSL stores have a write cache (`statestore.cache.max.bytes`, default 10 MiB per instance, split across threads). It compacts updates per key and flushes when `commit.interval.ms` passes or the cache fills. So downstream may see fewer, later updates. Set the size to 0 to see every update.
+
+**Exactly-once.** `processing.guarantee` accepts `at_least_once` (default) and `exactly_once_v2` (brokers 2.5+). Under EOS, the input offset commits, the state changelog writes and the output records of a task are committed in one Kafka transaction. Streams then sets:
+
+| Setting | EOS value |
+|---|---|
+| `commit.interval.ms` default | 100 ms (instead of 30000) |
+| consumer `isolation.level` | `read_committed` |
+| producer `enable.idempotence` | `true` |
+| producer `transaction.timeout.ms` default | 10000 |
+
+By default EOS needs at least 3 brokers, because of the transaction state topic's replication. Side effects outside Kafka (a REST call in `peek`) are **not** covered and may repeat after a retry.
+
+**Testing.** `kafka-streams-test-utils` provides `TopologyTestDriver`, which runs a `Topology` in-process with no broker. Create a `TestInputTopic` and a `TestOutputTopic` from the driver, read stores with `getKeyValueStore(...)`, and fire wall-clock punctuations with `advanceWallClockTime(...)`. Stream-time punctuations fire from piped timestamps. `MockProcessorContext` unit-tests a single `Processor`. It captures forwards and punctuators but does not run punctuators itself.
+
+## Gotchas the exam loves
+
+- `num.standby.replicas` defaults to 0; standbys don't process input or write output.
+- Changelog topics are compacted. Repartition topics use `delete` with infinite retention, and Streams purges them itself (`repartition.purge.interval.ms`, default 30000).
+- `replication.factor` for internal topics defaults to `-1`, meaning the broker default. The docs recommend 3.
+- `commit.interval.ms` is 30000 under at-least-once and 100 under `exactly_once_v2`.
+- Streams always sets `enable.auto.commit=false` and uses `application.id` as `group.id`. It defaults the consumer to `auto.offset.reset=earliest` and `max.poll.records=1000`.
+- `state.dir` defaults to `${java.io.tmpdir}`; each instance on a host needs its own.
+- Interactive queries are read-only and return local partitions only. Use `application.server` plus your own RPC layer to reach the rest.
+- Always close iterators from a store, or you leak memory. Always `close()` the `TopologyTestDriver`.
+
+## Java sample
+
+```java
+Properties props = new Properties();
+props.put(StreamsConfig.APPLICATION_ID_CONFIG, "word-count");
+props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "dummy:1234"); // not contacted
+props.put(StreamsConfig.PROCESSING_GUARANTEE_CONFIG, StreamsConfig.EXACTLY_ONCE_V2);
+props.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.StringSerde.class);
+props.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, Serdes.StringSerde.class);
+
+StreamsBuilder builder = new StreamsBuilder();
+builder.<String, String>stream("lines")
+       .flatMapValues(v -> Arrays.asList(v.toLowerCase().split("\\W+")))
+       .groupBy((k, word) -> word)
+       .count(Materialized.as("counts"))
+       .toStream()
+       .to("word-counts", Produced.with(Serdes.String(), Serdes.Long()));
+
+try (TopologyTestDriver driver = new TopologyTestDriver(builder.build(), props)) {
+  TestInputTopic<String, String> in =
+      driver.createInputTopic("lines", new StringSerializer(), new StringSerializer());
+  TestOutputTopic<String, Long> out =
+      driver.createOutputTopic("word-counts", new StringDeserializer(), new LongDeserializer());
+  in.pipeInput("k", "kafka streams kafka");
+  KeyValueStore<String, Long> store = driver.getKeyValueStore("counts");
+  assert store.get("kafka") == 2L;
+}
+```
+
+## Version notes
+
+<Note>`exactly_once` (EOS v1) and `exactly_once_beta` were deprecated in 3.0. The 4.x config reference accepts only `at_least_once` and `exactly_once_v2`. Kafka Streams 4.4 adds opt-in transactional state stores (`enable.transactional.statestores`, default `false`; KIP-892). With them, an EOS error no longer wipes and rebuilds the stores. Since 4.0, Kafka Streams uses RocksDB 9.x, so an in-place downgrade to 3.x needs the local state deleted first.</Note>

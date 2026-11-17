@@ -1,0 +1,96 @@
+[
+  {
+    "id": "int-zk-014",
+    "domain": "fundamentals",
+    "topics": [
+      "replication-isr"
+    ],
+    "type": "single",
+    "stem": "A team runs Kafka 3.6 in ZooKeeper mode and wants to move to Kafka 4.4. What must happen first?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Nothing; 4.4 brokers read the ZooKeeper metadata on startup"
+      },
+      {
+        "id": "b",
+        "text": "The cluster must be migrated from ZooKeeper to KRaft using a bridge release (the last one is 3.9) before upgrading to 4.x"
+      },
+      {
+        "id": "c",
+        "text": "Set `zookeeper.connect` on the 4.4 controllers so they can import the metadata"
+      },
+      {
+        "id": "d",
+        "text": "Recreate every topic on a new 4.4 cluster; migration is not possible"
+      }
+    ],
+    "correct": [
+      "b"
+    ],
+    "explanation": "Kafka 4.0 and later support KRaft mode only. The upgrade notes: \"Clusters in ZooKeeper mode have to be migrated to KRaft mode before they can be upgraded.\" The KRaft guide: \"In order to migrate from ZooKeeper to KRaft you need to use a bridge release. The last bridge release is Kafka 3.9.\"\n\n4.x brokers and controllers have no ZooKeeper support, so they can neither read ZooKeeper metadata nor take a `zookeeper.connect` setting. Recreating topics is not required.",
+    "references": [
+      {
+        "title": "KRaft: ZooKeeper to KRaft migration",
+        "url": "https://kafka.apache.org/44/operations/kraft/#zookeeper-to-kraft-migration",
+        "kind": "official"
+      },
+      {
+        "title": "Upgrade notes: notable changes in 4.0",
+        "url": "https://kafka.apache.org/44/getting-started/upgrade/#notable-changes-in-400",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "unsure",
+    "source": "original",
+    "kafkaVersionNote": "Legacy: Kafka 4.0 and later run in KRaft mode only; ZooKeeper mode was removed. This question describes pre-4.0 ZooKeeper clusters, which the 4.4 docs no longer document."
+  },
+  {
+    "id": "int-zk-015",
+    "domain": "fundamentals",
+    "topics": [
+      "replication-isr"
+    ],
+    "type": "single",
+    "stem": "Legacy question. In a pre-4.0 cluster running in ZooKeeper mode, where were cluster metadata (brokers, topics, partition leaders and ISRs) stored, compared with a KRaft cluster?",
+    "options": [
+      {
+        "id": "a",
+        "text": "ZooKeeper mode: in ZooKeeper, managed by one broker elected as controller. KRaft: in the `__cluster_metadata` log, managed by the controller quorum"
+      },
+      {
+        "id": "b",
+        "text": "ZooKeeper mode: in `__consumer_offsets`. KRaft: in ZooKeeper"
+      },
+      {
+        "id": "c",
+        "text": "Both modes store metadata only in each broker's `server.properties`"
+      },
+      {
+        "id": "d",
+        "text": "ZooKeeper mode: in the `__cluster_metadata` topic. KRaft: in ZooKeeper"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "In ZooKeeper mode, metadata lived in ZooKeeper and one broker, elected through ZooKeeper, acted as the controller. KRaft replaces this with a Raft-based controller quorum that keeps metadata in a replicated log, the `__cluster_metadata` partition (the KRaft tools such as `kafka-dump-log.sh --cluster-metadata-decoder` read files under `__cluster_metadata-0`).\n\n`__consumer_offsets` holds consumer group offsets in both modes. Configuration files hold static settings, not cluster state.",
+    "references": [
+      {
+        "title": "KRaft: dump log tool",
+        "url": "https://kafka.apache.org/44/operations/kraft/#dump-log-tool",
+        "kind": "official"
+      },
+      {
+        "title": "KRaft: ZooKeeper to KRaft migration",
+        "url": "https://kafka.apache.org/44/operations/kraft/#zookeeper-to-kraft-migration",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "unsure",
+    "source": "original",
+    "kafkaVersionNote": "Legacy: Kafka 4.0 and later run in KRaft mode only; ZooKeeper mode was removed. This question describes pre-4.0 ZooKeeper clusters, which the 4.4 docs no longer document."
+  }
+]

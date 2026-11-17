@@ -1,0 +1,45 @@
+Clients secure their connections with `security.protocol`, configure TLS through truststores and keystores, and authenticate with a SASL mechanism set up through `sasl.jaas.config`. Brokers then authorize each request with ACLs.
+
+## How it works
+
+- `security.protocol` has four values:
+  - `PLAINTEXT` (the default)
+  - `SSL`
+  - `SASL_PLAINTEXT`
+  - `SASL_SSL`
+- TLS with server authentication only needs `ssl.truststore.location` and `ssl.truststore.password`. Mutual TLS (broker `ssl.client.auth=required`) also needs:
+  - `ssl.keystore.location`
+  - `ssl.keystore.password`
+  - `ssl.key.password`
+- SASL mechanisms:
+  - `GSSAPI` (Kerberos, the default for `sasl.mechanism`)
+  - `PLAIN`
+  - `SCRAM-SHA-256`
+  - `SCRAM-SHA-512`
+  - `OAUTHBEARER`
+- An ACL reads: principal P is allowed or denied operation O from host H on resource R. Resource types are Topic, Group, Cluster, TransactionalId, DelegationToken and User.
+
+## Gotchas the exam loves
+
+- A consumer needs `READ` on the topic and `READ` on its group. `kafka-acls --consumer` also adds `DESCRIBE` on the topic.
+- `kafka-acls --producer` grants `WRITE`, `DESCRIBE` and `CREATE` on the topic.
+- A transactional producer needs `WRITE` on its `TransactionalId`.
+- When no ACL matches a resource, only super users can access it, unless `allow.everyone.if.no.acl.found=true`.
+- Use `SASL/PLAIN` only with `SASL_SSL`, because it sends passwords in clear.
+- Always set `sasl.mechanism`; it is not inferred from the login module.
+- `sasl.jaas.config` takes precedence over a static JAAS file, and it lets clients in one JVM use different users.
+- `ssl.endpoint.identification.algorithm` defaults to `https`, so hostname verification is on.
+
+## Java sample
+
+```java
+Properties p = new Properties();
+p.put("bootstrap.servers", "broker1:9093");
+p.put("security.protocol", "SASL_SSL");
+p.put("sasl.mechanism", "SCRAM-SHA-256");
+p.put("sasl.jaas.config",
+    "org.apache.kafka.common.security.scram.ScramLoginModule required "
+  + "username=\"alice\" password=\"alice-secret\";");
+p.put("ssl.truststore.location", "/etc/kafka/client.truststore.jks");
+p.put("ssl.truststore.password", "changeit");
+```

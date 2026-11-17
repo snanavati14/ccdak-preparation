@@ -1,0 +1,64 @@
+Every partition is copied to `replication.factor` brokers: one leader takes all writes, and followers pull from it. The in-sync replica set (ISR) decides when a write counts as committed, which replicas can become leader, and how far consumers can read.
+
+## How it works
+
+Followers fetch from the leader like consumers do, so their logs have the same offsets in the same order. A replica is **in sync** while its broker keeps its session with the controller (KRaft heartbeats, `broker.session.timeout.ms`) and it keeps up with the leader. A follower that has not fetched, or not caught up to the leader's log end offset, for `replica.lag.time.max.ms` (default 30000 ms) is dropped from the ISR. The test is time, not a message count.
+
+A record is **committed** once every ISR member has it. The **high watermark** (HW) is the offset after the last committed record. Consumers only read below the HW; anything between the HW and the leader's **log end offset** (LEO) could still be lost.
+
+<Figure caption="RF=3. Follower 3 is out of the ISR, so the high watermark is set by the slowest ISR member (follower 2). Consumers can read offsets 0 to 99.">
+  <svg viewBox="0 0 640 220" role="img" aria-label="Leader and follower logs with high watermark and log end offset">
+    <text x="60" y="48" textAnchor="end" fontSize="13" fill="currentColor">leader</text>
+    <rect x="70" y="30" width="400" height="28" fill="none" stroke="currentColor" strokeWidth="1.5" />
+    <text x="530" y="48" textAnchor="middle" fontSize="13" fill="currentColor">LEO 105</text>
+    <text x="60" y="88" textAnchor="end" fontSize="13" fill="currentColor">follower 2</text>
+    <rect x="70" y="70" width="380" height="28" fill="none" stroke="currentColor" strokeWidth="1.5" />
+    <text x="530" y="88" textAnchor="middle" fontSize="13" fill="currentColor">in ISR</text>
+    <text x="60" y="128" textAnchor="end" fontSize="13" fill="currentColor">follower 3</text>
+    <rect x="70" y="110" width="240" height="28" fill="none" stroke="currentColor" strokeWidth="1.5" strokeDasharray="4 4" />
+    <text x="530" y="128" textAnchor="middle" fontSize="13" fill="currentColor">out of ISR</text>
+    <line className="accent" x1="450" y1="20" x2="450" y2="160" stroke="currentColor" strokeWidth="2.5" />
+    <text x="450" y="178" textAnchor="middle" fontSize="13" fill="currentColor">high watermark = 100</text>
+    <text x="260" y="208" textAnchor="middle" fontSize="13" fill="currentColor">consumers read below the high watermark</text>
+  </svg>
+</Figure>
+
+**Durability knobs.** Producer `acks=all` waits for the current ISR. Topic `min.insync.replicas` (default 1) is the smallest ISR that may accept an `acks=all` write; below it the producer gets `NotEnoughReplicas` or `NotEnoughReplicasAfterAppend`. The usual setup is RF 3, `min.insync.replicas=2`, `acks=all`: one broker can be down and writes still succeed with two copies.
+
+**Leader election.** In KRaft the active controller notices a failed broker and picks a new leader from the remaining ISR, batching elections for many partitions. With f+1 replicas, Kafka tolerates f failures without losing committed data. If every ISR member is down, `unclean.leader.election.enable` (default `false`) decides: wait for an ISR member (consistency) or let an out-of-sync replica lead and lose what it missed (availability). `auto.leader.rebalance.enable` (default `true`) later moves leadership back to the preferred replica.
+
+**KRaft controllers.** Metadata lives in the `__cluster_metadata` log, replicated across a controller quorum. A majority must be up: 3 controllers survive 1 failure, 5 survive 2 (2N+1). `process.roles` is `broker`, `controller` or both ("combined", for development only), and every node sets `controller.quorum.bootstrap.servers`.
+
+## Gotchas the exam loves
+
+- `acks=all` means "all **current** ISR members", not all assigned replicas. RF 2 with `min.insync.replicas=1` keeps accepting writes on a single copy.
+- `min.insync.replicas` only affects producers using `acks=all`.
+- `min.insync.replicas` equal to RF means any single broker outage blocks `acks=all` writes.
+- When writes are refused for too small an ISR, reads of committed data still work: the partition still has a leader.
+- The replication factor includes the leader. It can't exceed the number of brokers; topic creation fails.
+- Broker defaults `default.replication.factor` and `num.partitions` are both 1. `offsets.topic.replication.factor` and `transaction.state.log.replication.factor` default to 3.
+- `endOffsets()` for a `read_uncommitted` consumer returns the high watermark; for `read_committed` it returns the LSO.
+- Unclean election trades data loss for uptime. It never lets consumers read above the HW.
+
+## Java sample
+
+```java
+try (Admin admin = Admin.create(Map.of("bootstrap.servers", "localhost:9092"))) {
+    NewTopic orders = new NewTopic("orders", 6, (short) 3)
+        .configs(Map.of(
+            "min.insync.replicas", "2",
+            "unclean.leader.election.enable", "false"));
+    admin.createTopics(List.of(orders)).all().get();
+
+    TopicDescription d = admin.describeTopics(List.of("orders"))
+        .allTopicNames().get().get("orders");
+    d.partitions().forEach(p ->
+        System.out.printf("p%d leader=%s isr=%s%n", p.partition(), p.leader(), p.isr()));
+}
+```
+
+## Version notes
+
+<Note>Kafka 4.0 removed ZooKeeper; clusters must migrate to KRaft through a bridge release (the last is 3.9) before upgrading. Kafka 4.x also applies a "strict min ISR" rule: the high watermark does not advance while the ISR is smaller than `min.insync.replicas`, whatever the producer's `acks`. Eligible Leader Replicas (KIP-966), on by default for new clusters from 4.1, let the controller elect some safe replicas outside the ISR.</Note>
+
+Details: [Replication](https://kafka.apache.org/44/design/design/#replication) and [Eligible Leader Replicas](https://kafka.apache.org/44/operations/eligible-leader-replicas/#overview).

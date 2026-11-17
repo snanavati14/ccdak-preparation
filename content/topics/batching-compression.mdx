@@ -1,0 +1,73 @@
+`send()` doesn't put anything on the network. It serializes the record, picks a partition, and adds the record to a per-partition batch in memory. A background I/O thread sends the batches. `batch.size` and `linger.ms` decide when a batch leaves, compression works on whole batches, and `buffer.memory` with `max.block.ms` decide what happens when the producer can't keep up.
+
+## How it works
+
+<Figure caption="send() only buffers the record. The sender thread ships a batch when it reaches batch.size or has waited linger.ms, whichever comes first.">
+  <svg viewBox="0 0 660 230" role="img" aria-label="Producer pipeline from send through serializer, partitioner and record accumulator to the sender thread and broker">
+    <rect x="10" y="80" width="90" height="50" rx="6" fill="none" stroke="currentColor" strokeWidth="1.5" />
+    <text x="55" y="110" fontSize="14" textAnchor="middle" fill="currentColor">send()</text>
+    <line x1="100" y1="105" x2="125" y2="105" stroke="currentColor" strokeWidth="1.5" />
+    <rect x="125" y="80" width="130" height="50" rx="6" fill="none" stroke="currentColor" strokeWidth="1.5" />
+    <text x="190" y="102" fontSize="13" textAnchor="middle" fill="currentColor">serializer +</text>
+    <text x="190" y="119" fontSize="13" textAnchor="middle" fill="currentColor">partitioner</text>
+    <line x1="255" y1="105" x2="280" y2="105" stroke="currentColor" strokeWidth="1.5" />
+    <rect x="280" y="30" width="180" height="150" rx="8" fill="none" stroke="currentColor" strokeWidth="1.5" className="accent" />
+    <text x="370" y="50" fontSize="13" textAnchor="middle" fill="currentColor">accumulator (buffer.memory)</text>
+    <rect x="295" y="65" width="150" height="30" rx="4" fill="none" stroke="currentColor" strokeWidth="1" />
+    <text x="370" y="85" fontSize="13" textAnchor="middle" fill="currentColor">P0 batch</text>
+    <rect x="295" y="102" width="150" height="30" rx="4" fill="none" stroke="currentColor" strokeWidth="1" />
+    <text x="370" y="122" fontSize="13" textAnchor="middle" fill="currentColor">P1 batch</text>
+    <rect x="295" y="139" width="150" height="30" rx="4" fill="none" stroke="currentColor" strokeWidth="1" />
+    <text x="370" y="159" fontSize="13" textAnchor="middle" fill="currentColor">P2 batch</text>
+    <line x1="460" y1="105" x2="490" y2="105" stroke="currentColor" strokeWidth="1.5" />
+    <rect x="490" y="80" width="150" height="50" rx="6" fill="none" stroke="currentColor" strokeWidth="1.5" />
+    <text x="565" y="102" fontSize="13" textAnchor="middle" fill="currentColor">sender thread</text>
+    <text x="565" y="119" fontSize="13" textAnchor="middle" fill="currentColor">to leaders</text>
+    <text x="190" y="160" fontSize="13" textAnchor="middle" fill="currentColor">blocks up to</text>
+    <text x="190" y="177" fontSize="13" textAnchor="middle" fill="currentColor">max.block.ms</text>
+    <text x="370" y="210" fontSize="13" textAnchor="middle" fill="currentColor">ready at batch.size or after linger.ms</text>
+    <text x="565" y="160" fontSize="13" textAnchor="middle" fill="currentColor">compressed</text>
+    <text x="565" y="177" fontSize="13" textAnchor="middle" fill="currentColor">per batch</text>
+  </svg>
+</Figure>
+
+- **Batching.** Each partition has an open batch of up to `batch.size` bytes (default 16384). The batch is sent once it's full, or after `linger.ms` (default 5) if it isn't. One request to a broker can carry batches for several partitions, up to `max.request.size` (default 1048576).
+- **Compression.** `compression.type` (default `none`; also `gzip`, `snappy`, `lz4`, `zstd`) compresses whole batches, so fuller batches compress better. The broker decompresses batches to validate them, stores them compressed, and consumers decompress them.
+- **Back-pressure.** `buffer.memory` (default 33554432, 32 MB) caps the memory used for unsent records. When it's full, `send()` blocks. After `max.block.ms` (default 60000) it fails with `BufferExhaustedException`, a subclass of `TimeoutException`.
+
+## Gotchas the exam loves
+
+- `linger.ms` changed from 0 to 5 in Kafka 4.0. Older material, and even parts of the `KafkaProducer` javadoc, still describe 0.
+- A batch is sent when it reaches `batch.size` *or* `linger.ms` passes, whichever comes first. Under heavy load, batches fill before the linger time is up.
+- `batch.size=0` turns batching off. A record bigger than `batch.size` isn't rejected; it gets a batch of its own.
+- The size limits are `max.request.size` on the producer and `max.message.bytes` on the topic (broker default `message.max.bytes`, 1048588). A record over the limit fails with `RecordTooLargeException`, which isn't retried.
+- `max.block.ms` covers the wait for metadata and the wait for buffer space inside `send()`. Time spent in your serializer or partitioner doesn't count.
+- If a topic is missing and auto-creation is off, `send()` waits up to `max.block.ms` for metadata, then the send fails with a `TimeoutException`.
+- The topic-level `compression.type` defaults to `producer`, which keeps the producer's codec. Any other value makes the broker recompress into that codec.
+- `flush()` makes every buffered record sendable at once and blocks until they all complete. Calling it from a `send()` callback throws an exception in 4.1 and later.
+
+## Java sample
+
+```java
+Properties props = new Properties();
+props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
+props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+// Throughput tuning: bigger, fuller batches, compressed on the wire.
+props.put(ProducerConfig.BATCH_SIZE_CONFIG, 64 * 1024);
+props.put(ProducerConfig.LINGER_MS_CONFIG, 20);
+props.put(ProducerConfig.COMPRESSION_TYPE_CONFIG, "lz4");
+props.put(ProducerConfig.MAX_BLOCK_MS_CONFIG, 10_000);
+
+try (Producer<String, String> producer = new KafkaProducer<>(props)) {
+    for (int i = 0; i < 10_000; i++) {
+        producer.send(new ProducerRecord<>("clicks", "user-" + (i % 100), "{\"page\":\"/home\"}"));
+    }
+    producer.flush(); // push out anything still lingering, wait for completion
+}
+```
+
+## Version notes
+
+- Kafka 4.0 changed the `linger.ms` default from 0 to 5.
+- Kafka 4.1 made `flush()` detect calls from inside a `send()` callback and refuse them, because they could deadlock.

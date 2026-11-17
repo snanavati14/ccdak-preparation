@@ -1,0 +1,76 @@
+Kafka ships test doubles for producers, consumers, Streams topologies and processors, so most client logic can be unit-tested without a broker. Know what each double replaces, how it completes or feeds records, and what it can't show you: that is where integration tests against a real broker come in.
+
+## How it works
+
+- **`MockProducer`** implements `Producer`:
+  - `new MockProducer<>(autoComplete, partitioner, keySerializer, valueSerializer)`. With `autoComplete=false`, a send stays pending until the test calls `completeNext()` (success) or `errorNext(e)` (failure), oldest send first.
+  - `history()` returns every record sent since the last `clear()`.
+  - `flushed()` is `true` when no send is pending.
+  - Transactions are tracked: `transactionInitialized()`, `transactionInFlight()`, `transactionCommitted()`, `transactionAborted()`, `uncommittedRecords()`, `commitCount()`.
+- **`MockConsumer`** implements `Consumer`:
+  - Construct it with the reset strategy as a string, for example `new MockConsumer<>("earliest")`.
+  - Set offsets with `updateBeginningOffsets(...)` and `updateEndOffsets(...)`.
+  - `addRecord(...)` only works for assigned partitions. Use `assign(...)`, or after `subscribe(...)` call `rebalance(...)`.
+  - `schedulePollTask(...)` runs one task per `poll()`.
+  - `setPollException(...)` makes `poll()` throw.
+  - Check commits with `committed(...)`.
+- **`TopologyTestDriver`** comes from `kafka-streams-test-utils` (test scope). It runs a `Topology` in-process:
+  - Create a `TestInputTopic` from the driver with serializers, and a `TestOutputTopic` with deserializers.
+  - Read output with `readValue()`, `readKeyValue()`, `readRecord()` (timestamp and headers), `readKeyValuesToList()` or `readKeyValuesToMap()`. `isEmpty()` checks for unread records.
+  - Read or pre-fill stores with `getKeyValueStore(...)`, `getTimestampedKeyValueStore(...)`, `getWindowStore(...)` and similar getters.
+  - `close()` the driver after each test.
+- **`MockProcessorContext`** (package `org.apache.kafka.streams.processor.api`) captures what a `Processor` does: `forwarded()`, `committed()` and `scheduledPunctuators()`. It never fires punctuators; the test calls them.
+
+<Figure caption="Three clocks in a TopologyTestDriver test. Only piped record timestamps move stream time.">
+<svg viewBox="0 0 560 170" role="img" aria-label="Input topic time, stream time and wall-clock time in a TopologyTestDriver test">
+  <rect x="10" y="20" width="160" height="50" rx="6" fill="none" stroke="currentColor" />
+  <text x="90" y="42" textAnchor="middle" fontSize="13" fill="currentColor">TestInputTopic time</text>
+  <text x="90" y="60" textAnchor="middle" fontSize="13" fill="currentColor">advanceTime(...)</text>
+  <rect x="200" y="20" width="160" height="50" rx="6" fill="none" stroke="currentColor" className="accent" />
+  <text x="280" y="42" textAnchor="middle" fontSize="13" fill="currentColor">stream time</text>
+  <text x="280" y="60" textAnchor="middle" fontSize="13" fill="currentColor">piped timestamps</text>
+  <rect x="390" y="20" width="160" height="50" rx="6" fill="none" stroke="currentColor" />
+  <text x="470" y="42" textAnchor="middle" fontSize="13" fill="currentColor">wall-clock time</text>
+  <text x="470" y="60" textAnchor="middle" fontSize="13" fill="currentColor">advanceWallClockTime(...)</text>
+  <line x1="170" y1="45" x2="198" y2="45" stroke="currentColor" strokeWidth="1.5" />
+  <text x="90" y="100" textAnchor="middle" fontSize="13" fill="currentColor">stamps the next record</text>
+  <text x="90" y="118" textAnchor="middle" fontSize="13" fill="currentColor">without a timestamp</text>
+  <text x="280" y="100" textAnchor="middle" fontSize="13" fill="currentColor">STREAM_TIME punctuation,</text>
+  <text x="280" y="118" textAnchor="middle" fontSize="13" fill="currentColor">window close, suppress</text>
+  <text x="470" y="100" textAnchor="middle" fontSize="13" fill="currentColor">WALL_CLOCK_TIME</text>
+  <text x="470" y="118" textAnchor="middle" fontSize="13" fill="currentColor">punctuation only</text>
+</svg>
+</Figure>
+
+## Gotchas the exam loves
+
+- The driver processes records synchronously, as if `commit.interval.ms` and caching were zero. Every KTable update reaches the output, so use `readKeyValuesToMap()` for the final table state.
+- The driver simulates single-partitioned input topics with no broker. It doesn't exercise multiple partitions or instances, rebalances, or real client and security settings: that needs an integration test against a real broker, for example a Kafka container.
+- `TestInputTopic.advanceTime(...)` alone doesn't move stream time; the next piped record does. `advanceWallClockTime(...)` never releases a `suppress`.
+- `pipeInput(key, value, timestamp)` sets the timestamp explicitly and doesn't advance the topic's own time.
+- `getStateStore(...)` is for custom stores only. For DSL stores use the typed getters; `getKeyValueStore(...)` on a timestamped store gives a value-only view.
+- `history()` keeps growing across tests that share one `MockProducer`; call `clear()`.
+- A `MockConsumer` has no group coordinator, so `subscribe()` alone assigns nothing.
+- For Confluent serdes, `schema.registry.url=mock://<scope>` uses an in-memory mock registry. Serdes in the same JVM with the same scope share schemas.
+- To check a schema change before deploying, use `POST /compatibility/subjects/{subject}/versions` (the same check as registration) or the Maven plugin's `test-compatibility` goal.
+
+## Java sample
+
+```java
+try (TopologyTestDriver driver = new TopologyTestDriver(builder.build(), props)) {
+    TestInputTopic<String, String> in = driver.createInputTopic(
+        "clicks", new StringSerializer(), new StringSerializer());
+    TestOutputTopic<String, Long> out = driver.createOutputTopic(
+        "click-counts", new StringDeserializer(), new LongDeserializer());
+
+    in.pipeInput("alice", "p1", Instant.parse("2026-01-01T00:00:00Z"));
+    in.pipeInput("alice", "p2", Instant.parse("2026-01-01T00:00:05Z"));
+
+    assertEquals(Map.of("alice", 2L), out.readKeyValuesToMap());
+    assertTrue(out.isEmpty());
+}
+```
+
+## Version notes
+
+<Note>Kafka 3.0 removed `TopologyTestDriver#pipeInput`/`readOutput`, `ConsumerRecordFactory` and `OutputVerifier`; use `TestInputTopic` and `TestOutputTopic`. Since 4.0, `MockConsumer(OffsetResetStrategy)` and the old-API `org.apache.kafka.streams.processor.MockProcessorContext` are deprecated.</Note>

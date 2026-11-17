@@ -1,0 +1,81 @@
+A consumer's progress in a partition is one number: the offset of the next record it will read. Committing saves that number for the group in `__consumer_offsets`, so whoever owns the partition next knows where to resume. When and how you commit decides whether a crash loses records or repeats them.
+
+## How it works
+
+Two positions matter for each partition:
+
+- **Position**: the next offset this consumer will fetch. It moves forward with every `poll()` and can be moved by hand with `seek()`, `seekToBeginning()` or `seekToEnd()`.
+- **Committed offset**: the last position saved for the group. After a restart or rebalance, the new owner starts here.
+
+Lag is how far the group is behind the end of the log. `kafka-consumer-groups --describe` prints it as `LOG-END-OFFSET - CURRENT-OFFSET`.
+
+<Figure caption="One partition. The committed offset trails the consumer's position; lag is measured to the end of the log (or to the last stable offset for read_committed).">
+  <svg viewBox="0 0 640 170" role="img" aria-label="Committed offset, position and log end offset on a partition">
+    <rect x="20" y="60" width="600" height="40" fill="none" stroke="currentColor" strokeWidth="1.5" />
+    <line x1="200" y1="60" x2="200" y2="100" stroke="currentColor" strokeWidth="1" />
+    <line className="accent" x1="330" y1="45" x2="330" y2="115" stroke="currentColor" strokeWidth="2.5" />
+    <line x1="460" y1="60" x2="460" y2="100" stroke="currentColor" strokeWidth="1" />
+    <text x="110" y="85" textAnchor="middle" fontSize="13" fill="currentColor">processed</text>
+    <text x="265" y="85" textAnchor="middle" fontSize="13" fill="currentColor">fetched</text>
+    <text x="395" y="85" textAnchor="middle" fontSize="13" fill="currentColor">not fetched</text>
+    <text x="540" y="85" textAnchor="middle" fontSize="13" fill="currentColor">future</text>
+    <text x="200" y="40" textAnchor="middle" fontSize="13" fill="currentColor">committed offset</text>
+    <text x="330" y="132" textAnchor="middle" fontSize="13" fill="currentColor">position</text>
+    <text x="460" y="40" textAnchor="middle" fontSize="13" fill="currentColor">log end offset</text>
+    <line x1="200" y1="150" x2="460" y2="150" stroke="currentColor" strokeWidth="1" />
+    <line x1="200" y1="144" x2="200" y2="156" stroke="currentColor" strokeWidth="1" />
+    <line x1="460" y1="144" x2="460" y2="156" stroke="currentColor" strokeWidth="1" />
+    <text x="530" y="155" textAnchor="middle" fontSize="13" fill="currentColor">group lag (CLI)</text>
+  </svg>
+</Figure>
+
+**Auto-commit** (`enable.auto.commit=true`, the default) commits every `auto.commit.interval.ms` (default 5 s). It commits the offsets of records already returned by `poll()`, whether or not you have processed them, and it also commits on `close()`. It is at-least-once only if you finish each batch before the next `poll()`.
+
+**Manual commits**: `commitSync()` blocks and retries until success, an unrecoverable error, or `default.api.timeout.ms` (60 s). `commitAsync()` does not block and does **not** retry; errors go to the callback. Async commits are sent in call order. The usual pattern: `commitAsync()` in the loop, `commitSync()` in `onPartitionsRevoked` and before `close()`.
+
+**Where to start**: `auto.offset.reset` applies only when there is no committed offset or it is out of range. `latest` (default) jumps to the end, `earliest` to the start, `none` throws, and `by_duration:PT1H` (new in 4.x) starts one hour back.
+
+## Gotchas the exam loves
+
+- Commit the offset of the **next** record to read: `record.offset() + 1`.
+- Changing `auto.offset.reset` on a group that already has committed offsets does nothing. Reset with `kafka-consumer-groups --reset-offsets ... --execute` (dry run is the default; the group must be inactive) or use a new `group.id`.
+- `auto.offset.reset=none` with no committed offset: `poll()` throws `NoOffsetForPartitionException`.
+- Committed offsets of an empty group expire after `offsets.retention.minutes` (default 10080, 7 days); the reset policy then applies.
+- Commit before processing gives at-most-once; process then commit gives at-least-once. Exactly-once needs transactions (`sendOffsetsToTransaction`) or offsets stored atomically with the output.
+- Retrying a failed `commitAsync()` blindly can overwrite a newer commit and cause duplicates.
+- `seek()` changes the position only, not the committed offset. `seekToBeginning()` and `seekToEnd()` are lazy, evaluated on the next `poll()` or `position()`. With `subscribe()`, seek inside `onPartitionsAssigned`.
+- `isolation.level` defaults to `read_uncommitted`. With `read_committed`, the consumer reads only up to the last stable offset, skips aborted records, and sees offset gaps where transaction markers sit.
+- The `records-lag-max` client metric uses the consumer's position, not its committed offset.
+
+## Java sample
+
+```java
+props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
+props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+
+try {
+    while (running) {
+        ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(500));
+        for (ConsumerRecord<String, String> r : records) {
+            process(r);
+        }
+        consumer.commitAsync((offsets, e) -> {
+            if (e != null) log.warn("commit failed for {}", offsets, e); // do not blindly retry
+        });
+    }
+} finally {
+    try {
+        consumer.commitSync();   // last commit must land
+    } finally {
+        consumer.close();
+    }
+}
+```
+
+## Version notes
+
+<Note>
+Kafka 4.0 Java clients add `by_duration:` as an `auto.offset.reset` value. The 4.4 docs also warn that `latest` can skip records written to newly added partitions before the consumer discovers them. Kafka 4.0 removed `committed(TopicPartition)`; use `committed(Set)`.
+</Note>
+
+See [Manual Offset Control](https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html#manual-offset-control-heading) in the `KafkaConsumer` Javadoc and Confluent's notes on [asynchronous commits](https://docs.confluent.io/platform/current/clients/consumer.html#asynchronous-commits).

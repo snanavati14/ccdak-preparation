@@ -1,0 +1,514 @@
+[
+  {
+    "id": "app-admin-001",
+    "domain": "app-development",
+    "topics": [
+      "admin-api"
+    ],
+    "type": "single",
+    "stem": "A service calls `admin.createTopics(List.of(new NewTopic(\"orders\", 6, (short) 3)))` and immediately produces to `orders`. Sometimes the first sends fail with unknown-topic errors. What is the simplest fix?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Wait on the result, for example `createTopics(...).all().get()`, before producing"
+      },
+      {
+        "id": "b",
+        "text": "Set `acks=all` on the producer so it waits for the topic to exist"
+      },
+      {
+        "id": "c",
+        "text": "Call `createTopics` twice, because the first call only validates the request"
+      },
+      {
+        "id": "d",
+        "text": "Close the `Admin` client before producing, because creation is only committed on `close()`"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "Admin operations are asynchronous: `createTopics` returns a `CreateTopicsResult` at once, and the work finishes later. `all()` returns a `KafkaFuture<Void>` that completes when every topic in the batch is created; `get()` blocks until then (or throws `ExecutionException`).\n\n- `acks` controls replication acknowledgement of writes, not topic existence.\n- There is no separate validate-then-create step unless you set `validateOnly` in `CreateTopicsOptions`.\n- `close()` doesn't commit anything; it waits for pending calls and releases resources.",
+    "references": [
+      {
+        "title": "Admin javadoc (Kafka 4.4)",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/admin/Admin.html",
+        "kind": "official"
+      },
+      {
+        "title": "CreateTopicsResult javadoc",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/admin/CreateTopicsResult.html",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "app-admin-002",
+    "domain": "app-development",
+    "topics": [
+      "admin-api"
+    ],
+    "type": "single",
+    "stem": "An application runs this on every startup to make sure its topic exists:\n\n```java\nadmin.createTopics(List.of(new NewTopic(\"audit\", 3, (short) 3))).all().get();\n```\n\nOn the second start the topic already exists. What happens, and how should the code handle it?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`get()` throws `ExecutionException` whose cause is `TopicExistsException`; catch it and continue"
+      },
+      {
+        "id": "b",
+        "text": "The call succeeds silently, because `createTopics` is idempotent"
+      },
+      {
+        "id": "c",
+        "text": "`get()` returns `false`; check the return value"
+      },
+      {
+        "id": "d",
+        "text": "The broker deletes and recreates the topic with the new settings"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "Creating an existing topic fails that topic's future with `TopicExistsException`. Because `KafkaFuture.get()` follows `java.util.concurrent.Future`, the failure arrives as an `ExecutionException` and the Kafka exception is its `getCause()`. An \"ensure topic\" step checks `e.getCause() instanceof TopicExistsException` and carries on.\n\n- `createTopics` isn't silently idempotent; the error is reported.\n- `all()` is a `KafkaFuture<Void>`, so `get()` returns `null` on success, never `false`.\n- Kafka never drops and recreates a topic as a side effect of `createTopics`.",
+    "references": [
+      {
+        "title": "TopicExistsException javadoc",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/common/errors/TopicExistsException.html",
+        "kind": "official"
+      },
+      {
+        "title": "Admin javadoc: createTopics example",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/admin/Admin.html",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "app-admin-003",
+    "domain": "app-development",
+    "topics": [
+      "admin-api"
+    ],
+    "type": "multi",
+    "stem": "One `createTopics` call asks for `a`, `b` and `c`. Topic `b` already exists; `a` and `c` don't. What is the outcome? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "Topics `a` and `c` are created"
+      },
+      {
+        "id": "b",
+        "text": "`values().get(\"b\")` completes exceptionally with `TopicExistsException`"
+      },
+      {
+        "id": "c",
+        "text": "`all().get()` returns normally, because two of three topics succeeded"
+      },
+      {
+        "id": "d",
+        "text": "No topic is created, because the batch is applied atomically"
+      },
+      {
+        "id": "e",
+        "text": "`a` and `c` are created only after `b` is deleted"
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "The `Admin` Javadoc says `createTopics` \"is not transactional so it may succeed for some topics while fail for others\". Each topic has its own future in `values()`; `b`'s fails with `TopicExistsException` while `a` and `c` succeed.\n\n- `all()` succeeds only if every topic creation succeeds, so here `all().get()` throws `ExecutionException`.\n- There's no atomic batch, and Kafka never deletes `b` for you.",
+    "references": [
+      {
+        "title": "Admin javadoc: createTopics",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/admin/Admin.html",
+        "kind": "official"
+      },
+      {
+        "title": "CreateTopicsResult javadoc",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/admin/CreateTopicsResult.html",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "app-admin-004",
+    "domain": "app-development",
+    "topics": [
+      "admin-api"
+    ],
+    "type": "single",
+    "stem": "A developer creates a topic with `new NewTopic(\"events\", Optional.empty(), Optional.empty())`. How many partitions and replicas does it get?",
+    "options": [
+      {
+        "id": "a",
+        "text": "The broker defaults: `num.partitions` partitions and `default.replication.factor` replicas"
+      },
+      {
+        "id": "b",
+        "text": "1 partition and replication factor 1, hard-coded in the Admin client"
+      },
+      {
+        "id": "c",
+        "text": "The call fails, because partitions and replication factor are required"
+      },
+      {
+        "id": "d",
+        "text": "As many partitions as there are brokers, each with replication factor 3"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The `NewTopic(String, Optional<Integer>, Optional<Short>)` constructor \"optionally defaults numPartitions and replicationFactor to the broker configurations for num.partitions and default.replication.factor respectively\".\n\n- The client has no hard-coded defaults; the broker fills them in.\n- Empty optionals are valid; that's their purpose.\n- Nothing ties the partition count to the broker count.",
+    "references": [
+      {
+        "title": "NewTopic javadoc",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/admin/NewTopic.html",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "app-admin-005",
+    "domain": "app-development",
+    "topics": [
+      "admin-api"
+    ],
+    "type": "single",
+    "stem": "An operator wants to rewind group `billing` to yesterday's offsets with `admin.alterConsumerGroupOffsets(\"billing\", offsets)`. Three `billing` consumers are still running. What happens?",
+    "options": [
+      {
+        "id": "a",
+        "text": "The call fails, because the group must be empty for the offsets to be altered"
+      },
+      {
+        "id": "b",
+        "text": "The new offsets are applied and the running consumers jump to them on their next `poll()`"
+      },
+      {
+        "id": "c",
+        "text": "The broker pauses the consumers, applies the offsets and resumes them"
+      },
+      {
+        "id": "d",
+        "text": "The offsets are queued and applied at the group's next rebalance"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The `Admin` Javadoc for `alterConsumerGroupOffsets` says: \"In order to succeed, the group must be empty.\" Stop all consumers in the group first, alter the offsets, then restart them. `kafka-consumer-groups --reset-offsets` has the same rule because it uses this API.\n\nKafka doesn't pause active members, queue the change, or push new positions into running consumers.",
+    "references": [
+      {
+        "title": "Admin javadoc: alterConsumerGroupOffsets",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/admin/Admin.html",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "app-admin-006",
+    "domain": "app-development",
+    "topics": [
+      "admin-api"
+    ],
+    "type": "single",
+    "stem": "A Kafka 4.4 application must set `retention.ms` on topic `clicks` to 3 days without touching the topic's other overrides. Which Admin call does this?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`incrementalAlterConfigs` with a `ConfigResource` of type `TOPIC` and an `AlterConfigOp` of type `SET` for `retention.ms`"
+      },
+      {
+        "id": "b",
+        "text": "`alterConfigs` with a `Config` that contains only `retention.ms`"
+      },
+      {
+        "id": "c",
+        "text": "`createTopics` with `retention.ms` in `NewTopic.configs()`, which updates an existing topic"
+      },
+      {
+        "id": "d",
+        "text": "`describeConfigs`, then edit the returned `Config` object in place"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`incrementalAlterConfigs` changes only the entries you name; `SET` adds or replaces one value, and other overrides stay.\n\n- `alterConfigs` was removed from `Admin` in Kafka 4.0. It also replaced the whole set of overrides, which is why it was dangerous.\n- `createTopics` on an existing topic fails with `TopicExistsException`; it never updates.\n- `describeConfigs` only reads; changing the returned object changes nothing on the broker.",
+    "references": [
+      {
+        "title": "Kafka upgrade notes: notable changes in 4.0",
+        "url": "https://kafka.apache.org/44/getting-started/upgrade/#notable-changes-in-400",
+        "kind": "official"
+      },
+      {
+        "title": "Admin javadoc",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/admin/Admin.html",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original",
+    "kafkaVersionNote": "`Admin.alterConfigs` was removed in Kafka 4.0; `incrementalAlterConfigs` (since 2.3) is the replacement."
+  },
+  {
+    "id": "app-admin-007",
+    "domain": "app-development",
+    "topics": [
+      "admin-api"
+    ],
+    "type": "multi",
+    "stem": "A monitoring service computes consumer lag for group `orders-app` with the Admin client. Which two calls does it need? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "`listConsumerGroupOffsets(\"orders-app\")` for the committed offsets"
+      },
+      {
+        "id": "b",
+        "text": "`listOffsets(...)` with `OffsetSpec.latest()` for each partition's log-end offset"
+      },
+      {
+        "id": "c",
+        "text": "`describeCluster()` for each partition's high watermark"
+      },
+      {
+        "id": "d",
+        "text": "`describeConfigs(...)` for the group's `retention.ms`"
+      },
+      {
+        "id": "e",
+        "text": "`alterConsumerGroupOffsets(...)` to read the current positions"
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "Lag per partition is log-end offset minus committed offset. `listConsumerGroupOffsets` returns `partitionsToOffsetAndMetadata()`, the committed offsets. `listOffsets` with `OffsetSpec.latest()` returns the latest offset of each partition. This is what `kafka-consumer-groups --describe` reports.\n\n- `describeCluster()` returns `nodes()`, `controller()` and `clusterId()`, not offsets.\n- `describeConfigs` reads configs; groups don't have `retention.ms`.\n- `alterConsumerGroupOffsets` writes offsets, it doesn't read them.",
+    "references": [
+      {
+        "title": "Admin javadoc (Kafka 4.4)",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/admin/Admin.html",
+        "kind": "official"
+      },
+      {
+        "title": "OffsetSpec javadoc",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/admin/OffsetSpec.html",
+        "kind": "official"
+      },
+      {
+        "title": "ListConsumerGroupOffsetsResult javadoc",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/admin/ListConsumerGroupOffsetsResult.html",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "likely",
+    "source": "original"
+  },
+  {
+    "id": "app-admin-008",
+    "domain": "app-development",
+    "topics": [
+      "admin-api"
+    ],
+    "type": "multi",
+    "stem": "A web service shares one `Admin` instance across request threads and attaches callbacks with `KafkaFuture.thenApply(...)`. Which statements are true? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "Sharing one `Admin` instance across threads is safe; instances from `Admin.create` are thread safe"
+      },
+      {
+        "id": "b",
+        "text": "Callbacks run on the Admin client's single internal thread, so they shouldn't block for long"
+      },
+      {
+        "id": "c",
+        "text": "Each thread must create its own `Admin`, because the client isn't thread safe"
+      },
+      {
+        "id": "d",
+        "text": "`thenApply` callbacks run on the thread that called the Admin method"
+      },
+      {
+        "id": "e",
+        "text": "`KafkaFuture.get()` can't be used; only callbacks are supported"
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "The `Admin` Javadoc: \"Instances returned from the create methods of this interface are guaranteed to be thread safe. However, the KafkaFutures returned from request methods are executed by a single thread so it is important that any code which executes on that thread when they complete (using `KafkaFuture.thenApply(...)`, for example) doesn't block for too long.\" Hand heavy work to another executor.\n\n- One shared instance is the normal pattern; one per thread wastes connections.\n- Callbacks don't run on the caller's thread.\n- `get()` is the documented way to get synchronous behaviour.",
+    "references": [
+      {
+        "title": "Admin javadoc (Kafka 4.4)",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/admin/Admin.html",
+        "kind": "official"
+      },
+      {
+        "title": "KafkaFuture javadoc",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/common/KafkaFuture.html",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "app-admin-009",
+    "domain": "app-development",
+    "topics": [
+      "admin-api"
+    ],
+    "type": "single",
+    "stem": "An operator wants to replay group `reports` from the start of topic `sales` using the Admin client. Which order is correct?\n\n1. Stop every consumer in `reports`\n2. Call `listOffsets` with `OffsetSpec.earliest()` for each `sales` partition\n3. Call `alterConsumerGroupOffsets(\"reports\", ...)` with those offsets\n4. Restart the consumers",
+    "options": [
+      {
+        "id": "a",
+        "text": "1, 2, 3, 4"
+      },
+      {
+        "id": "b",
+        "text": "2, 3, 1, 4"
+      },
+      {
+        "id": "c",
+        "text": "1, 3, 2, 4"
+      },
+      {
+        "id": "d",
+        "text": "2, 1, 4, 3"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`alterConsumerGroupOffsets` succeeds only when the group is empty, so the consumers stop first. Then look up the earliest offset per partition with `listOffsets(...)` and `OffsetSpec.earliest()`, write them as the group's committed offsets, and restart. The restarted consumers resume from the committed offsets.\n\n- Altering before stopping fails while the group has members.\n- You can't write offsets you haven't looked up yet.\n- Restarting before altering lets the consumers pick up the old offsets.",
+    "references": [
+      {
+        "title": "Admin javadoc: alterConsumerGroupOffsets",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/admin/Admin.html",
+        "kind": "official"
+      },
+      {
+        "title": "OffsetSpec javadoc",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/admin/OffsetSpec.html",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "app-admin-010",
+    "domain": "app-development",
+    "topics": [
+      "admin-api"
+    ],
+    "type": "single",
+    "stem": "Which pairing of Admin method to what it returns is correct?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`describeCluster()` returns the brokers, the active controller and the cluster id; `describeTopics()` returns partitions with their leader, replicas and ISR"
+      },
+      {
+        "id": "b",
+        "text": "`describeCluster()` returns every topic's partition count; `describeTopics()` returns topic configs such as `retention.ms`"
+      },
+      {
+        "id": "c",
+        "text": "`describeConfigs()` returns committed group offsets; `listConsumerGroupOffsets()` returns broker configs"
+      },
+      {
+        "id": "d",
+        "text": "`listTopics()` returns each partition's ISR; `describeCluster()` returns consumer group members"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`DescribeClusterResult` has `nodes()`, `controller()`, `clusterId()` and `authorizedOperations()`. `describeTopics` returns a `TopicDescription` per topic with its `TopicPartitionInfo` list: leader, replicas and ISR.\n\n- Topic configs come from `describeConfigs` with a `TOPIC` `ConfigResource`.\n- Committed offsets come from `listConsumerGroupOffsets`.\n- `listTopics` returns names (and listings), not ISRs; group members come from `describeConsumerGroups`.",
+    "references": [
+      {
+        "title": "DescribeClusterResult javadoc",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/admin/DescribeClusterResult.html",
+        "kind": "official"
+      },
+      {
+        "title": "DescribeTopicsResult javadoc",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/admin/DescribeTopicsResult.html",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "app-admin-011",
+    "domain": "app-development",
+    "topics": [
+      "admin-api"
+    ],
+    "type": "single",
+    "stem": "A deployment script calls `createTopics(...).all().get()`, which returns successfully, and immediately runs `listTopics()` through the same `Admin` client. The new topic is missing from the list. Why?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Brokers can take several seconds to learn about a new topic, so `listTopics()` may not show it yet"
+      },
+      {
+        "id": "b",
+        "text": "`createTopics` succeeded only on the controller and the topic is rolled back if a broker disagrees"
+      },
+      {
+        "id": "c",
+        "text": "`listTopics()` lists only topics with at least one record"
+      },
+      {
+        "id": "d",
+        "text": "The topic is hidden until a producer writes to it with `allow.auto.create.topics=true`"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "From the `createTopics` Javadoc: \"It may take several seconds after CreateTopicsResult returns success for all the brokers to become aware that the topics have been created. During this time, listTopics() and describeTopics(Collection) may not return information about the new topics.\" Retry or wait briefly.\n\n- There is no rollback after success.\n- `listTopics()` doesn't filter on data; empty topics are listed (internal topics are hidden unless `listInternal` is set).\n- `allow.auto.create.topics` is a consumer setting for auto-creation and is unrelated.",
+    "references": [
+      {
+        "title": "Admin javadoc: createTopics",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/admin/Admin.html",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "verified",
+    "source": "original"
+  }
+]

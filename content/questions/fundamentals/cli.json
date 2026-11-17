@@ -1,0 +1,583 @@
+[
+  {
+    "id": "ops-cli-013",
+    "domain": "fundamentals",
+    "topics": [
+      "cli-tools"
+    ],
+    "type": "single",
+    "stem": "Which command creates a topic `payments` with 6 partitions and replication factor 3 on a Kafka 4.x cluster?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`kafka-topics.sh --bootstrap-server broker1:9092 --create --topic payments --partitions 6 --replication-factor 3`"
+      },
+      {
+        "id": "b",
+        "text": "`kafka-topics.sh --zookeeper zk1:2181 --create --topic payments --partitions 6 --replication-factor 3`"
+      },
+      {
+        "id": "c",
+        "text": "`kafka-configs.sh --bootstrap-server broker1:9092 --create --topic payments --partitions 6`"
+      },
+      {
+        "id": "d",
+        "text": "`kafka-topics.sh --bootstrap-server broker1:9092 --topic payments --add-partitions 6 --replicas 3`"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The operations guide creates topics with `kafka-topics.sh --bootstrap-server ... --create --topic ... --partitions ... --replication-factor ...`.\n\n- Kafka 4.0 removed ZooKeeper mode, so `--zookeeper` is no longer an option; tools connect with `--bootstrap-server`.\n- `kafka-configs.sh` changes configuration and cannot create topics.\n- `--add-partitions` and `--replicas` are not `kafka-topics` options.",
+    "references": [
+      {
+        "title": "Basic Kafka operations: Adding and removing topics",
+        "url": "https://kafka.apache.org/44/operations/basic-kafka-operations/#adding-and-removing-topics",
+        "kind": "official"
+      },
+      {
+        "title": "Upgrade notes: notable changes in 4.0.0",
+        "url": "https://kafka.apache.org/44/getting-started/upgrade/#notable-changes-in-400",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original",
+    "kafkaVersionNote": "Before Kafka 3.0, many guides used kafka-topics --zookeeper. In Kafka 4.x, ZooKeeper mode is gone and the tools use --bootstrap-server (or --bootstrap-controller for some admin tools)."
+  },
+  {
+    "id": "ops-cli-014",
+    "domain": "fundamentals",
+    "topics": [
+      "cli-tools"
+    ],
+    "type": "single",
+    "stem": "Topic `clicks` has 12 partitions. An operator runs `kafka-topics.sh --bootstrap-server b1:9092 --alter --topic clicks --partitions 6`. What happens?",
+    "options": [
+      {
+        "id": "a",
+        "text": "The command fails: Kafka does not support reducing the number of partitions."
+      },
+      {
+        "id": "b",
+        "text": "Partitions 6–11 are deleted along with their data."
+      },
+      {
+        "id": "c",
+        "text": "Partitions 6–11 are merged into partitions 0–5."
+      },
+      {
+        "id": "d",
+        "text": "The change is accepted but applied only to new segments."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "\"Kafka does not currently support reducing the number of partitions for a topic.\" `--alter --partitions` can only increase the count. To get fewer partitions, create a new topic and copy the data across.",
+    "references": [
+      {
+        "title": "Basic Kafka operations: Modifying topics",
+        "url": "https://kafka.apache.org/44/operations/basic-kafka-operations/#modifying-topics",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "ops-cli-015",
+    "domain": "fundamentals",
+    "topics": [
+      "cli-tools"
+    ],
+    "type": "multi",
+    "stem": "A keyed topic is increased from 6 to 12 partitions with `kafka-topics --alter --partitions 12`. Which statements are correct? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "New records for an existing key may go to a different partition than that key's older records."
+      },
+      {
+        "id": "b",
+        "text": "Existing records stay in their current partitions; Kafka doesn't redistribute them."
+      },
+      {
+        "id": "c",
+        "text": "Kafka rehashes existing records so each key stays in a single partition."
+      },
+      {
+        "id": "d",
+        "text": "The topic's replication factor doubles as well."
+      },
+      {
+        "id": "e",
+        "text": "The command fails if any consumer group is active on the topic."
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "The operations guide warns that when data is partitioned by `hash(key) % number_of_partitions`, \"messages with the same key may be routed to different partitions after the expansion, potentially affecting message ordering guarantees for existing keys. Kafka will not attempt to automatically redistribute existing data.\"\n\n- The replication factor doesn't change.\n- Active consumers don't block the change; they pick up the new partitions after a metadata refresh.",
+    "references": [
+      {
+        "title": "Basic Kafka operations: Modifying topics",
+        "url": "https://kafka.apache.org/44/operations/basic-kafka-operations/#modifying-topics",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "ops-cli-016",
+    "domain": "fundamentals",
+    "topics": [
+      "cli-tools"
+    ],
+    "type": "multi",
+    "stem": "Which tasks belong to `kafka-topics.sh` in Kafka 4.x? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "Increasing a topic's partition count with `--alter --partitions`"
+      },
+      {
+        "id": "b",
+        "text": "Showing each partition's leader, replicas and ISR with `--describe`"
+      },
+      {
+        "id": "c",
+        "text": "Changing a topic's `retention.ms` with `--alter --config`"
+      },
+      {
+        "id": "d",
+        "text": "Resetting a consumer group's offsets"
+      },
+      {
+        "id": "e",
+        "text": "Creating ACLs for a topic"
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "`kafka-topics --alter` changes \"the number of partitions and replica assignment. (To alter topic configurations, the kafka-configs tool can be used.)\" `--describe` lists topic details, including `Leader`, `Replicas` and `Isr` for each partition, as shown in the quickstart.\n\n- Topic configs such as `retention.ms` are changed with `kafka-configs.sh --entity-type topics --alter --add-config`.\n- Offset resets use `kafka-consumer-groups.sh`.\n- ACLs use `kafka-acls.sh`.",
+    "references": [
+      {
+        "title": "Confluent: kafka-topics usage",
+        "url": "https://docs.confluent.io/kafka/operations-tools/kafka-tools.html#kafka-topics-sh",
+        "kind": "official"
+      },
+      {
+        "title": "Apache Kafka quickstart: create a topic",
+        "url": "https://kafka.apache.org/44/getting-started/quickstart/#step-3-create-a-topic-to-store-your-events",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "ops-cli-017",
+    "domain": "fundamentals",
+    "topics": [
+      "cli-tools"
+    ],
+    "type": "single",
+    "stem": "You run `kafka-console-consumer.sh --bootstrap-server b1:9092 --topic orders --group audit --from-beginning`. Group `audit` already has committed offsets for `orders`. Where does the console consumer start?",
+    "options": [
+      {
+        "id": "a",
+        "text": "At the group's committed offsets; `--from-beginning` only applies when there is no established offset."
+      },
+      {
+        "id": "b",
+        "text": "At the earliest offset of every partition, ignoring the committed offsets."
+      },
+      {
+        "id": "c",
+        "text": "At the end of each partition, because `--group` overrides `--from-beginning`."
+      },
+      {
+        "id": "d",
+        "text": "It refuses to start, because `--group` and `--from-beginning` can't be combined."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The tool's usage text says `--from-beginning` means: \"If the consumer does not already have an established offset to consume from, start with the earliest message present in the log rather than the latest message.\" A group with committed offsets has an established offset, so the consumer resumes there. To really replay, reset the group's offsets (`kafka-consumer-groups --reset-offsets --to-earliest --execute`) or use a new group.",
+    "references": [
+      {
+        "title": "Confluent: kafka-console-consumer usage",
+        "url": "https://docs.confluent.io/kafka/operations-tools/kafka-tools.html#kafka-console-consumer-sh",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "ops-cli-018",
+    "domain": "fundamentals",
+    "topics": [
+      "cli-tools"
+    ],
+    "type": "single",
+    "stem": "The console consumer prints only record values. Which option makes it print each record's key as well?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`--formatter-property print.key=true` (older form: `--property print.key=true`)"
+      },
+      {
+        "id": "b",
+        "text": "`--print-keys`"
+      },
+      {
+        "id": "c",
+        "text": "`--command-property key.deserializer=print`"
+      },
+      {
+        "id": "d",
+        "text": "`--parse-key true`"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`print.key=true|false` is a property of the default message formatter. Formatter properties are passed with `--formatter-property`; the older `--property` option still works but is deprecated.\n\n- `--print-keys` doesn't exist.\n- `--command-property` sets consumer client properties.\n- `parse.key` is a console *producer* reader property, used to read keys from the input.",
+    "references": [
+      {
+        "title": "Confluent: kafka-console-consumer usage",
+        "url": "https://docs.confluent.io/kafka/operations-tools/kafka-tools.html#kafka-console-consumer-sh",
+        "kind": "official"
+      },
+      {
+        "title": "Upgrade notes: notable changes in 4.2.0",
+        "url": "https://kafka.apache.org/44/getting-started/upgrade/#notable-changes-in-420",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original",
+    "kafkaVersionNote": "Kafka 4.2 (KIP-1147) deprecated --property on the console consumer in favour of --formatter-property, and on the console producer in favour of --reader-property. The old option works until 5.0, and exam material usually shows --property print.key=true."
+  },
+  {
+    "id": "ops-cli-019",
+    "domain": "fundamentals",
+    "topics": [
+      "cli-tools"
+    ],
+    "type": "single",
+    "stem": "An operator runs `kafka-consumer-groups.sh --bootstrap-server b1:9092 --group billing --topic invoices --reset-offsets --to-earliest` and sees a table of new offsets. What has changed?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Nothing: without `--execute` the tool does a dry run and only shows the offsets it would set."
+      },
+      {
+        "id": "b",
+        "text": "The offsets were reset to earliest for every partition of `invoices`."
+      },
+      {
+        "id": "c",
+        "text": "The offsets were reset, but only for consumers that are currently active."
+      },
+      {
+        "id": "d",
+        "text": "The offsets were exported to a CSV file."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`--reset-offsets` has three execution options: `--dry-run` (\"to display which offsets to reset\", the default), `--execute` (to apply the reset) and `--export` (CSV output). Run the same command again with `--execute` to apply it, after making sure the group's consumers are inactive.",
+    "references": [
+      {
+        "title": "Basic Kafka operations: Managing consumer groups",
+        "url": "https://kafka.apache.org/44/operations/basic-kafka-operations/#managing-consumer-groups",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "ops-cli-020",
+    "domain": "fundamentals",
+    "topics": [
+      "cli-tools"
+    ],
+    "type": "multi",
+    "stem": "You need group `reporting` to re-read topic `sales` starting from 2026-11-01 00:00. Which statements about doing this with `kafka-consumer-groups.sh --reset-offsets` are correct? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "Stop all consumer instances in `reporting` first; the reset needs the group to be inactive."
+      },
+      {
+        "id": "b",
+        "text": "Use `--to-datetime 2026-11-01T00:00:00.000` and add `--execute` to apply it."
+      },
+      {
+        "id": "c",
+        "text": "One command can reset several groups, for example `--group reporting --group billing`."
+      },
+      {
+        "id": "d",
+        "text": "`--to-datetime` takes epoch milliseconds, for example `--to-datetime 1793491200000`."
+      },
+      {
+        "id": "e",
+        "text": "A scope such as `--topic` or `--all-topics` is optional; the default is all topics."
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "The operations guide says to \"make sure that the consumer instances are inactive\" first. `--to-datetime` takes the format `YYYY-MM-DDThh:mm:ss.sss`, and `--execute` applies the change (the default is `--dry-run`).\n\n- The option \"supports one consumer group at the time\".\n- `--to-datetime` takes the date-time string above, not epoch milliseconds.\n- A scope is required: \"–all-topics or –topic. One scope must be selected, unless you use '–from-file'\".",
+    "references": [
+      {
+        "title": "Basic Kafka operations: Managing consumer groups",
+        "url": "https://kafka.apache.org/44/operations/basic-kafka-operations/#managing-consumer-groups",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "ops-cli-021",
+    "domain": "fundamentals",
+    "topics": [
+      "cli-tools"
+    ],
+    "type": "single",
+    "stem": "A bad deploy processed the last 100 records of every partition incorrectly. The group is stopped. Which reset scenario moves each partition's committed offset back by 100?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`--shift-by -100`"
+      },
+      {
+        "id": "b",
+        "text": "`--shift-by 100`"
+      },
+      {
+        "id": "c",
+        "text": "`--to-offset -100`"
+      },
+      {
+        "id": "d",
+        "text": "`--by-duration -100`"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`--shift-by <n>` resets \"offsets shifting current offset by 'n', where 'n' can be positive or negative\", so `-100` moves back 100 records. Shifts that land out of range \"will be adjusted to available offset end\".\n\n- `+100` would skip forward.\n- `--to-offset` sets an absolute offset.\n- `--by-duration` takes an ISO-8601 duration such as `PT1H`, not a record count.",
+    "references": [
+      {
+        "title": "Basic Kafka operations: Managing consumer groups",
+        "url": "https://kafka.apache.org/44/operations/basic-kafka-operations/#managing-consumer-groups",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "ops-cli-022",
+    "domain": "fundamentals",
+    "topics": [
+      "cli-tools"
+    ],
+    "type": "single",
+    "stem": "A partition's log-end offset is 10 and the group's committed offset is 5. You run `--reset-offsets --shift-by 15 --execute` for the group. What is the new committed offset?",
+    "options": [
+      {
+        "id": "a",
+        "text": "10, because out-of-range offsets are adjusted to the available end"
+      },
+      {
+        "id": "b",
+        "text": "20"
+      },
+      {
+        "id": "c",
+        "text": "5, because out-of-range shifts are ignored"
+      },
+      {
+        "id": "d",
+        "text": "The command fails with an out-of-range error."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "\"Please note, that out of range offsets will be adjusted to available offset end. For example, if offset end is at 10 and offset shift request is of 15, then, offset at 10 will actually be selected.\" 5 + 15 = 20 is past the end, so the offset is clamped to 10.",
+    "references": [
+      {
+        "title": "Basic Kafka operations: Managing consumer groups",
+        "url": "https://kafka.apache.org/44/operations/basic-kafka-operations/#managing-consumer-groups",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "ops-cli-023",
+    "domain": "fundamentals",
+    "topics": [
+      "cli-tools"
+    ],
+    "type": "single",
+    "stem": "Which `kafka-consumer-groups.sh` command shows each member of group `my-group` together with the partitions assigned to it?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`--describe --group my-group --members --verbose`"
+      },
+      {
+        "id": "b",
+        "text": "`--describe --group my-group --state`"
+      },
+      {
+        "id": "c",
+        "text": "`--list --group my-group`"
+      },
+      {
+        "id": "d",
+        "text": "`--describe --group my-group --offsets --assignments`"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`--members` lists the active members, and adding `--verbose` \"also provides the partitions assigned to each member\" (the `ASSIGNMENT` column).\n\n- `--state` shows group-level information: coordinator, assignment strategy, state and member count.\n- `--list` lists group names.\n- `--offsets` is the default describe output; there is no `--assignments` option.",
+    "references": [
+      {
+        "title": "Basic Kafka operations: Managing consumer groups",
+        "url": "https://kafka.apache.org/44/operations/basic-kafka-operations/#managing-consumer-groups",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "fund-cli-001",
+    "domain": "fundamentals",
+    "topics": [
+      "cli-tools"
+    ],
+    "type": "single",
+    "stem": "You want to type lines such as `user42:login` into the console producer so that `user42` becomes the record key and `login` the value. Which command does that on Kafka 4.4?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`kafka-console-producer.sh --bootstrap-server b1:9092 --topic events --reader-property parse.key=true --reader-property key.separator=:`"
+      },
+      {
+        "id": "b",
+        "text": "`kafka-console-producer.sh --bootstrap-server b1:9092 --topic events --reader-property parse.key=true`"
+      },
+      {
+        "id": "c",
+        "text": "`kafka-console-producer.sh --bootstrap-server b1:9092 --topic events --reader-property print.key=true --reader-property key.separator=:`"
+      },
+      {
+        "id": "d",
+        "text": "`kafka-console-producer.sh --bootstrap-server b1:9092 --topic events --key user42`"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The console producer's line reader sends each line as the value unless `parse.key=true`. Then it splits the line at `key.separator`, which defaults to a tab (`\\t`), so you need `key.separator=:` for colon-separated input.\n\n- Without `key.separator`, the reader looks for a tab that isn't there.\n- `print.key` is a console consumer formatter property, not a producer one.\n- There's no `--key` option.\n\nSince Kafka 4.2, `--reader-property` replaces the deprecated `--property` on the console producer.",
+    "references": [
+      {
+        "title": "Kafka tools: kafka-console-producer.sh",
+        "url": "https://docs.confluent.io/kafka/operations-tools/kafka-tools.html#kafka-console-producer-sh",
+        "kind": "official"
+      },
+      {
+        "title": "Kafka upgrade notes: notable changes in 4.2",
+        "url": "https://kafka.apache.org/44/getting-started/upgrade/#notable-changes-in-420",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "likely",
+    "source": "original",
+    "kafkaVersionNote": "Kafka 4.2 (KIP-1147) deprecated `--property` in favour of `--reader-property` (producer) and `--formatter-property` (consumer); `--property` still works until 5.0."
+  },
+  {
+    "id": "fund-cli-002",
+    "domain": "fundamentals",
+    "topics": [
+      "cli-tools"
+    ],
+    "type": "multi",
+    "stem": "While debugging ordering, you want the console consumer to show which partition and offset each record came from. Which formatter properties do you add? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "`--formatter-property print.partition=true`"
+      },
+      {
+        "id": "b",
+        "text": "`--formatter-property print.offset=true`"
+      },
+      {
+        "id": "c",
+        "text": "`--formatter-property parse.key=true`"
+      },
+      {
+        "id": "d",
+        "text": "`--formatter-property print.position=true`"
+      },
+      {
+        "id": "e",
+        "text": "`--formatter-property print.leader=true`"
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "The default formatter's properties include `print.timestamp`, `print.key`, `print.offset`, `print.epoch`, `print.partition`, `print.headers` and `print.value`, plus separators. `print.partition=true` and `print.offset=true` add the partition and offset to each line.\n\n- `parse.key` belongs to the console producer's reader.\n- `print.position` and `print.leader` don't exist.\n\nOn Kafka 4.2 and later, `--formatter-property` replaces the deprecated `--property` on the console consumer.",
+    "references": [
+      {
+        "title": "Kafka tools: kafka-console-consumer.sh",
+        "url": "https://docs.confluent.io/kafka/operations-tools/kafka-tools.html#kafka-console-consumer-sh",
+        "kind": "official"
+      },
+      {
+        "title": "Kafka upgrade notes: notable changes in 4.2",
+        "url": "https://kafka.apache.org/44/getting-started/upgrade/#notable-changes-in-420",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  }
+]

@@ -1,0 +1,73 @@
+Deploying a Kafka client is mostly about four things: how it finds the cluster, how many instances you run against how many partitions, where its settings come from, and how it stops. Get those right and restarts, rolling upgrades and scaling in a container platform become routine instead of a rebalance storm.
+
+## How it works
+
+- **Finding the cluster.** `bootstrap.servers` is only used for the first connection. The client fetches metadata and then talks to whichever brokers lead its partitions. List two or three brokers (or one DNS name in front of them) so that one broker being down doesn't stop startup.
+- **Naming the instance.** `client.id` (default empty) is sent with every request so brokers can attribute it in request logs, and it names the client's metrics MBeans. Give each instance a readable id.
+- **Scaling consumers.** Within a group, each partition goes to exactly one consumer. Extra consumers beyond the partition count sit idle, so the partition count caps a group's parallelism. Kafka Streams is the same: the number of tasks comes from the input partition count, and threads or instances beyond the task count have nothing to do.
+- **Reading from the nearest replica.** Set `client.rack` on the consumer to match the `broker.rack` of brokers in its zone. Brokers return the leader by default; follower fetching also needs the broker-side `replica.selector.class` set to a rack-aware selector.
+- **Externalising config.** Keep environment-specific values out of the image: pass them as environment variables or mounted files, and use `config.providers` (for example `EnvVarConfigProvider`, `FileConfigProvider`, `DirectoryConfigProvider`) so a value such as a password is resolved from a placeholder at startup.
+
+<Figure caption="Six partitions, eight consumers in one group: two consumers get no partitions.">
+<svg viewBox="0 0 520 170" role="img" aria-label="Six partitions assigned to six of eight consumers">
+  <g fontSize="13" fill="currentColor" textAnchor="middle">
+    <text x="60" y="20">partitions</text>
+    <text x="400" y="20">consumers</text>
+  </g>
+  <g stroke="currentColor" fill="none" strokeWidth="1.5">
+    <rect x="20" y="30" width="80" height="18" /><rect x="20" y="52" width="80" height="18" /><rect x="20" y="74" width="80" height="18" />
+    <rect x="20" y="96" width="80" height="18" /><rect x="20" y="118" width="80" height="18" /><rect x="20" y="140" width="80" height="18" />
+    <rect x="360" y="8" width="80" height="16" /><rect x="360" y="28" width="80" height="16" /><rect x="360" y="48" width="80" height="16" />
+    <rect x="360" y="68" width="80" height="16" /><rect x="360" y="88" width="80" height="16" /><rect x="360" y="108" width="80" height="16" />
+    <rect className="accent" x="360" y="128" width="80" height="16" /><rect className="accent" x="360" y="148" width="80" height="16" />
+    <line x1="100" y1="39" x2="360" y2="16" /><line x1="100" y1="61" x2="360" y2="36" /><line x1="100" y1="83" x2="360" y2="56" />
+    <line x1="100" y1="105" x2="360" y2="76" /><line x1="100" y1="127" x2="360" y2="96" /><line x1="100" y1="149" x2="360" y2="116" />
+  </g>
+  <g fontSize="13" fill="currentColor">
+    <text x="450" y="141">idle</text>
+    <text x="450" y="161">idle</text>
+  </g>
+</svg>
+</Figure>
+
+## Gotchas the exam loves
+
+- `bootstrap.servers` doesn't need every broker; the client discovers the rest from metadata.
+- Adding consumers past the partition count adds no throughput. Add partitions, or make each consumer faster.
+- A Streams app reading a 5-partition topic can usefully run at most 5 stream threads across all instances.
+- `KafkaConsumer` is not thread safe. The one method you may call from another thread is `wakeup()`, which makes a blocked `poll()` throw `WakeupException`. Catch it in the poll loop and call `close()` in `finally`.
+- `close()` waits up to 30 seconds by default, commits offsets if `enable.auto.commit` is on, and leaves the group if the member is dynamic. Prefer `wakeup()` over thread interrupts, which can abort a clean close.
+- In a container, handle `SIGTERM` with a shutdown hook that triggers the shutdown, and give the platform's grace period enough time for `close()`.
+- `group.instance.id` makes a consumer a static member. A restart within `session.timeout.ms` gets its old partitions back with no rebalance, and a static member doesn't leave the group on `close()`. Each instance needs a unique, stable id, such as a StatefulSet pod name.
+- Rolling upgrades of clients work one instance at a time because clients and brokers negotiate protocol versions. In Kafka 4.0 brokers, 3.x clients are fully compatible, 2.1 to 2.8 clients only partly, and older clients not at all.
+
+## Java sample
+
+```java
+KafkaConsumer<String, String> consumer = new KafkaConsumer<>(props);
+Thread main = Thread.currentThread();
+Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+    consumer.wakeup();                 // safe from another thread
+    try { main.join(); } catch (InterruptedException ignored) { }
+}));
+
+try {
+    consumer.subscribe(List.of("orders"));
+    while (true) {
+        for (ConsumerRecord<String, String> r : consumer.poll(Duration.ofMillis(500))) {
+            handle(r);
+        }
+        consumer.commitSync();
+    }
+} catch (WakeupException e) {
+    // expected on shutdown
+} finally {
+    consumer.close();                  // commit, leave group, release sockets
+}
+```
+
+## Version notes
+
+<Note>
+Kafka 4.1 deprecated `KafkaConsumer.close(Duration)` in favour of `close(CloseOptions)`. Kafka 4.0 removed pre-0.10 protocol support, so very old clients can't talk to 4.x brokers; check the [compatibility matrix](https://kafka.apache.org/44/getting-started/compatibility/#clientbroker-forward-compatibility) before a broker upgrade.
+</Note>

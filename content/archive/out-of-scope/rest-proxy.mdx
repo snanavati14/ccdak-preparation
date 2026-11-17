@@ -1,0 +1,30 @@
+Confluent REST Proxy lets applications produce, consume and inspect Kafka over HTTP, without a Kafka client library. **This topic is low priority:** study it last.
+
+## How it works
+
+- Typical use: apps in languages without a supported client, or simple scripting and admin tasks.
+- **API v2:**
+  - `POST /topics/{topic}` to produce
+  - consumer instances: `POST /consumers/{group}`, then subscribe, then `GET .../records`
+  - media types such as `application/vnd.kafka.json.v2+json`
+- **API v3:**
+  - cluster and admin operations under `/v3/clusters/...`
+  - producing with `POST /clusters/{cluster_id}/topics/{topic}/records`
+- Avro, Protobuf and JSON Schema payloads are registered and validated through Schema Registry.
+
+## Gotchas the exam loves
+
+- Consumer instances are stateful and tied to the REST Proxy node that created them. Use the returned URL, or you get 404s behind a load balancer.
+- Producer settings are global to the proxy, not set per request.
+- The default port is 8082.
+
+## Java sample
+
+```java
+HttpRequest req = HttpRequest.newBuilder(URI.create("http://localhost:8082/topics/orders"))
+    .header("Content-Type", "application/vnd.kafka.json.v2+json")
+    .POST(HttpRequest.BodyPublishers.ofString(
+        "{\"records\":[{\"key\":\"o-1\",\"value\":{\"amount\":42}}]}"))
+    .build();
+HttpClient.newHttpClient().send(req, HttpResponse.BodyHandlers.ofString());
+```

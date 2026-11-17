@@ -1,0 +1,721 @@
+[
+  {
+    "id": "prod-part-001",
+    "domain": "fundamentals",
+    "topics": [
+      "partitioning-ordering"
+    ],
+    "type": "single",
+    "stem": "With the Java producer's default partitioning, how is the partition chosen for a record that has a non-null key and no explicit partition?",
+    "options": [
+      {
+        "id": "a",
+        "text": "The serialized key is hashed with murmur2 and the result is taken modulo the number of partitions"
+      },
+      {
+        "id": "b",
+        "text": "The key's Java `hashCode()` modulo the number of partitions"
+      },
+      {
+        "id": "c",
+        "text": "Round-robin across partitions, ignoring the key"
+      },
+      {
+        "id": "d",
+        "text": "The partition whose leader has the least load"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The Confluent producer docs say the partitioner hashes the key with the murmur2 algorithm and divides by the number of partitions, so the same key always goes to the same partition, as long as the partition count doesn't change. The Kafka config docs describe this as 'a hash of the key'.\n\n- Java `hashCode()` isn't used; the hash is over the serialized key bytes.\n- Round-robin ignoring keys is `RoundRobinPartitioner`, not the default.\n- Load-aware choice (adaptive partitioning) only applies to records without a key.",
+    "references": [
+      {
+        "title": "Kafka Producer for Confluent Platform: partitioning",
+        "url": "https://docs.confluent.io/platform/current/clients/producer.html#ak-producer-for-product",
+        "kind": "official"
+      },
+      {
+        "title": "Producer configs: partitioner.class",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_partitioner.class",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "prod-part-002",
+    "domain": "fundamentals",
+    "topics": [
+      "partitioning-ordering"
+    ],
+    "type": "single",
+    "stem": "A Kafka 4.x producer with the default partitioner sends many records with `null` keys to a 6-partition topic. How are they spread?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Records stick to one partition until at least `batch.size` bytes have gone to it, then a new partition is picked"
+      },
+      {
+        "id": "b",
+        "text": "Each record goes to the next partition in strict round-robin order"
+      },
+      {
+        "id": "c",
+        "text": "All of them go to partition 0"
+      },
+      {
+        "id": "d",
+        "text": "Each record goes to a randomly chosen partition"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The `partitioner.class` docs: with no partition and no key, the producer uses a sticky partition that changes when at least `batch.size` bytes have been produced to it. This builds fuller batches than per-record spreading. With `partitioner.adaptive.partitioning.enable=true` (default), the next partition favours faster brokers.\n\n- Per-record round-robin was the behaviour of very old clients, and is what `RoundRobinPartitioner` does.\n- Records are spread over time, not pinned to partition 0.\n- The choice isn't random per record.",
+    "references": [
+      {
+        "title": "Producer configs: partitioner.class",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_partitioner.class",
+        "kind": "official"
+      },
+      {
+        "title": "Producer configs: partitioner.adaptive.partitioning.enable",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_partitioner.adaptive.partitioning.enable",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original",
+    "kafkaVersionNote": "Null-key behaviour has changed over time: early clients spread keyless records round-robin, then a sticky partitioner switched partition on each new batch (KIP-480, still described on some Confluent pages), and the current built-in partitioner switches after `batch.size` bytes. `DefaultPartitioner` and `UniformStickyPartitioner` were removed in 4.0."
+  },
+  {
+    "id": "prod-part-003",
+    "domain": "fundamentals",
+    "topics": [
+      "partitioning-ordering",
+      "topic-design"
+    ],
+    "type": "single",
+    "stem": "Topic `customers` has 6 partitions, and producers key records by customer ID using the default partitioner. An operator increases it to 8 partitions. What is the effect on keyed data?",
+    "options": [
+      {
+        "id": "a",
+        "text": "New records for some customer IDs go to different partitions than before; existing records stay where they are, so per-key ordering across the change is not guaranteed"
+      },
+      {
+        "id": "b",
+        "text": "Kafka redistributes existing records so each key is again on a single partition"
+      },
+      {
+        "id": "c",
+        "text": "Nothing changes, because the producer caches each key's original partition"
+      },
+      {
+        "id": "d",
+        "text": "The topic rejects writes until all producers restart"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The operations docs warn that when data is partitioned by hash(key) % number_of_partitions, adding partitions changes the mapping, so records with the same key may go to different partitions after the expansion. Kafka does not redistribute existing data.\n\n- No automatic redistribution happens.\n- The producer doesn't remember per-key placement; it hashes each record with the current partition count.\n- Writes continue; producers pick up the new count on their next metadata refresh.",
+    "references": [
+      {
+        "title": "Operations: modifying topics",
+        "url": "https://kafka.apache.org/44/operations/basic-kafka-operations/#modifying-topics",
+        "kind": "official"
+      },
+      {
+        "title": "Kafka Producer for Confluent Platform: partitioning",
+        "url": "https://docs.confluent.io/platform/current/clients/producer.html#ak-producer-for-product",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "prod-part-004",
+    "domain": "fundamentals",
+    "topics": [
+      "partitioning-ordering"
+    ],
+    "type": "single",
+    "stem": "An application builds `new ProducerRecord<>(\"orders\", 3, key, value)` (explicit partition 3) on a producer that also has a custom `partitioner.class`. Which partition does the record go to?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Partition 3; an explicit partition bypasses the partitioner"
+      },
+      {
+        "id": "b",
+        "text": "Whatever the custom partitioner returns"
+      },
+      {
+        "id": "c",
+        "text": "The partition given by hashing the key"
+      },
+      {
+        "id": "d",
+        "text": "The producer throws an exception because both are set"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "When a `ProducerRecord` carries a partition, the producer uses it directly and doesn't call any partitioner. The config docs describe the default logic as applying when 'no partition is specified', and the Confluent producer docs note that explicitly setting the partition overrides the default behaviour.\n\n- The partitioner, custom or built-in, is only consulted when no partition is given.\n- Key hashing only applies with no explicit partition.\n- Setting both is legal.",
+    "references": [
+      {
+        "title": "Kafka Producer for Confluent Platform: partitioning",
+        "url": "https://docs.confluent.io/platform/current/clients/producer.html#ak-producer-for-product",
+        "kind": "official"
+      },
+      {
+        "title": "Producer configs: partitioner.class",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_partitioner.class",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "likely",
+    "source": "original"
+  },
+  {
+    "id": "prod-part-005",
+    "domain": "fundamentals",
+    "topics": [
+      "partitioning-ordering"
+    ],
+    "type": "single",
+    "stem": "A producer sets `partitioner.ignore.keys=true` and leaves `partitioner.class` unset. How are keyed records partitioned?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Keys are ignored; records are spread with the same sticky logic used for `null` keys"
+      },
+      {
+        "id": "b",
+        "text": "Records are hashed by key as usual; the setting only affects `null` keys"
+      },
+      {
+        "id": "c",
+        "text": "Records go round-robin one by one"
+      },
+      {
+        "id": "d",
+        "text": "The producer throws an exception because records have keys"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "With `partitioner.ignore.keys=true` the producer doesn't use record keys to choose a partition, so keyed records get the same treatment as keyless ones: the sticky partition that changes after `batch.size` bytes. The key is still stored with the record. The docs add that this setting has no effect when a custom partitioner is used.\n\n- Hashing by key is the `false` (default) behaviour.\n- Per-record round-robin is `RoundRobinPartitioner`.\n- Keys are still allowed.",
+    "references": [
+      {
+        "title": "Producer configs: partitioner.ignore.keys",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_partitioner.ignore.keys",
+        "kind": "official"
+      },
+      {
+        "title": "Producer configs: partitioner.class",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_partitioner.class",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "prod-part-006",
+    "domain": "fundamentals",
+    "topics": [
+      "partitioning-ordering"
+    ],
+    "type": "multi",
+    "stem": "A team wants to send all records for VIP customers to partition 0 and hash everything else. How do they plug in this logic in Kafka 4.x? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "Implement the `org.apache.kafka.clients.producer.Partitioner` interface"
+      },
+      {
+        "id": "b",
+        "text": "Set `partitioner.class` to the implementing class"
+      },
+      {
+        "id": "c",
+        "text": "Extend `org.apache.kafka.clients.producer.internals.DefaultPartitioner`"
+      },
+      {
+        "id": "d",
+        "text": "Override `onNewBatch()` to switch partitions for VIP records"
+      },
+      {
+        "id": "e",
+        "text": "Set `partitioner.ignore.keys=true` to activate the custom class"
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "The config docs: implementing the `org.apache.kafka.clients.producer.Partitioner` interface lets you plug in a custom partitioner, configured with `partitioner.class`. The interface's main method is `partition(topic, key, keyBytes, value, valueBytes, cluster)`.\n\n- `DefaultPartitioner` was removed in Kafka 4.0.\n- `Partitioner.onNewBatch()` was also removed in 4.0.\n- `partitioner.ignore.keys` has no effect when a custom partitioner is used.",
+    "references": [
+      {
+        "title": "Producer configs: partitioner.class",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_partitioner.class",
+        "kind": "official"
+      },
+      {
+        "title": "Partitioner javadoc",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/producer/Partitioner.html",
+        "kind": "official"
+      },
+      {
+        "title": "Upgrade notes: notable changes in 4.0.0",
+        "url": "https://kafka.apache.org/44/getting-started/upgrade/#notable-changes-in-400",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original",
+    "kafkaVersionNote": "`DefaultPartitioner`, `UniformStickyPartitioner` and `Partitioner.onNewBatch()` were removed in Kafka 4.0. Older study material that extends `DefaultPartitioner` no longer compiles."
+  },
+  {
+    "id": "prod-part-007",
+    "domain": "fundamentals",
+    "topics": [
+      "partitioning-ordering"
+    ],
+    "type": "single",
+    "stem": "To spread load evenly, a team sets `partitioner.class=org.apache.kafka.clients.producer.RoundRobinPartitioner` on a producer whose records are keyed by account ID. What is the consequence?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Records for the same account can land on different partitions, so per-account ordering is lost"
+      },
+      {
+        "id": "b",
+        "text": "Keyed records are still hashed; only `null`-key records go round-robin"
+      },
+      {
+        "id": "c",
+        "text": "The producer rejects keyed records"
+      },
+      {
+        "id": "d",
+        "text": "Records stay on one partition until `batch.size` bytes are written"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The docs describe `RoundRobinPartitioner` as sending each record in a series to a different partition regardless of whether a key is provided. Two records for the same account can therefore go to different partitions, and Kafka only orders records within a partition.\n\n- Keys are ignored, not hashed.\n- Keyed records are allowed.\n- Switching after `batch.size` bytes is the default sticky behaviour.\n\nThe docs also note a known issue (KAFKA-9965) where distribution becomes uneven when a new batch is created.",
+    "references": [
+      {
+        "title": "Producer configs: partitioner.class",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_partitioner.class",
+        "kind": "official"
+      },
+      {
+        "title": "RoundRobinPartitioner javadoc",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/producer/RoundRobinPartitioner.html",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "prod-part-008",
+    "domain": "fundamentals",
+    "topics": [
+      "partitioning-ordering",
+      "idempotence-retries",
+      "topic-design"
+    ],
+    "type": "multi",
+    "stem": "Which of these can cause records with the same key to be read in a different order from the order they were sent by a single producer? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "Increasing the topic's partition count while producers keep sending"
+      },
+      {
+        "id": "b",
+        "text": "`enable.idempotence=false` with retries enabled and `max.in.flight.requests.per.connection` greater than 1"
+      },
+      {
+        "id": "c",
+        "text": "Raising `linger.ms` from 5 to 50"
+      },
+      {
+        "id": "d",
+        "text": "Enabling `compression.type=zstd`"
+      },
+      {
+        "id": "e",
+        "text": "Using the default idempotent producer with `max.in.flight.requests.per.connection=5`"
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "Adding partitions changes hash(key) % partitions, so a key's later records can go to a new partition while older ones sit on the old one, and there is no ordering across partitions. Without idempotence, a failed batch that is retried can land after a later batch when several requests are in flight.\n\n- `linger.ms` and compression change how batches are formed and encoded, not their order within a partition.\n- With idempotence on, ordering is preserved for any allowed value of `max.in.flight.requests.per.connection` (up to 5).",
+    "references": [
+      {
+        "title": "Producer configs: max.in.flight.requests.per.connection",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_max.in.flight.requests.per.connection",
+        "kind": "official"
+      },
+      {
+        "title": "Operations: modifying topics",
+        "url": "https://kafka.apache.org/44/operations/basic-kafka-operations/#modifying-topics",
+        "kind": "official"
+      },
+      {
+        "title": "Producer configs: retries",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_retries",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "prod-part-009",
+    "domain": "fundamentals",
+    "topics": [
+      "partitioning-ordering"
+    ],
+    "type": "multi",
+    "stem": "Which statements about `send()` callbacks are true? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "Callbacks for records sent to the same partition run in the order the records were sent"
+      },
+      {
+        "id": "b",
+        "text": "Callbacks generally run on the producer's I/O thread, so slow work in them delays other sends"
+      },
+      {
+        "id": "c",
+        "text": "Each callback runs on its own new thread"
+      },
+      {
+        "id": "d",
+        "text": "The callback runs on the calling thread before `send()` returns"
+      },
+      {
+        "id": "e",
+        "text": "Callbacks across different partitions are also guaranteed to run in send order"
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "The `send()` javadoc guarantees that callbacks for records sent to the same partition execute in order. It also warns that callbacks generally execute in the producer's I/O thread, so they should be fast; for blocking or expensive work, hand off to your own `Executor`.\n\n- No thread is created per callback.\n- `send()` returns once the record is buffered; the callback runs later on completion (except for some immediate errors).\n- There is no ordering guarantee across partitions.",
+    "references": [
+      {
+        "title": "KafkaProducer.send() javadoc",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/producer/KafkaProducer.html#send%28org.apache.kafka.clients.producer.ProducerRecord,org.apache.kafka.clients.producer.Callback%29",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "prod-part-010",
+    "domain": "fundamentals",
+    "topics": [
+      "partitioning-ordering",
+      "idempotence-retries"
+    ],
+    "type": "single",
+    "stem": "A developer replaces `producer.send(record, callback)` with `producer.send(record).get()` inside a tight loop. What is the main effect?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Each send becomes synchronous: the thread blocks until that record is acknowledged or fails, so throughput drops sharply"
+      },
+      {
+        "id": "b",
+        "text": "Nothing changes; `get()` only reads metadata that is already available"
+      },
+      {
+        "id": "c",
+        "text": "Records are now sent with `acks=all` regardless of configuration"
+      },
+      {
+        "id": "d",
+        "text": "The producer now retries failed sends forever"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`send()` is asynchronous and returns a `Future<RecordMetadata>`. The javadoc says calling `get()` blocks until the request completes and then returns the metadata or throws the exception, which is how you simulate a blocking call. Waiting for every record one at a time stops records from being batched and pipelined, which lowers throughput.\n\n- `get()` waits for the actual result; it doesn't read cached metadata.\n- `acks` and retry behaviour come from config, not from how the result is collected.",
+    "references": [
+      {
+        "title": "KafkaProducer.send() javadoc",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/producer/KafkaProducer.html#send%28org.apache.kafka.clients.producer.ProducerRecord,org.apache.kafka.clients.producer.Callback%29",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "prod-part-011",
+    "domain": "fundamentals",
+    "topics": [
+      "partitioning-ordering",
+      "batching-compression"
+    ],
+    "type": "multi",
+    "stem": "`KafkaProducer.send()` is described as asynchronous. In which situations can it still block the calling thread? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "When metadata for the topic isn't available yet, for example on the first send to that topic"
+      },
+      {
+        "id": "b",
+        "text": "When the buffer pool has no free space for the record"
+      },
+      {
+        "id": "c",
+        "text": "While waiting for the broker to acknowledge the record"
+      },
+      {
+        "id": "d",
+        "text": "While waiting `linger.ms` for the batch to fill"
+      },
+      {
+        "id": "e",
+        "text": "While the I/O thread compresses the batch"
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "The `send()` javadoc lists two blocking cases: the first record sent to a topic, while it waits up to `max.block.ms` for topic metadata, and allocating a buffer when the pool has no free buffers. Otherwise it returns as soon as the record is in the buffer.\n\n- Acknowledgement is reported later through the future or callback.\n- Lingering happens in the background; `send()` doesn't wait for it.\n- Compression happens when batches are built and sent, not as a wait inside `send()`.",
+    "references": [
+      {
+        "title": "KafkaProducer.send() javadoc",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/producer/KafkaProducer.html#send%28org.apache.kafka.clients.producer.ProducerRecord,org.apache.kafka.clients.producer.Callback%29",
+        "kind": "official"
+      },
+      {
+        "title": "Producer configs: max.block.ms",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_max.block.ms",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "prod-part-012",
+    "domain": "fundamentals",
+    "topics": [
+      "partitioning-ordering",
+      "idempotence-retries"
+    ],
+    "type": "single",
+    "stem": "Which error is thrown directly from the `send()` call itself, rather than reported through the returned future or the callback?",
+    "options": [
+      {
+        "id": "a",
+        "text": "A `SerializationException` because the value can't be serialized by the configured serializer"
+      },
+      {
+        "id": "b",
+        "text": "A `RecordTooLargeException` for a record bigger than `max.request.size`"
+      },
+      {
+        "id": "c",
+        "text": "A `NotEnoughReplicasException` from the leader"
+      },
+      {
+        "id": "d",
+        "text": "A `TimeoutException` after `delivery.timeout.ms`"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The `send()` javadoc lists `SerializationException` under **Throws**: serialization happens on the calling thread, and the exception propagates out of `send()`. Errors the client classes as API errors, such as an oversized record detected before buffering, come back as a failed future and are also passed to the callback. Broker errors and delivery timeouts arrive asynchronously, by definition.\n\nIn practice: wrap `send()` in try/catch for serialization problems, and still check the callback or future for everything else.",
+    "references": [
+      {
+        "title": "KafkaProducer.send() javadoc",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/producer/KafkaProducer.html#send%28org.apache.kafka.clients.producer.ProducerRecord,org.apache.kafka.clients.producer.Callback%29",
+        "kind": "official"
+      },
+      {
+        "title": "Callback javadoc",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/producer/Callback.html#onCompletion%28org.apache.kafka.clients.producer.RecordMetadata,java.lang.Exception%29",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "likely",
+    "source": "original"
+  },
+  {
+    "id": "prod-part-013",
+    "domain": "fundamentals",
+    "topics": [
+      "partitioning-ordering"
+    ],
+    "type": "single",
+    "stem": "In a `Callback.onCompletion(RecordMetadata metadata, Exception exception)` implementation, `exception` is not null. What does the javadoc say about `metadata`?",
+    "options": [
+      {
+        "id": "a",
+        "text": "It contains the special value `-1` for all fields"
+      },
+      {
+        "id": "b",
+        "text": "It is always `null`"
+      },
+      {
+        "id": "c",
+        "text": "It contains the partition and offset the record would have had"
+      },
+      {
+        "id": "d",
+        "text": "It contains the offset of the last successful record in the batch"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The `Callback` javadoc: when the exception is not null, metadata contains the special `-1` value for all fields; if the topic partition couldn't be chosen, `-1` is used. Always check `exception` first, and don't treat the offset as meaningful on failure.",
+    "references": [
+      {
+        "title": "Callback javadoc",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/producer/Callback.html#onCompletion%28org.apache.kafka.clients.producer.RecordMetadata,java.lang.Exception%29",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "prod-part-014",
+    "domain": "fundamentals",
+    "topics": [
+      "partitioning-ordering",
+      "idempotence-retries"
+    ],
+    "type": "single",
+    "stem": "A producer uses all defaults (idempotent, `acks=all`, `max.in.flight.requests.per.connection=5`). Batches B1 and B2 go to the same partition and are in flight together. B1 fails with a retriable error. What ends up in the partition?",
+    "options": [
+      {
+        "id": "a",
+        "text": "B1 then B2, each written once"
+      },
+      {
+        "id": "b",
+        "text": "B2 then B1, because B1 was retried after B2 was written"
+      },
+      {
+        "id": "c",
+        "text": "B1 twice and B2 once"
+      },
+      {
+        "id": "d",
+        "text": "Only B2; B1 is dropped once a later batch succeeds"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The `max.in.flight.requests.per.connection` docs say ordering is preserved if idempotence is enabled, for any allowed value up to 5. The broker tracks each producer's sequence numbers per partition, so it won't write B2 ahead of a gap left by B1; the producer resends in sequence order, and a duplicate resend is dropped.\n\n- Reordering on retry is the risk when idempotence is disabled.\n- Duplicates from retries are what idempotence prevents.\n- Retriable errors are retried, not dropped.",
+    "references": [
+      {
+        "title": "Producer configs: max.in.flight.requests.per.connection",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_max.in.flight.requests.per.connection",
+        "kind": "official"
+      },
+      {
+        "title": "Producer configs: enable.idempotence",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_enable.idempotence",
+        "kind": "official"
+      },
+      {
+        "title": "Design: message delivery semantics",
+        "url": "https://kafka.apache.org/44/design/design/#message-delivery-semantics",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "prod-part-015",
+    "domain": "fundamentals",
+    "topics": [
+      "partitioning-ordering"
+    ],
+    "type": "single",
+    "stem": "With default settings, `partitioner.adaptive.partitioning.enable` is `true`. Which records does it affect, and how?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Records without a key (or when keys are ignored): the producer sends more of them to partitions on faster brokers"
+      },
+      {
+        "id": "b",
+        "text": "Keyed records: hot keys are moved to less loaded partitions"
+      },
+      {
+        "id": "c",
+        "text": "All records: partitions are rebalanced across brokers"
+      },
+      {
+        "id": "d",
+        "text": "Only records sent with a custom partitioner"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "Adaptive partitioning applies to the built-in sticky logic used when no key is used for partitioning. When `true`, the producer adapts to broker performance and sends more messages to partitions hosted on faster brokers; when `false`, it spreads them uniformly. The docs say it has no effect with a custom partitioner.\n\n- Keyed records are always hashed, so a key's partition never moves for load.\n- The producer doesn't move partitions between brokers; that's a cluster operation.\n- Custom partitioners ignore this setting.",
+    "references": [
+      {
+        "title": "Producer configs: partitioner.adaptive.partitioning.enable",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_partitioner.adaptive.partitioning.enable",
+        "kind": "official"
+      },
+      {
+        "title": "Producer configs: partitioner.class",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_partitioner.class",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  }
+]

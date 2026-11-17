@@ -1,0 +1,68 @@
+A topic's partition count sets its parallelism and its ordering scope, and it is the one setting that is hard to fix later: you can add partitions but never remove them, and adding them moves keys. Pick the count, the key and the per-topic overrides up front.
+
+## How it works
+
+**Partitions are the unit of everything.** Each partition is an ordered log stored entirely on one broker (plus its replicas), and each is read by exactly one consumer per consumer group at a time. So:
+
+- The partition count caps a group's parallelism. 6 partitions and 10 consumers leaves 4 consumers idle.
+- Ordering holds within a partition only. Records with the same key go to the same partition (the default partitioner hashes the key modulo the partition count), so per-key order holds.
+- More partitions spread load across more brokers, at the cost of more files, more leaders to elect on failover and more metadata.
+
+**Changing the count.** `kafka-topics.sh --alter --partitions N` only increases. The hash now uses a different modulus, so some keys start landing on a different partition than their history. Kafka does not move existing data. Reducing the count is not supported: create a new topic and migrate.
+
+<Figure caption="Growing from 3 to 4 partitions. Key K hashed to partition 1 before the change and to partition 3 after, so K's records are split and their relative order across partitions is lost.">
+  <svg viewBox="0 0 640 200" role="img" aria-label="Key mapping before and after adding a partition">
+    <text x="150" y="24" textAnchor="middle" fontSize="14" fill="currentColor">before: 3 partitions</text>
+    <rect x="60" y="40" width="180" height="30" fill="none" stroke="currentColor" strokeWidth="1.5" />
+    <text x="150" y="60" textAnchor="middle" fontSize="13" fill="currentColor">P0</text>
+    <rect x="60" y="78" width="180" height="30" fill="none" stroke="currentColor" strokeWidth="1.5" />
+    <text x="150" y="98" textAnchor="middle" fontSize="13" fill="currentColor">P1: K v1, K v2</text>
+    <rect x="60" y="116" width="180" height="30" fill="none" stroke="currentColor" strokeWidth="1.5" />
+    <text x="150" y="136" textAnchor="middle" fontSize="13" fill="currentColor">P2</text>
+    <text x="470" y="24" textAnchor="middle" fontSize="14" fill="currentColor">after: 4 partitions</text>
+    <rect x="380" y="40" width="180" height="30" fill="none" stroke="currentColor" strokeWidth="1.5" />
+    <text x="470" y="60" textAnchor="middle" fontSize="13" fill="currentColor">P0</text>
+    <rect x="380" y="78" width="180" height="30" fill="none" stroke="currentColor" strokeWidth="1.5" />
+    <text x="470" y="98" textAnchor="middle" fontSize="13" fill="currentColor">P1: K v1, K v2 (old)</text>
+    <rect x="380" y="116" width="180" height="30" fill="none" stroke="currentColor" strokeWidth="1.5" />
+    <text x="470" y="136" textAnchor="middle" fontSize="13" fill="currentColor">P2</text>
+    <rect className="accent" x="380" y="154" width="180" height="30" fill="none" stroke="currentColor" strokeWidth="2.5" />
+    <text x="470" y="174" textAnchor="middle" fontSize="13" fill="currentColor">P3: K v3 (new)</text>
+    <line x1="250" y1="93" x2="370" y2="93" stroke="currentColor" strokeWidth="1" strokeDasharray="3 3" />
+    <text x="310" y="85" textAnchor="middle" fontSize="13" fill="currentColor">--alter</text>
+  </svg>
+</Figure>
+
+**Auto-creation.** `auto.create.topics.enable` defaults to `true`. A topic created by a first produce gets `num.partitions` (default 1) partitions and `default.replication.factor` (default 1). Most teams create topics explicitly with `kafka-topics.sh` or `Admin.createTopics()` instead.
+
+**Per-topic overrides.** Topic configs (`retention.ms`, `cleanup.policy`, `min.insync.replicas`, `max.message.bytes` and so on) override the broker's `log.*` defaults for that topic only. Set them at creation with `--config` or later with `kafka-configs.sh --alter --add-config`.
+
+**Message size.** `max.message.bytes` (topic, default 1048588) and `message.max.bytes` (broker) cap a record **batch** after compression. The producer's `max.request.size` (default 1048576) caps the request. To send bigger records, raise the topic limit and `max.request.size`. Consumer `max.partition.fetch.bytes` and follower `replica.fetch.max.bytes` are soft limits: a batch larger than them is still returned so progress is possible.
+
+## Gotchas the exam loves
+
+- Partitions can be increased, never decreased.
+- Adding partitions changes key-to-partition mapping for new records only; old records stay put.
+- Consumers with `auto.offset.reset=latest` can miss records written to new partitions before they discover them.
+- Never add partitions to internal topics such as `__consumer_offsets` or `__transaction_state`.
+- Replication factor can't exceed the broker count. Changing it later is a partition reassignment, not a config change.
+- Topic names are limited to 249 characters.
+- Same key, same partition, as long as the partition count doesn't change and the partitioner is the default.
+- `max.message.bytes` is about batches after compression; `max.request.size` is the producer's own cap on uncompressed batch size.
+
+## Java sample
+
+```java
+try (Admin admin = Admin.create(Map.of("bootstrap.servers", "localhost:9092"))) {
+    // Create with headroom: keyed topics should not need more partitions later.
+    admin.createTopics(List.of(
+        new NewTopic("payments", 12, (short) 3)
+            .configs(Map.of("max.message.bytes", "2097152"))
+    )).all().get();
+
+    // Increasing is possible, but it remaps keys for new records.
+    admin.createPartitions(Map.of("payments", NewPartitions.increaseTo(16))).all().get();
+}
+```
+
+Details: [Modifying topics](https://kafka.apache.org/44/operations/basic-kafka-operations/#modifying-topics).

@@ -1,0 +1,246 @@
+[
+  {
+    "id": "conn-cdc-001",
+    "domain": "connect",
+    "topics": ["connect-cdc", "connect-architecture"],
+    "type": "single",
+    "stem": "A team wants every `INSERT`, `UPDATE` and `DELETE` committed to an `orders` table to show up as events in a Kafka topic within seconds. They can't change the application that writes to the database. What should they use?",
+    "options": [
+      { "id": "a", "text": "A change data capture (CDC) **source** connector, which tracks changes in the database and writes them to Kafka" },
+      { "id": "b", "text": "A **sink** connector that reads the `orders` table into Kafka" },
+      { "id": "c", "text": "A nightly batch export of the whole table into a Kafka topic" },
+      { "id": "d", "text": "A Kafka Streams application that subscribes directly to the database table" }
+    ],
+    "correct": ["a"],
+    "explanation": "Change data capture tracks the changes made in a source database and passes them on to other systems, without touching the application that writes the data. In Kafka Connect, getting data **into** Kafka is the job of a **source** connector.\n\n- A sink connector does the opposite: it writes from Kafka topics to an external system.\n- A nightly batch export is the batch replication that CDC replaces. It isn't within seconds, and it doesn't show the individual changes.\n- Kafka Streams reads from and writes to Kafka topics. It can't subscribe to a database table.",
+    "references": [
+      { "title": "Confluent: What is change data capture? How does it work?", "url": "https://www.confluent.io/learn/change-data-capture/#how-does-change-data-capture-work", "kind": "official" },
+      { "title": "Confluent docs: Kafka Connect connectors", "url": "https://docs.confluent.io/platform/current/connect/index.html#connectors", "kind": "official" }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "conn-cdc-002",
+    "domain": "connect",
+    "topics": ["connect-cdc"],
+    "type": "multi",
+    "stem": "A source connector polls a `customers` table every 10 seconds with a query like `WHERE last_modified > ?`. It keeps the last timestamp it saw as its offset. The application removes rows with a hard `DELETE`. Which changes will this connector fail to deliver to Kafka? (Choose two.)",
+    "options": [
+      { "id": "a", "text": "A row that is deleted" },
+      { "id": "b", "text": "The intermediate states of a row that is updated three times between two polls" },
+      { "id": "c", "text": "A new row inserted with `last_modified` set to the insert time" },
+      { "id": "d", "text": "The latest state of a row that is updated three times between two polls" },
+      { "id": "e", "text": "An update that also sets `last_modified` to the current time" }
+    ],
+    "correct": ["a", "b"],
+    "explanation": "This is **query-based** (polling) CDC: a query with a predicate on a timestamp or incrementing column pulls the rows that changed since the last poll.\n\n- A hard-deleted row no longer exists, so no query can return it. Query-based CDC can only see soft deletes, such as a flag column.\n- A query only sees the current state of a row. If the row changed three times between polls, the next poll returns only the last version, so the intermediate states are lost.\n\nNew rows and updates that set `last_modified` match the predicate, so they are captured. The latest state of a row that changed several times is captured too.\n\nLog-based CDC reads the database's transaction log instead, so it sees every insert, update and delete.",
+    "references": [
+      { "title": "Confluent Developer: Query-based CDC", "url": "https://developer.confluent.io/courses/data-pipelines/kafka-data-ingestion-with-cdc/#query-based-cdc", "kind": "official" },
+      { "title": "Confluent: Change data capture patterns and methods", "url": "https://www.confluent.io/learn/change-data-capture/#change-data-capture-patterns-and-methods", "kind": "official" }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "conn-cdc-003",
+    "domain": "connect",
+    "topics": ["connect-cdc"],
+    "type": "single",
+    "stem": "Match each change data capture method to what it does.\n\nMethods:\n1. Query-based (timestamp or incrementing column)\n2. Log-based (transaction log)\n3. Trigger-based (shadow table)\n\nBehaviour:\n- W: reads the database's redo log or binlog, sees inserts, updates and deletes, and adds little load to the source database\n- X: polls with a query predicate, can't see hard deletes, and misses changes made between polls\n- Y: captures every type of change, but each write to the table costs extra writes inside the database\n\nWhich pairing is correct?",
+    "options": [
+      { "id": "a", "text": "1-X, 2-W, 3-Y" },
+      { "id": "b", "text": "1-W, 2-X, 3-Y" },
+      { "id": "c", "text": "1-X, 2-Y, 3-W" },
+      { "id": "d", "text": "1-Y, 2-W, 3-X" }
+    ],
+    "correct": ["a"],
+    "explanation": "- **Query-based** CDC runs a query with a predicate on a timestamp or incrementing ID. It can't see hard deletes, it misses intermediate changes between polls, and every poll adds load to the source database.\n- **Log-based** CDC reads the transaction log (redo log, binlog). It sees every insert, update and delete, has lower latency, and adds no query load to the source. The cost is a database-specific log format and more setup.\n- **Trigger-based** CDC uses database triggers to copy each change into a shadow table. It sees every type of change, but each write costs extra writes, which slows the source database.",
+    "references": [
+      { "title": "Confluent: Change data capture patterns and methods", "url": "https://www.confluent.io/learn/change-data-capture/#change-data-capture-patterns-and-methods", "kind": "official" },
+      { "title": "Confluent Developer: Log-based CDC", "url": "https://developer.confluent.io/courses/data-pipelines/kafka-data-ingestion-with-cdc/#log-based-cdc", "kind": "official" }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "conn-cdc-004",
+    "domain": "connect",
+    "topics": ["connect-cdc", "partitioning-ordering"],
+    "type": "single",
+    "stem": "A CDC source connector writes change events for an `accounts` table to a topic with 12 partitions. Each event's key is the row's primary key, and the default partitioner is used. A consumer must apply each account's changes in the order they were committed. Which statement is correct?",
+    "options": [
+      { "id": "a", "text": "All events for one account go to the same partition, so the consumer reads them in the order they were written. There is no ordering guarantee across different accounts." },
+      { "id": "b", "text": "Kafka orders events across all 12 partitions by timestamp, so every account's changes arrive in order." },
+      { "id": "c", "text": "Per-row ordering is only possible if the topic has a single partition." },
+      { "id": "d", "text": "One account's events are spread round-robin over the partitions, so the consumer must sort them by commit time." }
+    ],
+    "correct": ["a"],
+    "explanation": "Events with the same key are written to the same partition, and Kafka guarantees that a consumer reads a partition's events in the order they were written. Keying change events by primary key therefore keeps all changes to one row in commit order.\n\n- Kafka gives no ordering across partitions, so there is no order between different accounts. CDC doesn't need one.\n- A single partition isn't needed for per-key order, and it would remove all parallelism.\n- The default partitioner only spreads records without a key. Keyed records are hashed to a partition.\n\nIf you later add partitions, keys can map to a different partition, and the order of changes made around that time is no longer guaranteed.",
+    "references": [
+      { "title": "Apache Kafka: Main concepts and terminology", "url": "https://kafka.apache.org/44/getting-started/introduction/#main-concepts-and-terminology", "kind": "official" }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "conn-cdc-005",
+    "domain": "connect",
+    "topics": ["connect-cdc", "log-retention-compaction"],
+    "type": "single",
+    "stem": "A log-based CDC connector writes to a compacted topic. For each `DELETE`, it writes two records keyed by the row's primary key. The first is a delete event whose value describes the deleted row. The second has a `null` value. Why does it write the second record?",
+    "options": [
+      { "id": "a", "text": "The `null`-value record is a tombstone. It lets log compaction remove the earlier records for that key, which the delete event alone can't do because its value isn't `null`." },
+      { "id": "b", "text": "It tells the sink connector to commit its consumer offsets." },
+      { "id": "c", "text": "Kafka can't store a record that describes a deleted row, so the `null` record replaces it." },
+      { "id": "d", "text": "It marks the end of the database transaction that contained the delete." }
+    ],
+    "correct": ["a"],
+    "explanation": "On a compacted topic, a record with a key and a `null` value is a **tombstone**. It causes earlier records with the same key to be removed, and the tombstone itself is cleaned up after `delete.retention.ms`.\n\nThe delete event has a non-`null` value, so compaction would treat it as the key's latest value and keep it for good. Writing the tombstone after it lets the key disappear from the topic, while consumers that are caught up still get the delete event with the old row.\n\n- Sink connectors commit offsets on their own schedule, not when a special record arrives.\n- Kafka can store any value, including one that describes a deleted row.\n- Kafka doesn't mark the end of a database transaction with a `null` record.",
+    "references": [
+      { "title": "Apache Kafka design: Log compaction basics", "url": "https://kafka.apache.org/44/design/design/#log-compaction-basics", "kind": "official" }
+    ],
+    "difficulty": 3,
+    "confidence": "likely",
+    "source": "original"
+  },
+  {
+    "id": "conn-cdc-006",
+    "domain": "connect",
+    "topics": ["connect-cdc", "log-retention-compaction"],
+    "type": "multi",
+    "stem": "A team keeps the CDC topic for a `products` table with `cleanup.policy=compact` and otherwise default topic settings. Which statements are correct? (Choose two.)",
+    "options": [
+      { "id": "a", "text": "A new consumer reading from the beginning sees at least the latest change for every product key, so it can rebuild the current table, and the topic doesn't grow with every update forever." },
+      { "id": "b", "text": "A consumer that needs more than `delete.retention.ms` (default 1 day) to read from the beginning to the head can miss tombstones, and so never learn that some rows were deleted." },
+      { "id": "c", "text": "Compaction reorders records so that the latest value for each key comes first." },
+      { "id": "d", "text": "Compaction guarantees that the topic holds exactly one record per key at all times." },
+      { "id": "e", "text": "Compaction gives the records it keeps new, consecutive offsets." }
+    ],
+    "correct": ["a", "b"],
+    "explanation": "Log compaction keeps **at least** the last value for each key. That's why CDC topics are often compacted: the topic holds a full snapshot of the latest state of every row, so a new consumer can rebuild the table, and the topic doesn't grow without bound.\n\nTombstones are kept for `delete.retention.ms` (default 86400000 ms, one day). A consumer that starts at offset 0 and takes longer than that to reach the head can miss a tombstone, and never see that the row was deleted.\n\n- Compaction never reorders records; it only removes some.\n- The head of the log isn't compacted yet, so a key can have several records there.\n- Offsets never change. A removed record leaves a gap in the offsets.",
+    "references": [
+      { "title": "Apache Kafka design: What guarantees does log compaction provide?", "url": "https://kafka.apache.org/44/design/design/#what-guarantees-does-log-compaction-provide", "kind": "official" },
+      { "title": "Topic configs: delete.retention.ms", "url": "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_delete.retention.ms", "kind": "official" }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "conn-cdc-007",
+    "domain": "connect",
+    "topics": ["connect-cdc"],
+    "type": "single",
+    "stem": "A log-based CDC source connector is created for a `customers` table that already holds 2 million rows. The database keeps only a few days of transaction log. How does such a connector usually get the existing rows into Kafka?",
+    "options": [
+      { "id": "a", "text": "It first takes a snapshot of the existing rows, then streams the changes made after that from the transaction log." },
+      { "id": "b", "text": "It replays the transaction log from the beginning, which recreates every row." },
+      { "id": "c", "text": "It only captures changes made after it starts; existing rows must be loaded by a sink connector." },
+      { "id": "d", "text": "It copies the table's data files into the topic once a day." }
+    ],
+    "correct": ["a"],
+    "explanation": "Log-based CDC connectors take a **snapshot** of the existing data when they start, and then monitor and record every later row-level change from the log. Snapshot plus CDC captures what is already in the database as well as the changes that follow.\n\n- The log keeps only a few days, so replaying it can't recreate rows written before that.\n- A sink connector writes **from** Kafka to another system, so it can't load rows into Kafka.\n- Copying data files once a day is batch replication, not CDC.",
+    "references": [
+      { "title": "Confluent: Change data capture and Apache Kafka", "url": "https://www.confluent.io/learn/change-data-capture/#change-data-capture-and-apache-kafka", "kind": "official" },
+      { "title": "Confluent Developer: Ingest data with CDC", "url": "https://developer.confluent.io/courses/data-pipelines/kafka-data-ingestion-with-cdc/#ingest-data-from-databases-into-kafka-with-change-data-capture-cdc", "kind": "official" }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "conn-cdc-008",
+    "domain": "connect",
+    "topics": ["connect-cdc", "connect-architecture"],
+    "type": "single",
+    "stem": "A CDC source connector runs on a distributed Connect cluster with `exactly.once.source.support=disabled` and `offset.flush.interval.ms=60000` (the default). A worker crashes 40 seconds after its last offset commit, and the connector's task restarts on another worker. What happens?",
+    "options": [
+      { "id": "a", "text": "The task reads its last committed source offset (a position in the database log) from the offsets topic and resumes there. The changes from the last 40 seconds are written to Kafka again: duplicates, but no loss." },
+      { "id": "b", "text": "The task resumes right after the last record written to Kafka, so there are no duplicates and no gaps." },
+      { "id": "c", "text": "The changes from the last 40 seconds are lost, because the task resumes from the current end of the database log." },
+      { "id": "d", "text": "The task takes a new full snapshot, because the source offsets were stored on the crashed worker's disk." }
+    ],
+    "correct": ["a"],
+    "explanation": "Each source record carries a source partition and a source offset; for CDC that offset is a position in the database's log. The framework commits these offsets periodically, every `offset.flush.interval.ms` (default 60000 ms). In distributed mode they go to the topic named by `offset.storage.topic`.\n\nAfter a failure, the restarted task reads the last committed offset and seeks back to it. Anything captured after that commit is captured and written again. Without exactly-once source support, this gives **at-least-once** delivery.\n\n- Records written after the last commit aren't recorded as done, so the task can't resume after them.\n- The task resumes from the committed offset, not from the end of the log, so nothing is lost.\n- In distributed mode, offsets live in a Kafka topic, not on a worker's disk.",
+    "references": [
+      { "title": "Connector development guide: Resuming from previous offsets", "url": "https://kafka.apache.org/44/kafka-connect/connector-development-guide/#resuming-from-previous-offsets", "kind": "official" },
+      { "title": "Connect configs: offset.flush.interval.ms", "url": "https://kafka.apache.org/44/configuration/kafka-connect-configs/#connectconfigs_offset.flush.interval.ms", "kind": "official" }
+    ],
+    "difficulty": 3,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "conn-cdc-009",
+    "domain": "connect",
+    "topics": ["connect-cdc", "connect-converters-errors"],
+    "type": "single",
+    "stem": "A pipeline copies changes from an `orders` table to a search index through Kafka. These are its steps, out of order:\n\n1. A sink connector reads the topic and upserts the document with that key in the search index.\n2. The application commits an `UPDATE`, and the database writes it to its transaction log.\n3. The worker's converter serializes the change event, and the record is written to the Kafka topic.\n4. The CDC source connector reads the log entry and builds a change event keyed by the row's primary key.\n\nWhich order is correct?",
+    "options": [
+      { "id": "a", "text": "2 → 4 → 3 → 1" },
+      { "id": "b", "text": "2 → 3 → 4 → 1" },
+      { "id": "c", "text": "4 → 2 → 3 → 1" },
+      { "id": "d", "text": "2 → 4 → 1 → 3" }
+    ],
+    "correct": ["a"],
+    "explanation": "The database records the change in its log first. The log-based **source** connector then reads that entry and builds a change event. On the source path, the converter turns the event into bytes before it is written to Kafka. Finally, a **sink** connector reads the topic and applies the change to the target system.\n\n- The converter can't serialize an event the connector hasn't built yet.\n- The connector can't read a log entry before the database has written it.\n- The sink can't read the record before it is in the topic.",
+    "references": [
+      { "title": "Confluent docs: Kafka Connect converters", "url": "https://docs.confluent.io/platform/current/connect/index.html#converters", "kind": "official" },
+      { "title": "Confluent Developer: Log-based CDC", "url": "https://developer.confluent.io/courses/data-pipelines/kafka-data-ingestion-with-cdc/#log-based-cdc", "kind": "official" }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "conn-cdc-010",
+    "domain": "connect",
+    "topics": ["connect-cdc", "transactions-eos"],
+    "type": "multi",
+    "stem": "A CDC source connector that supports exactly-once runs on a new distributed Connect cluster. You want three things:\n\n- each change written to Kafka exactly once, even when workers crash\n- connector creation to fail if exactly-once can't be provided\n- downstream consumers never to see records from aborted transactions\n\nWhich settings do you use? (Choose three.)",
+    "options": [
+      { "id": "a", "text": "`exactly.once.source.support=enabled` on every worker" },
+      { "id": "b", "text": "`exactly.once.support=required` in the connector configuration" },
+      { "id": "c", "text": "`isolation.level=read_committed` on the downstream consumers" },
+      { "id": "d", "text": "`exactly.once.source.support=enabled` on a standalone worker instead of a distributed cluster" },
+      { "id": "e", "text": "`errors.tolerance=all` in the connector configuration" }
+    ],
+    "correct": ["a", "b", "c"],
+    "explanation": "Exactly-once source support (KIP-618, Kafka 3.3+):\n\n- **Worker:** `exactly.once.source.support` defaults to `disabled`. Set it to `enabled` on every worker of a new cluster. On an existing cluster, roll through `preparing` first, then `enabled`. Connect then writes source records and their source offsets in one transaction.\n- **Connector:** `exactly.once.support` defaults to `requested`. With `required`, Connect runs a preflight check and creating or validating the connector fails if exactly-once can't be provided.\n- **Consumers:** `isolation.level` defaults to `read_uncommitted`, which also returns records from aborted transactions. Use `read_committed`.\n\nExactly-once source support is only available in **distributed** mode; standalone workers can't provide it. `errors.tolerance=all` only skips bad records and has nothing to do with exactly-once.",
+    "references": [
+      { "title": "Connect user guide: Exactly-once support for source connectors", "url": "https://kafka.apache.org/44/kafka-connect/user-guide/#source-connectors", "kind": "official" },
+      { "title": "Connect configs: exactly.once.source.support", "url": "https://kafka.apache.org/44/configuration/kafka-connect-configs/#connectconfigs_exactly.once.source.support", "kind": "official" },
+      { "title": "Source connector configs: exactly.once.support", "url": "https://kafka.apache.org/44/configuration/kafka-connect-configs/#sourceconnectorconfigs_exactly.once.support", "kind": "official" },
+      { "title": "Consumer configs: isolation.level", "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_isolation.level", "kind": "official" }
+    ],
+    "difficulty": 3,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "conn-cdc-011",
+    "domain": "connect",
+    "topics": ["connect-cdc"],
+    "type": "single",
+    "stem": "A sink connector copies CDC events for a `customers` table (key = customer ID) into a reporting database. Delivery is at-least-once, so after a task restart some events are delivered again. How should the sink apply the events so the target table stays correct?",
+    "options": [
+      { "id": "a", "text": "Upsert by key: insert or overwrite the row identified by the record key, and delete that row when a tombstone arrives." },
+      { "id": "b", "text": "Insert every event as a new row, so that no change is ever lost." },
+      { "id": "c", "text": "Set `errors.tolerance=all` so that duplicate events are skipped." },
+      { "id": "d", "text": "Set `consumer.override.isolation.level=read_committed` so that redelivered records are filtered out." }
+    ],
+    "correct": ["a"],
+    "explanation": "With at-least-once delivery, a consumer may process some records again after a failure. When records have a primary key, the writes can be made idempotent: receiving the same record twice just overwrites the row with another copy of itself. Upserting by the record key, and deleting on a tombstone, gives that.\n\n- Plain inserts turn every redelivered event into a duplicate row.\n- `errors.tolerance=all` skips records that fail conversion or transformation. A duplicate isn't an error.\n- `read_committed` hides records from aborted transactions. It doesn't stop a sink from receiving records again after it restarts from its last committed offset.",
+    "references": [
+      { "title": "Apache Kafka design: Message delivery semantics", "url": "https://kafka.apache.org/44/design/design/#message-delivery-semantics", "kind": "official" }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  }
+]

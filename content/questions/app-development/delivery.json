@@ -1,0 +1,1523 @@
+[
+  {
+    "id": "eos-semantics-001",
+    "domain": "app-development",
+    "topics": [
+      "transactions-eos"
+    ],
+    "type": "single",
+    "stem": "A consumer calls `commitSync()` as soon as `poll()` returns, and only then processes the records. The process crashes after the commit but before processing finishes. Which delivery semantics does this ordering give the records in that batch?",
+    "options": [
+      {
+        "id": "a",
+        "text": "At-most-once: the unprocessed records are skipped by whichever consumer takes over"
+      },
+      {
+        "id": "b",
+        "text": "At-least-once: the records are redelivered to whichever consumer takes over"
+      },
+      {
+        "id": "c",
+        "text": "Exactly-once: the commit and the processing are atomic"
+      },
+      {
+        "id": "d",
+        "text": "No guarantee at all: the committed offset is discarded when the consumer crashes"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "Committing **before** processing is the textbook at-most-once ordering. The design docs describe it as: read the messages, save the position, then process. If the process crashes after saving the position but before the output is saved, the next owner of the partition starts at the saved position, so those records are never processed.\n\n- At-least-once is the opposite ordering: process first, then commit.\n- Exactly-once needs the output and the offset to be committed atomically, for example with a transactional producer and `sendOffsetsToTransaction`. A plain `commitSync()` is not atomic with anything.\n- A committed offset survives a consumer crash. It is stored in the `__consumer_offsets` topic, not in the consumer process.",
+    "references": [
+      {
+        "title": "Kafka design: Message delivery semantics",
+        "url": "https://kafka.apache.org/44/design/design/#message-delivery-semantics",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "eos-semantics-002",
+    "domain": "app-development",
+    "topics": [
+      "transactions-eos"
+    ],
+    "type": "single",
+    "stem": "A consumer processes each batch completely (writing results to a database) and then calls `commitSync()`. It crashes after the database writes but before `commitSync()` returns. What happens when another group member takes over the partition?",
+    "options": [
+      {
+        "id": "a",
+        "text": "It starts after the last processed record, because the database write acts as the commit"
+      },
+      {
+        "id": "b",
+        "text": "It re-reads and re-processes the records whose offsets were not committed, so the database may receive duplicates"
+      },
+      {
+        "id": "c",
+        "text": "It skips the whole batch because the batch was already fetched once"
+      },
+      {
+        "id": "d",
+        "text": "It waits for `transaction.timeout.ms` before it can fetch from the partition"
+      }
+    ],
+    "correct": [
+      "b"
+    ],
+    "explanation": "Process-then-commit is **at-least-once**. The design docs: the consumer can crash after processing but before saving its position, and the process that takes over will receive the first few messages again. Nothing is lost, but some records are processed twice. The docs note that this is often fine when updates are idempotent, for example keyed upserts.\n\n- Writing to a database does not commit Kafka offsets.\n- Fetching a record does not mark it consumed; only the committed offset matters.\n- `transaction.timeout.ms` is a transactional producer setting and plays no part here.",
+    "references": [
+      {
+        "title": "Kafka design: Message delivery semantics",
+        "url": "https://kafka.apache.org/44/design/design/#message-delivery-semantics",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "eos-semantics-003",
+    "domain": "app-development",
+    "topics": [
+      "transactions-eos"
+    ],
+    "type": "multi",
+    "stem": "According to the Apache Kafka design documentation, which two changes let an application implement **at-most-once** delivery? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "Disable retries on the producer"
+      },
+      {
+        "id": "b",
+        "text": "Commit consumer offsets before processing each batch"
+      },
+      {
+        "id": "c",
+        "text": "Set `isolation.level=read_committed` on the consumer"
+      },
+      {
+        "id": "d",
+        "text": "Set `enable.idempotence=true` on the producer"
+      },
+      {
+        "id": "e",
+        "text": "Commit consumer offsets only after processing each batch"
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "The design docs say Kafka gives at-least-once by default and \"allows the user to implement at-most-once delivery by disabling retries on the producer and committing offsets in the consumer prior to processing a batch of messages.\"\n\n- With no retries, a send that fails is not resent, so it may be lost but is never duplicated.\n- Committing before processing means a crash skips records rather than replaying them.\n- `read_committed` only hides aborted and still-open transactional records. It does not change the delivery semantics of the commit ordering.\n- Idempotence prevents duplicates from retries. It is part of exactly-once, not at-most-once.\n- Committing after processing is at-least-once.",
+    "references": [
+      {
+        "title": "Kafka design: Message delivery semantics",
+        "url": "https://kafka.apache.org/44/design/design/#message-delivery-semantics",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "eos-semantics-004",
+    "domain": "app-development",
+    "topics": [
+      "transactions-eos"
+    ],
+    "type": "single",
+    "stem": "An application uses a producer and a consumer with no special delivery settings beyond the client defaults, and commits offsets after processing. If nothing extra is configured, what delivery guarantee does Kafka describe as its default?",
+    "options": [
+      {
+        "id": "a",
+        "text": "At-most-once"
+      },
+      {
+        "id": "b",
+        "text": "At-least-once"
+      },
+      {
+        "id": "c",
+        "text": "Exactly-once, because `enable.idempotence` defaults to `true`"
+      },
+      {
+        "id": "d",
+        "text": "Exactly-once, because `isolation.level` defaults to `read_committed`"
+      }
+    ],
+    "correct": [
+      "b"
+    ],
+    "explanation": "The design docs end the delivery-semantics section with: \"Otherwise, Kafka guarantees at-least-once delivery by default.\"\n\n- Idempotence (default `true` since 3.0) removes duplicates caused by producer retries within one producer session, but it does not make the consumer's processing and offset commit atomic. End-to-end exactly-once needs transactions (or Kafka Streams with `exactly_once_v2`).\n- `isolation.level` defaults to `read_uncommitted`, not `read_committed`.",
+    "references": [
+      {
+        "title": "Kafka design: Message delivery semantics",
+        "url": "https://kafka.apache.org/44/design/design/#message-delivery-semantics",
+        "kind": "official"
+      },
+      {
+        "title": "Consumer configs: isolation.level",
+        "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_isolation.level",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "eos-semantics-005",
+    "domain": "app-development",
+    "topics": [
+      "transactions-eos"
+    ],
+    "type": "single",
+    "stem": "A consumer with `enable.auto.commit=true` (the default) appends each record returned by `poll()` to an in-memory buffer and writes the buffer to a database once it holds 200 records. The process crashes while the buffer holds 150 records that were returned by earlier polls. What is the risk?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Those 150 records may never be written to the database, because their offsets may already have been auto-committed"
+      },
+      {
+        "id": "b",
+        "text": "Those 150 records are guaranteed to be redelivered, because auto-commit only commits offsets that were written to the database"
+      },
+      {
+        "id": "c",
+        "text": "The group is rebalanced and the 150 records are written twice by the new owner"
+      },
+      {
+        "id": "d",
+        "text": "Nothing: auto-commit is disabled automatically when records are buffered"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The KafkaConsumer Javadoc uses exactly this example. With auto-commit, records are considered consumed once they are returned by `poll()`; offsets are committed in the background every `auto.commit.interval.ms` (default 5000 ms). It \"would then be possible for our process to fail after batching the records, but before they had been inserted into the database.\" Those records are lost: at-most-once behaviour.\n\nThe fix in the Javadoc is `enable.auto.commit=false` and calling `commitSync()` only after the database insert, which moves the risk to duplicates (at-least-once) instead of loss.\n\n- Auto-commit knows nothing about the database.\n- The client never disables auto-commit on its own.",
+    "references": [
+      {
+        "title": "KafkaConsumer Javadoc: Manual offset control",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html#manual-offset-control-heading",
+        "kind": "official"
+      },
+      {
+        "title": "Consumer configs: enable.auto.commit",
+        "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_enable.auto.commit",
+        "kind": "official"
+      },
+      {
+        "title": "Consumer configs: auto.commit.interval.ms",
+        "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_auto.commit.interval.ms",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "eos-idem-006",
+    "domain": "app-development",
+    "topics": [
+      "transactions-eos"
+    ],
+    "type": "single",
+    "stem": "A producer runs with `enable.idempotence=true`. When `send()` fails with a `TimeoutException`, the application's error handler calls `send()` again with the same record. Can this create a duplicate in the topic?",
+    "options": [
+      {
+        "id": "a",
+        "text": "No. The broker deduplicates every record with the same key and value"
+      },
+      {
+        "id": "b",
+        "text": "No. Idempotence deduplicates any resend from the same `KafkaProducer` instance"
+      },
+      {
+        "id": "c",
+        "text": "Yes. Idempotence only deduplicates the producer's own internal retries, not application-level resends"
+      },
+      {
+        "id": "d",
+        "text": "Yes, but only when `acks=1`"
+      }
+    ],
+    "correct": [
+      "c"
+    ],
+    "explanation": "The idempotent producer gives each producer an ID and attaches a sequence number to each batch; the broker uses these to drop duplicates caused by the producer's **internal** retries. A second `send()` call by the application is a new record with a new sequence number, so the broker treats it as new data.\n\nThe KafkaProducer Javadoc says: \"it is imperative to avoid application level re-sends since these cannot be de-duplicated\", and adds that idempotence only holds within a single producer session.\n\n- Kafka never deduplicates by key or value.\n- Idempotence requires `acks=all`; with conflicting settings and idempotence not set explicitly, it is turned off. The duplicate risk here does not depend on `acks`.",
+    "references": [
+      {
+        "title": "KafkaProducer Javadoc: class description",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/producer/KafkaProducer.html#class-description",
+        "kind": "official"
+      },
+      {
+        "title": "Kafka design: Message delivery semantics",
+        "url": "https://kafka.apache.org/44/design/design/#message-delivery-semantics",
+        "kind": "official"
+      },
+      {
+        "title": "Producer configs: enable.idempotence",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_enable.idempotence",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "eos-txn-007",
+    "domain": "app-development",
+    "topics": [
+      "transactions-eos"
+    ],
+    "type": "single",
+    "stem": "Which single producer configuration must be set before an application can call `initTransactions()`, `beginTransaction()` and `commitTransaction()`?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`enable.idempotence=true`"
+      },
+      {
+        "id": "b",
+        "text": "`transactional.id`"
+      },
+      {
+        "id": "c",
+        "text": "`isolation.level=read_committed`"
+      },
+      {
+        "id": "d",
+        "text": "`acks=all`"
+      }
+    ],
+    "correct": [
+      "b"
+    ],
+    "explanation": "`transactional.id` has no default (`null`), and the docs say that without it \"transactions cannot be used\" and the producer is limited to idempotent delivery. `initTransactions()` throws `IllegalStateException` if no `transactional.id` is configured.\n\n- Setting `transactional.id` implies `enable.idempotence` (and the configs idempotence needs, such as `acks=all`), but idempotence alone does not enable the transactional API.\n- `isolation.level` is a **consumer** setting.",
+    "references": [
+      {
+        "title": "Producer configs: transactional.id",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_transactional.id",
+        "kind": "official"
+      },
+      {
+        "title": "KafkaProducer Javadoc: initTransactions()",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/producer/KafkaProducer.html#initTransactions%28%29",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "eos-txn-008",
+    "domain": "app-development",
+    "topics": [
+      "transactions-eos"
+    ],
+    "type": "single",
+    "stem": "A consume-transform-produce application uses one transactional producer. Which call order is correct for each batch, assuming the producer has just been constructed?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`beginTransaction()` once at startup, then per batch: `send()`, `commitTransaction()`, `initTransactions()`"
+      },
+      {
+        "id": "b",
+        "text": "`initTransactions()` once at startup, then per batch: `beginTransaction()`, `send()`, `sendOffsetsToTransaction()`, `commitTransaction()`"
+      },
+      {
+        "id": "c",
+        "text": "`initTransactions()` per batch, then `send()`, `commitTransaction()`, `sendOffsetsToTransaction()`"
+      },
+      {
+        "id": "d",
+        "text": "`initTransactions()` once at startup, then per batch: `send()`, `beginTransaction()`, `commitTransaction()`, `sendOffsetsToTransaction()`"
+      }
+    ],
+    "correct": [
+      "b"
+    ],
+    "explanation": "`initTransactions()` \"needs to be called before any other methods when the `transactional.id` is set\", and only once: after it succeeds \"this method should no longer be used\". Each transaction then starts with `beginTransaction()`. The offsets of the consumed input are added with `sendOffsetsToTransaction()` **before** `commitTransaction()`, so they commit or abort together with the output.\n\n- Calling `sendOffsetsToTransaction()` after commit would put the offsets in a different (or no) transaction, which throws `IllegalStateException` if no transaction has been started.\n- `send()` before `beginTransaction()` is not allowed for a transactional producer: when `transactional.id` is set, all messages must be part of a transaction.",
+    "references": [
+      {
+        "title": "KafkaProducer Javadoc: initTransactions()",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/producer/KafkaProducer.html#initTransactions%28%29",
+        "kind": "official"
+      },
+      {
+        "title": "KafkaProducer Javadoc: sendOffsetsToTransaction()",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/producer/KafkaProducer.html#sendOffsetsToTransaction%28java.util.Map,org.apache.kafka.clients.consumer.ConsumerGroupMetadata%29",
+        "kind": "official"
+      },
+      {
+        "title": "Kafka design: Using transactions",
+        "url": "https://kafka.apache.org/44/design/design/#using-transactions",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "eos-txn-009",
+    "domain": "app-development",
+    "topics": [
+      "transactions-eos"
+    ],
+    "type": "single",
+    "stem": "A developer sets `transactional.id` on a producer and calls `beginTransaction()` straight after constructing it, without calling `initTransactions()`. What happens?",
+    "options": [
+      {
+        "id": "a",
+        "text": "The producer calls `initTransactions()` implicitly and the transaction starts"
+      },
+      {
+        "id": "b",
+        "text": "`beginTransaction()` throws `IllegalStateException`"
+      },
+      {
+        "id": "c",
+        "text": "`beginTransaction()` throws `ProducerFencedException`"
+      },
+      {
+        "id": "d",
+        "text": "The transaction starts, but it will be aborted after `transaction.timeout.ms`"
+      }
+    ],
+    "correct": [
+      "b"
+    ],
+    "explanation": "The Javadoc for `beginTransaction()`: \"prior to the first invocation of this method, you must invoke `initTransactions()` exactly one time\", and it throws `IllegalStateException` \"if no transactional.id has been configured or if initTransactions() has not yet been invoked\".\n\n- There is no implicit initialisation.\n- `ProducerFencedException` means another producer with the same `transactional.id` is active, which has nothing to do with the missing call.",
+    "references": [
+      {
+        "title": "KafkaProducer Javadoc: beginTransaction()",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/producer/KafkaProducer.html#beginTransaction%28%29",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "eos-txn-010",
+    "domain": "app-development",
+    "topics": [
+      "transactions-eos"
+    ],
+    "type": "multi",
+    "stem": "What does `KafkaProducer.initTransactions()` do? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "Completes or aborts any transaction left open by a previous producer instance with the same `transactional.id`"
+      },
+      {
+        "id": "b",
+        "text": "Obtains the internal producer id and epoch used for all later transactional messages"
+      },
+      {
+        "id": "c",
+        "text": "Creates the output topics that the transaction will write to"
+      },
+      {
+        "id": "d",
+        "text": "Switches every consumer of the output topics to `read_committed`"
+      },
+      {
+        "id": "e",
+        "text": "Commits the consumer group's current offsets"
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "From the Javadoc, `initTransactions()`:\n\n1. \"Ensures any transactions initiated by previous instances of the producer with the same `transactional.id` are completed. If the previous instance had failed with a transaction in progress, it will be aborted.\"\n2. \"Gets the internal producer id and epoch, used in all future transactional messages issued by the producer.\"\n\nThe epoch bump in step 2 is what fences older instances (zombies).\n\n- It creates no topics.\n- Consumers choose their own `isolation.level`; the producer cannot change it.\n- Offsets are added to a transaction with `sendOffsetsToTransaction()`, not here.",
+    "references": [
+      {
+        "title": "KafkaProducer Javadoc: initTransactions()",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/producer/KafkaProducer.html#initTransactions%28%29",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "eos-fence-011",
+    "domain": "app-development",
+    "topics": [
+      "transactions-eos"
+    ],
+    "type": "single",
+    "stem": "Instance A of a transactional application (`transactional.id=orders-tx-0`) stalls in a long GC pause in the middle of a transaction. The orchestrator starts instance B with the same `transactional.id`, and B calls `initTransactions()`. A then wakes up and calls `commitTransaction()`. What happens to A?",
+    "options": [
+      {
+        "id": "a",
+        "text": "A's commit succeeds and B's first transaction is aborted"
+      },
+      {
+        "id": "b",
+        "text": "A's commit fails with `ProducerFencedException` (or another fatal fencing error) and A must close its producer"
+      },
+      {
+        "id": "c",
+        "text": "Both A and B commit, and the output contains duplicates"
+      },
+      {
+        "id": "d",
+        "text": "A's commit blocks until B calls `commitTransaction()`"
+      }
+    ],
+    "correct": [
+      "b"
+    ],
+    "explanation": "Only one producer with a given `transactional.id` can be active. When B runs `initTransactions()`, the coordinator aborts A's open transaction and bumps the producer epoch. The `ProducerFencedException` Javadoc: \"the latest one to be started 'fences' the previous instances so that they can no longer make transactional requests. When you encounter this exception, you must close the producer instance.\"\n\nThis zombie fencing is the reason `transactional.id` should be stable across restarts of the same logical producer.\n\n- The older instance never wins.\n- Duplicates are exactly what fencing prevents.\n- There is no waiting between instances.",
+    "references": [
+      {
+        "title": "ProducerFencedException Javadoc",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/common/errors/ProducerFencedException.html",
+        "kind": "official"
+      },
+      {
+        "title": "KafkaProducer Javadoc: initTransactions()",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/producer/KafkaProducer.html#initTransactions%28%29",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "verified",
+    "source": "original",
+    "kafkaVersionNote": "The Javadoc lists `ProducerFencedException` for this case. With the Kafka 4.0 transaction protocol (KIP-890) a fenced producer may instead see `InvalidProducerEpochException` on some calls; both are fatal for that producer instance."
+  },
+  {
+    "id": "eos-fence-012",
+    "domain": "app-development",
+    "topics": [
+      "transactions-eos"
+    ],
+    "type": "single",
+    "stem": "A transactional producer's `commitTransaction()` throws `ProducerFencedException`. What should the application do?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Call `abortTransaction()` and start a new transaction on the same producer"
+      },
+      {
+        "id": "b",
+        "text": "Retry `commitTransaction()` until it succeeds"
+      },
+      {
+        "id": "c",
+        "text": "Close the producer; this instance can no longer make transactional requests"
+      },
+      {
+        "id": "d",
+        "text": "Increase `transaction.timeout.ms` and call `commitTransaction()` again"
+      }
+    ],
+    "correct": [
+      "c"
+    ],
+    "explanation": "`ProducerFencedException` is fatal for the producer instance: another producer with the same `transactional.id` has been started. The KafkaProducer Javadoc example catches `ProducerFencedException | OutOfOrderSequenceException | AuthorizationException` with the comment \"We can't recover from these exceptions, so our only option is to close the producer and exit.\" Other `KafkaException`s in that example are handled with `abortTransaction()`.\n\n- Aborting is the response to abortable errors, not to fencing. `abortTransaction()` itself throws immediately if an earlier send failed with `ProducerFencedException`.\n- Retrying or changing the timeout does not un-fence the producer.",
+    "references": [
+      {
+        "title": "ProducerFencedException Javadoc",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/common/errors/ProducerFencedException.html",
+        "kind": "official"
+      },
+      {
+        "title": "KafkaProducer Javadoc: transactional example",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/producer/KafkaProducer.html#class-description",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "eos-ctp-013",
+    "domain": "app-development",
+    "topics": [
+      "transactions-eos"
+    ],
+    "type": "multi",
+    "stem": "You are hand-writing an exactly-once consume-transform-produce application with `KafkaConsumer` and `KafkaProducer` (no Kafka Streams). Which three settings do the Kafka docs require? (Choose three.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "Consumer: `isolation.level=read_committed`"
+      },
+      {
+        "id": "b",
+        "text": "Consumer: `enable.auto.commit=false`"
+      },
+      {
+        "id": "c",
+        "text": "Producer: `transactional.id` set to a stable, unique value"
+      },
+      {
+        "id": "d",
+        "text": "Consumer: `transactional.id` set to the same value as the producer"
+      },
+      {
+        "id": "e",
+        "text": "Producer: `acks=1` to keep transaction latency low"
+      }
+    ],
+    "correct": [
+      "a",
+      "b",
+      "c"
+    ],
+    "explanation": "The \"Using Transactions\" section of the design docs: \"The consumer configuration must include `isolation.level=read_committed` and `enable.auto.commit=false`. The producer configuration must set `transactional.id`... Only the producer has the `transactional.id` configuration.\"\n\n- There is no consumer `transactional.id`.\n- Transactions imply idempotence, which requires `acks=all`. Setting `acks=1` conflicts with it.\n\nThe consumer's offsets are then committed through the producer with `sendOffsetsToTransaction()`.",
+    "references": [
+      {
+        "title": "Kafka design: Using transactions",
+        "url": "https://kafka.apache.org/44/design/design/#using-transactions",
+        "kind": "official"
+      },
+      {
+        "title": "Consumer configs: isolation.level",
+        "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_isolation.level",
+        "kind": "official"
+      },
+      {
+        "title": "Producer configs: transactional.id",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_transactional.id",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "eos-ctp-014",
+    "domain": "app-development",
+    "topics": [
+      "transactions-eos"
+    ],
+    "type": "single",
+    "stem": "In a consume-transform-produce loop, the application has just processed the record at offset 41 of partition `input-0`, the last record of the batch. Which offset should it pass for `input-0` in `sendOffsetsToTransaction()`?",
+    "options": [
+      {
+        "id": "a",
+        "text": "40"
+      },
+      {
+        "id": "b",
+        "text": "41"
+      },
+      {
+        "id": "c",
+        "text": "42"
+      },
+      {
+        "id": "d",
+        "text": "The current high watermark of `input-0`"
+      }
+    ],
+    "correct": [
+      "c"
+    ],
+    "explanation": "The committed offset is the position of the **next** record to consume. The Javadoc for `sendOffsetsToTransaction()`: \"The committed offset should be the next message your application will consume, i.e. `nextRecordToBeProcessed.offset()` (or `ConsumerRecords.nextOffsets()`).\" After processing offset 41 that is 42.\n\n- Committing 41 would make a restarted consumer re-read offset 41, producing a duplicate.\n- Committing 40 would replay two records.\n- The high watermark could skip records that were never processed.",
+    "references": [
+      {
+        "title": "KafkaProducer Javadoc: sendOffsetsToTransaction()",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/producer/KafkaProducer.html#sendOffsetsToTransaction%28java.util.Map,org.apache.kafka.clients.consumer.ConsumerGroupMetadata%29",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "eos-ctp-015",
+    "domain": "app-development",
+    "topics": [
+      "transactions-eos"
+    ],
+    "type": "single",
+    "stem": "A transactional consume-transform-produce application calls `producer.sendOffsetsToTransaction(...)` and `producer.commitTransaction()`, and then, \"to be safe\", also calls `consumer.commitSync()`. What is the problem with the extra call?",
+    "options": [
+      {
+        "id": "a",
+        "text": "None; the second commit is ignored by the group coordinator"
+      },
+      {
+        "id": "b",
+        "text": "The docs say the consumer should not commit offsets itself; a non-transactional commit is not atomic with the output and breaks the exactly-once guarantee"
+      },
+      {
+        "id": "c",
+        "text": "`commitSync()` aborts the transaction that was just committed"
+      },
+      {
+        "id": "d",
+        "text": "`commitSync()` throws `ProducerFencedException`"
+      }
+    ],
+    "correct": [
+      "b"
+    ],
+    "explanation": "The Javadoc for `sendOffsetsToTransaction()` says: \"the consumer should have `enable.auto.commit=false` and should also not commit offsets manually (via sync or async commits).\"\n\nThe whole point of the transactional loop is that the output records and the input offsets are committed atomically. A separate `commitSync()` is an ordinary, non-transactional commit of the consumer's current position. Any code path where it runs for input whose transaction did not commit (for example after an error, or before the transaction completes) moves the group's offset forward independently of the output, so those input records are skipped even though their output was aborted.\n\n- The coordinator does not ignore the call.\n- A consumer commit cannot abort a producer's transaction.\n- `ProducerFencedException` is about competing producers with the same `transactional.id`.",
+    "references": [
+      {
+        "title": "KafkaProducer Javadoc: sendOffsetsToTransaction()",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/producer/KafkaProducer.html#sendOffsetsToTransaction%28java.util.Map,org.apache.kafka.clients.consumer.ConsumerGroupMetadata%29",
+        "kind": "official"
+      },
+      {
+        "title": "Kafka design: Using transactions",
+        "url": "https://kafka.apache.org/44/design/design/#using-transactions",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "likely",
+    "source": "original"
+  },
+  {
+    "id": "eos-ctp-016",
+    "domain": "app-development",
+    "topics": [
+      "transactions-eos"
+    ],
+    "type": "single",
+    "stem": "A consume-transform-produce application catches a `KafkaException` during a transaction and calls `abortTransaction()`. It then calls `poll()` again on the same consumer without doing anything else. What happens to the input records from the aborted transaction?",
+    "options": [
+      {
+        "id": "a",
+        "text": "They are redelivered automatically, because aborting rewinds the consumer to the last committed offset"
+      },
+      {
+        "id": "b",
+        "text": "They are skipped, because the consumer's in-memory position does not rewind on abort"
+      },
+      {
+        "id": "c",
+        "text": "They are redelivered only if the consumer uses `read_committed`"
+      },
+      {
+        "id": "d",
+        "text": "`poll()` throws `IllegalStateException` until `initTransactions()` is called again"
+      }
+    ],
+    "correct": [
+      "b"
+    ],
+    "explanation": "Aborting reverts the **committed** offset (the offsets sent with `sendOffsetsToTransaction()` are discarded), but not the consumer's in-memory **position**. The design docs: \"the consumer's stored position will revert to its old value (although the consumer has to refetch the committed offset because it does not automatically rewind)\", and \"the application's state and in particular the current position of the consumer must be reset explicitly\".\n\nThe docs give two fixes: recreate the producer and consumer (the rebalance fetches the last committed offset), or look up the committed offsets and `seek()` back to them.\n\n- `isolation.level` controls which records a consumer sees, not its position.\n- `initTransactions()` is called only once per producer, not after each abort.",
+    "references": [
+      {
+        "title": "Kafka design: Using transactions",
+        "url": "https://kafka.apache.org/44/design/design/#using-transactions",
+        "kind": "official"
+      },
+      {
+        "title": "Kafka design: Message delivery semantics",
+        "url": "https://kafka.apache.org/44/design/design/#message-delivery-semantics",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "eos-iso-017",
+    "domain": "app-development",
+    "topics": [
+      "transactions-eos"
+    ],
+    "type": "single",
+    "stem": "What is the default value of the consumer setting `isolation.level`?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`read_committed`"
+      },
+      {
+        "id": "b",
+        "text": "`read_uncommitted`"
+      },
+      {
+        "id": "c",
+        "text": "`serializable`"
+      },
+      {
+        "id": "d",
+        "text": "It has no default and must be set when transactions are used"
+      }
+    ],
+    "correct": [
+      "b"
+    ],
+    "explanation": "`isolation.level` defaults to `read_uncommitted`; the valid values are `read_committed` and `read_uncommitted`. In `read_uncommitted`, `poll()` returns all messages, \"even transactional messages which have been aborted\". Any consumer that should only see committed transactional output must set `read_committed` explicitly.",
+    "references": [
+      {
+        "title": "Consumer configs: isolation.level",
+        "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_isolation.level",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "eos-iso-018",
+    "domain": "app-development",
+    "topics": [
+      "transactions-eos"
+    ],
+    "type": "multi",
+    "stem": "A topic contains non-transactional records, records from committed transactions and records from aborted transactions. A consumer reads it with the default `isolation.level`. Which two statements are true? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "The consumer receives the records from aborted transactions"
+      },
+      {
+        "id": "b",
+        "text": "The consumer receives the non-transactional records"
+      },
+      {
+        "id": "c",
+        "text": "The consumer receives the commit and abort marker records"
+      },
+      {
+        "id": "d",
+        "text": "The consumer stops at the last stable offset (LSO)"
+      },
+      {
+        "id": "e",
+        "text": "The consumer receives only records from committed transactions"
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "The default is `read_uncommitted`, where \"`consumer.poll()` will return all messages, even transactional messages which have been aborted. Non-transactional messages will be returned unconditionally in either mode.\"\n\n- Transaction markers have offsets in the log but are never returned to applications, in either isolation level (KafkaConsumer Javadoc, \"Reading Transactional Messages\").\n- Stopping at the LSO and filtering aborted records is `read_committed` behaviour.",
+    "references": [
+      {
+        "title": "Consumer configs: isolation.level",
+        "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_isolation.level",
+        "kind": "official"
+      },
+      {
+        "title": "KafkaConsumer Javadoc: Reading transactional messages",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html#reading-transactional-messages-heading",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "eos-lso-019",
+    "domain": "app-development",
+    "topics": [
+      "transactions-eos"
+    ],
+    "type": "single",
+    "stem": "Partition `p0` has a high watermark of 21. A transactional producer wrote offset 10 in a transaction that is still open. A non-transactional producer then wrote offsets 11 to 20. All records below offset 10 are committed. Up to which offset can a `read_committed` consumer read from `p0` right now?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Up to offset 9; offsets 11 to 20 are withheld until the open transaction completes"
+      },
+      {
+        "id": "b",
+        "text": "Up to offset 20, skipping offset 10"
+      },
+      {
+        "id": "c",
+        "text": "Up to offset 20, including offset 10"
+      },
+      {
+        "id": "d",
+        "text": "Nothing, until the open transaction completes"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "Messages are always returned in offset order, so a `read_committed` consumer stops at the last stable offset (LSO), set by the first open transaction. The consumer config docs: \"any messages appearing after messages belonging to ongoing transactions will be withheld until the relevant transaction has been completed. As a result, `read_committed` consumers will not be able to read up to the high watermark when there are in flight transactions.\"\n\nSo offsets 0 to 9 are readable. The non-transactional records at 11 to 20 are delivered only once the transaction at offset 10 commits or aborts.\n\n- Skipping ahead past an open transaction would break offset ordering.\n- Records before the open transaction are already stable and are returned.",
+    "references": [
+      {
+        "title": "Consumer configs: isolation.level",
+        "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_isolation.level",
+        "kind": "official"
+      },
+      {
+        "title": "KafkaConsumer Javadoc: Reading transactional messages",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html#reading-transactional-messages-heading",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "eos-lso-020",
+    "domain": "app-development",
+    "topics": [
+      "transactions-eos"
+    ],
+    "type": "single",
+    "stem": "A `read_committed` consumer calls `endOffsets()` for a partition that has an open transaction. What does it return?",
+    "options": [
+      {
+        "id": "a",
+        "text": "The high watermark"
+      },
+      {
+        "id": "b",
+        "text": "The log end offset of the leader"
+      },
+      {
+        "id": "c",
+        "text": "The last stable offset (LSO)"
+      },
+      {
+        "id": "d",
+        "text": "The offset of the last committed transaction marker"
+      }
+    ],
+    "correct": [
+      "c"
+    ],
+    "explanation": "The `endOffsets()` Javadoc: \"In the default `read_uncommitted` isolation level, the end offset is the high watermark... For `read_committed` consumers, the end offset is the last stable offset (LSO), which is the minimum of the high watermark and the smallest offset of any open transaction.\" `seekToEnd()` likewise goes to the LSO for `read_committed`, and consumer lag metrics are measured against the LSO.\n\nThe log end offset includes records not yet replicated; no consumer reads beyond the high watermark.",
+    "references": [
+      {
+        "title": "KafkaConsumer Javadoc: endOffsets()",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html#endOffsets%28java.util.Collection%29",
+        "kind": "official"
+      },
+      {
+        "title": "Consumer configs: isolation.level",
+        "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_isolation.level",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "eos-timeout-021",
+    "domain": "app-development",
+    "topics": [
+      "transactions-eos"
+    ],
+    "type": "multi",
+    "stem": "Which two statements about the producer setting `transaction.timeout.ms` are true? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "Its default is 60000 ms (1 minute)"
+      },
+      {
+        "id": "b",
+        "text": "If it is larger than the broker's `transaction.max.timeout.ms` (default 900000 ms), the request fails with `InvalidTxnTimeoutException`"
+      },
+      {
+        "id": "c",
+        "text": "It is a consumer setting that bounds how long a `read_committed` consumer waits"
+      },
+      {
+        "id": "d",
+        "text": "The timer starts when `beginTransaction()` is called"
+      },
+      {
+        "id": "e",
+        "text": "When it expires, the coordinator commits the transaction"
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "From the producer config reference: `transaction.timeout.ms` is \"the maximum amount of time in milliseconds that a transaction will remain open before the coordinator proactively **aborts** it\", default 60000 (1 minute). \"The start of the transaction is set at the time that the first partition is added to it\", not at `beginTransaction()`. A value above the broker's `transaction.max.timeout.ms` (default 900000, 15 minutes) fails with `InvalidTxnTimeoutException`.\n\n- It is a producer setting, although it does indirectly bound how long an abandoned transaction can block `read_committed` consumers.\n- Expired transactions are aborted, never committed.",
+    "references": [
+      {
+        "title": "Producer configs: transaction.timeout.ms",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_transaction.timeout.ms",
+        "kind": "official"
+      },
+      {
+        "title": "Broker configs: transaction.max.timeout.ms",
+        "url": "https://kafka.apache.org/44/configuration/broker-configs/#brokerconfigs_transaction.max.timeout.ms",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "eos-timeout-022",
+    "domain": "app-development",
+    "topics": [
+      "transactions-eos"
+    ],
+    "type": "single",
+    "stem": "A transactional producer crashes in the middle of a transaction and is never restarted. Consumers of the output topic use `read_committed` and stop making progress on the affected partitions. With default settings, what ends the stall?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Nothing; an operator must delete the open transaction"
+      },
+      {
+        "id": "b",
+        "text": "The coordinator aborts the transaction once `transaction.timeout.ms` (default 1 minute) has passed, and the LSO moves forward"
+      },
+      {
+        "id": "c",
+        "text": "The consumers' `max.poll.interval.ms` expires and they skip the open transaction"
+      },
+      {
+        "id": "d",
+        "text": "`transactional.id.expiration.ms` (default 7 days) expires and the transaction is committed"
+      }
+    ],
+    "correct": [
+      "b"
+    ],
+    "explanation": "An open transaction pins the last stable offset, so `read_committed` consumers cannot read past it. The coordinator \"proactively aborts\" any transaction that stays open longer than `transaction.timeout.ms` (default 60000 ms). Once the abort markers are written, the LSO advances and consumers continue, skipping the aborted records. Restarting a producer with the same `transactional.id` and calling `initTransactions()` would also abort it sooner.\n\n- Consumers never skip an open transaction on their own.\n- `transactional.id.expiration.ms` removes idle transactional ids; it does not commit anything, and \"Transactional IDs will not expire while the transaction is still ongoing\".\n- This is also why a very large transaction timeout is risky: the broker's `transaction.max.timeout.ms` exists to stop clients stalling consumers for too long.",
+    "references": [
+      {
+        "title": "Producer configs: transaction.timeout.ms",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_transaction.timeout.ms",
+        "kind": "official"
+      },
+      {
+        "title": "Broker configs: transaction.max.timeout.ms",
+        "url": "https://kafka.apache.org/44/configuration/broker-configs/#brokerconfigs_transaction.max.timeout.ms",
+        "kind": "official"
+      },
+      {
+        "title": "Consumer configs: isolation.level",
+        "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_isolation.level",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "eos-scope-023",
+    "domain": "app-development",
+    "topics": [
+      "transactions-eos"
+    ],
+    "type": "single",
+    "stem": "An application consumes from Kafka, writes each record to a relational database, and commits the consumer offsets with a transactional producer's `sendOffsetsToTransaction()`. The team claims this gives exactly-once writes to the database. Why is that wrong?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Kafka transactions only make writes to Kafka (output records and consumer offsets) atomic; the database write is outside the transaction"
+      },
+      {
+        "id": "b",
+        "text": "`sendOffsetsToTransaction()` only works with Kafka Streams"
+      },
+      {
+        "id": "c",
+        "text": "The database write would be exactly-once if the consumer used `read_committed`"
+      },
+      {
+        "id": "d",
+        "text": "Kafka transactions cover external systems only when `transaction.timeout.ms` is longer than the database commit"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "Kafka's exactly-once guarantee covers reading from Kafka, processing and writing back to Kafka. The design docs: \"Exactly-once delivery for other destination systems generally requires cooperation with such systems\". A crash between the database commit and the Kafka transaction commit still produces a duplicate (or a lost update, depending on the order).\n\nFor an external sink the docs suggest storing the consumer's offset in the same place as the output, in the same database transaction, or making the writes idempotent (for example keyed upserts).\n\n- `sendOffsetsToTransaction()` is a plain producer API.\n- `read_committed` only filters what the consumer reads.\n- No timeout extends a Kafka transaction to another system.",
+    "references": [
+      {
+        "title": "Kafka design: Message delivery semantics",
+        "url": "https://kafka.apache.org/44/design/design/#message-delivery-semantics",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "eos-scope-024",
+    "domain": "app-development",
+    "topics": [
+      "transactions-eos"
+    ],
+    "type": "multi",
+    "stem": "Which two pipelines can get exactly-once processing from Kafka's own transaction support, with no cooperation from an outside system? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "A Kafka Streams application with `processing.guarantee=exactly_once_v2` that reads from and writes to Kafka topics"
+      },
+      {
+        "id": "b",
+        "text": "A `KafkaConsumer` plus transactional `KafkaProducer` copying records from topic A to topic B, with `read_committed` consumers downstream"
+      },
+      {
+        "id": "c",
+        "text": "A consumer that sends one email per record"
+      },
+      {
+        "id": "d",
+        "text": "A consumer that calls a third-party REST API per record and commits offsets afterwards"
+      },
+      {
+        "id": "e",
+        "text": "A producer with `enable.idempotence=true` and no `transactional.id` writing to two topics atomically"
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "The design docs: \"Kafka supports exactly-once delivery in Kafka Streams, and the transactional producer and the consumer using read-committed isolation level can be used generally to provide exactly-once delivery when reading, processing and writing data on Kafka topics.\"\n\n- Emails and REST calls are side effects outside Kafka; a retry can repeat them, so at best they are at-least-once unless the other system deduplicates.\n- Idempotence alone does not give atomic writes across partitions or topics; that needs `transactional.id`.",
+    "references": [
+      {
+        "title": "Kafka design: Message delivery semantics",
+        "url": "https://kafka.apache.org/44/design/design/#message-delivery-semantics",
+        "kind": "official"
+      },
+      {
+        "title": "Kafka Streams configs: processing.guarantee",
+        "url": "https://kafka.apache.org/44/configuration/kafka-streams-configs/#streamsconfigs_processing.guarantee",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "eos-txn-025",
+    "domain": "app-development",
+    "topics": [
+      "transactions-eos"
+    ],
+    "type": "multi",
+    "stem": "An application runs as six instances, each handling its own set of input partitions with its own transactional producer. Which two statements about `transactional.id` are true? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "Setting it implicitly enables idempotence"
+      },
+      {
+        "id": "b",
+        "text": "Each instance needs its own value, and that value should stay the same when the instance restarts"
+      },
+      {
+        "id": "c",
+        "text": "All six instances should share one value so that the coordinator can balance them"
+      },
+      {
+        "id": "d",
+        "text": "The consumers in the application must set the same `transactional.id`"
+      },
+      {
+        "id": "e",
+        "text": "It defaults to the producer's `client.id`"
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "Producer config docs: \"If a TransactionalId is configured, `enable.idempotence` is implied.\" The default is `null`, not `client.id`.\n\nThe KafkaProducer Javadoc: the purpose of `transactional.id` is \"to enable transaction recovery across multiple sessions of a single producer instance... it should be unique to each producer instance running within a partitioned application.\" Keeping it stable across restarts is what lets a restarted instance fence its own zombie and abort its unfinished transaction.\n\n- Sharing one value would make the instances fence each other continuously.\n- Only the producer has `transactional.id`.",
+    "references": [
+      {
+        "title": "Producer configs: transactional.id",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_transactional.id",
+        "kind": "official"
+      },
+      {
+        "title": "KafkaProducer Javadoc: class description",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/producer/KafkaProducer.html#class-description",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "eos-txn-026",
+    "domain": "app-development",
+    "topics": [
+      "transactions-eos"
+    ],
+    "type": "single",
+    "stem": "Inside a transaction, the application calls `send()` for 50 records without callbacks and without calling `get()` on the futures. One send fails with an irrecoverable error. The application then calls `commitTransaction()`. What happens?",
+    "options": [
+      {
+        "id": "a",
+        "text": "The transaction commits with 49 records"
+      },
+      {
+        "id": "b",
+        "text": "`commitTransaction()` throws the error and the transaction is not committed"
+      },
+      {
+        "id": "c",
+        "text": "The failed record is retried forever and `commitTransaction()` blocks"
+      },
+      {
+        "id": "d",
+        "text": "The transaction commits and the error is only visible in the producer metrics"
+      }
+    ],
+    "correct": [
+      "b"
+    ],
+    "explanation": "`commitTransaction()` first flushes any unsent records. Then: \"if any of the `send(ProducerRecord)` calls which were part of the transaction hit irrecoverable errors, this method will throw the last received exception immediately and the transaction will not be committed. So all `send(ProducerRecord)` calls in a transaction must succeed in order for this method to succeed.\"\n\nThe class Javadoc adds that a transactional producer does not need callbacks or `get()` to notice failures, because the error surfaces as an exception from the transactional calls. The application should then abort (or, for fatal errors, close the producer).\n\nA transaction is all or nothing: a partial commit is never possible.",
+    "references": [
+      {
+        "title": "KafkaProducer Javadoc: commitTransaction()",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/producer/KafkaProducer.html#commitTransaction%28%29",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "eos-markers-027",
+    "domain": "app-development",
+    "topics": [
+      "transactions-eos"
+    ],
+    "type": "single",
+    "stem": "A `read_committed` consumer logs the offsets it receives from a partition written only by a transactional producer and sees gaps, for example 0, 1, 2, 4, 5, 6, 8. Nothing has been deleted from the topic. What explains the gaps?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Commit and abort markers take up offsets but are never returned to applications, and records from aborted transactions are filtered out"
+      },
+      {
+        "id": "b",
+        "text": "Log compaction removed the missing offsets"
+      },
+      {
+        "id": "c",
+        "text": "The producer skipped offsets because `enable.idempotence=true`"
+      },
+      {
+        "id": "d",
+        "text": "The consumer is losing data and should switch to `read_uncommitted`"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "From the KafkaConsumer Javadoc: \"Partitions with transactional messages will include commit or abort markers which indicate the result of a transaction. These markers are not returned to applications, yet have an offset in the log. As a result, applications reading from topics with transactional messages will see gaps in the consumed offsets.\" `read_committed` consumers \"may also see gaps due to aborted transactions\".\n\n- The question says nothing was deleted, and compaction is not on by default.\n- Offsets are assigned by the broker; producers never skip them.\n- Gaps are expected, not a sign of loss. `read_uncommitted` would show aborted records but still skip the markers.",
+    "references": [
+      {
+        "title": "KafkaConsumer Javadoc: Reading transactional messages",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html#reading-transactional-messages-heading",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "eos-cluster-028",
+    "domain": "app-development",
+    "topics": [
+      "transactions-eos"
+    ],
+    "type": "multi",
+    "stem": "On a single-broker development cluster, a transactional producer's `initTransactions()` keeps timing out, because the transaction state topic cannot be created. Which two broker settings would you lower to 1? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "`transaction.state.log.replication.factor`"
+      },
+      {
+        "id": "b",
+        "text": "`transaction.state.log.min.isr`"
+      },
+      {
+        "id": "c",
+        "text": "`transaction.max.timeout.ms`"
+      },
+      {
+        "id": "d",
+        "text": "`offsets.topic.num.partitions`"
+      },
+      {
+        "id": "e",
+        "text": "`min.insync.replicas` on the output topic"
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "The producer docs: \"by default, transactions require a cluster of at least three brokers... for development you can change this, by adjusting broker setting `transaction.state.log.replication.factor`.\" The `processing.guarantee` docs for Kafka Streams name both `transaction.state.log.replication.factor` (default 3) and `transaction.state.log.min.isr` (default 2). The broker docs say internal topic creation \"will fail until the cluster size meets this replication factor requirement\".\n\n`initTransactions()` blocks for up to `max.block.ms` and then throws `TimeoutException` if it cannot initialise the transactional state.\n\n- `transaction.max.timeout.ms` caps client transaction timeouts.\n- `offsets.topic.num.partitions` is for `__consumer_offsets` and has nothing to do with replication.\n- The output topic's `min.insync.replicas` does not stop the transaction state topic from being created.",
+    "references": [
+      {
+        "title": "Producer configs: transactional.id",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_transactional.id",
+        "kind": "official"
+      },
+      {
+        "title": "Broker configs: transaction.state.log.replication.factor",
+        "url": "https://kafka.apache.org/44/configuration/broker-configs/#brokerconfigs_transaction.state.log.replication.factor",
+        "kind": "official"
+      },
+      {
+        "title": "Broker configs: transaction.state.log.min.isr",
+        "url": "https://kafka.apache.org/44/configuration/broker-configs/#brokerconfigs_transaction.state.log.min.isr",
+        "kind": "official"
+      },
+      {
+        "title": "Kafka Streams configs: processing.guarantee",
+        "url": "https://kafka.apache.org/44/configuration/kafka-streams-configs/#streamsconfigs_processing.guarantee",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "likely",
+    "source": "original"
+  },
+  {
+    "id": "eos-txn-029",
+    "domain": "app-development",
+    "topics": [
+      "transactions-eos"
+    ],
+    "type": "single",
+    "stem": "Kafka 4.0 introduced the strengthened transaction protocol from KIP-890 (\"Transactions Server-Side Defense\"), enabled with `transaction.version=2`. What does it change for 4.x producer clients?",
+    "options": [
+      {
+        "id": "a",
+        "text": "The producer epoch is bumped on every transaction, so stray writes from one transaction cannot become part of the next"
+      },
+      {
+        "id": "b",
+        "text": "`transactional.id` is no longer required"
+      },
+      {
+        "id": "c",
+        "text": "Consumers no longer need `isolation.level=read_committed`"
+      },
+      {
+        "id": "d",
+        "text": "Transactions can now span Kafka and external databases"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The transaction protocol page: \"When enabled and using 4.0 producer clients, the producer epoch is bumped on every transaction to ensure every transaction includes the intended messages and duplicates are not written as part of the next transaction.\" The protocol is enabled on the server automatically since 4.0 and is controlled by the `transaction.version` feature flag.\n\nNone of the other statements is true: `transactional.id`, `read_committed` and the Kafka-only scope are all unchanged.",
+    "references": [
+      {
+        "title": "Transaction protocol",
+        "url": "https://kafka.apache.org/44/operations/transaction-protocol/#overview",
+        "kind": "official"
+      },
+      {
+        "title": "Upgrade notes: notable changes in 4.0",
+        "url": "https://kafka.apache.org/44/getting-started/upgrade/#notable-changes-in-400",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original",
+    "kafkaVersionNote": "New in Kafka 4.0 (KIP-890). Older prep material does not mention it."
+  },
+  {
+    "id": "eos-api-030",
+    "domain": "app-development",
+    "topics": [
+      "transactions-eos"
+    ],
+    "type": "single",
+    "stem": "Code written for an old client calls `producer.sendOffsetsToTransaction(offsets, \"my-group\")`, passing the group id as a `String`. It no longer compiles against a Kafka 4.x client. What is the replacement?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`sendOffsetsToTransaction(offsets, consumer.groupMetadata())`"
+      },
+      {
+        "id": "b",
+        "text": "`consumer.commitSync(offsets)` inside the transaction"
+      },
+      {
+        "id": "c",
+        "text": "`producer.commitTransaction(offsets)`"
+      },
+      {
+        "id": "d",
+        "text": "`sendOffsetsToTransaction(offsets)` with the group id set as `transactional.id`"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "Kafka 4.0 removed the deprecated `sendOffsetsToTransaction(Map<TopicPartition, OffsetAndMetadata>, String)` overload. The remaining method takes a `ConsumerGroupMetadata`, which the Javadoc says \"should be extracted from the used consumer via `KafkaConsumer.groupMetadata()`\". The full group metadata (generation, member id) gives stronger fencing than a group id alone.\n\n- Committing through the consumer is not part of the transaction.\n- `commitTransaction()` takes no arguments.\n- `transactional.id` is not a group id.",
+    "references": [
+      {
+        "title": "KafkaProducer Javadoc: sendOffsetsToTransaction()",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/producer/KafkaProducer.html#sendOffsetsToTransaction%28java.util.Map,org.apache.kafka.clients.consumer.ConsumerGroupMetadata%29",
+        "kind": "official"
+      },
+      {
+        "title": "Upgrade notes: notable changes in 4.0",
+        "url": "https://kafka.apache.org/44/getting-started/upgrade/#notable-changes-in-400",
+        "kind": "official"
+      },
+      {
+        "title": "KafkaConsumer Javadoc: groupMetadata()",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html#groupMetadata%28%29",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original",
+    "kafkaVersionNote": "The `String` group id overload was removed in Kafka 4.0."
+  },
+  {
+    "id": "eos-txn-031",
+    "domain": "app-development",
+    "topics": [
+      "transactions-eos"
+    ],
+    "type": "multi",
+    "stem": "A transaction writes 20 records to topic `out` and includes the consumer offsets via `sendOffsetsToTransaction()`. The application then calls `abortTransaction()`. Which two statements are true? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "`read_committed` consumers of `out` never receive the 20 records"
+      },
+      {
+        "id": "b",
+        "text": "The offsets sent in the transaction are not committed for the consumer group"
+      },
+      {
+        "id": "c",
+        "text": "The 20 records are physically removed from the log immediately"
+      },
+      {
+        "id": "d",
+        "text": "`read_uncommitted` consumers of `out` never receive the 20 records"
+      },
+      {
+        "id": "e",
+        "text": "The consumer's position is rewound to the last committed offset automatically"
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "Aborting writes abort markers. `read_committed` consumers filter out the aborted records. Offsets passed to `sendOffsetsToTransaction()` \"will be considered committed only if the transaction is committed successfully\", so the group's committed offset stays where it was.\n\n- Aborted records stay in the log until normal retention removes them; they are only hidden.\n- `read_uncommitted` consumers do receive aborted records.\n- The consumer's in-memory position is not rewound; the application must `seek()` or recreate the consumer.",
+    "references": [
+      {
+        "title": "KafkaProducer Javadoc: sendOffsetsToTransaction()",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/producer/KafkaProducer.html#sendOffsetsToTransaction%28java.util.Map,org.apache.kafka.clients.consumer.ConsumerGroupMetadata%29",
+        "kind": "official"
+      },
+      {
+        "title": "Kafka design: Using transactions",
+        "url": "https://kafka.apache.org/44/design/design/#using-transactions",
+        "kind": "official"
+      },
+      {
+        "title": "Consumer configs: isolation.level",
+        "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_isolation.level",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "eos-semantics-032",
+    "domain": "app-development",
+    "topics": [
+      "transactions-eos"
+    ],
+    "type": "single",
+    "stem": "A pipeline reads topic `in` with `isolation.level=read_committed` and `enable.auto.commit=false`, writes results to topic `out` with an idempotent but **non-transactional** producer, waits for the sends to be acknowledged, and then calls `commitSync()`. What end-to-end guarantee does `out` get if the application crashes at an arbitrary point?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Exactly-once, because the producer is idempotent and the consumer uses `read_committed`"
+      },
+      {
+        "id": "b",
+        "text": "At-least-once: a crash after the sends but before `commitSync()` re-processes records and writes them to `out` again"
+      },
+      {
+        "id": "c",
+        "text": "At-most-once, because idempotence drops retried records"
+      },
+      {
+        "id": "d",
+        "text": "Exactly-once, because `commitSync()` is synchronous"
+      }
+    ],
+    "correct": [
+      "b"
+    ],
+    "explanation": "This is the process-then-commit ordering, so it is at-least-once. If the process dies after the output is acknowledged but before the offsets are committed, the next owner re-reads those input records and produces them again. These are new `send()` calls from a new producer session, so idempotence cannot recognise them as duplicates; it only removes duplicates from internal retries within one session.\n\n`read_committed` only affects what is read from `in`. Exactly-once needs the output and the offsets in one transaction (`transactional.id` plus `sendOffsetsToTransaction()`).",
+    "references": [
+      {
+        "title": "Kafka design: Message delivery semantics",
+        "url": "https://kafka.apache.org/44/design/design/#message-delivery-semantics",
+        "kind": "official"
+      },
+      {
+        "title": "Kafka design: Using transactions",
+        "url": "https://kafka.apache.org/44/design/design/#using-transactions",
+        "kind": "official"
+      },
+      {
+        "title": "KafkaProducer Javadoc: class description",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/producer/KafkaProducer.html#class-description",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "verified",
+    "source": "original"
+  }
+]

@@ -1,0 +1,300 @@
+[
+  {
+    "id": "cp-ksql-001",
+    "domain": "confluent-platform",
+    "topics": [
+      "ksqldb"
+    ],
+    "type": "single",
+    "stem": "In ksqlDB, how does a table differ from a stream?",
+    "options": [
+      {
+        "id": "a",
+        "text": "A table is mutable and holds the latest value per key; a stream is an immutable, append-only series of events."
+      },
+      {
+        "id": "b",
+        "text": "A table is append-only; a stream keeps only the latest value per key."
+      },
+      {
+        "id": "c",
+        "text": "A table is stored outside Kafka; a stream lives in a Kafka topic."
+      },
+      {
+        "id": "d",
+        "text": "Tables can't have keys; streams must have keys."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "A stream is \"a partitioned, immutable, append-only collection that represents a series of historical facts\". A table is \"a mutable, partitioned collection that models change over time\": for each key, the last row is the current value. This mirrors `KStream` and `KTable` in Kafka Streams.",
+    "references": [
+      {
+        "title": "ksqlDB: Tables",
+        "url": "https://docs.confluent.io/platform/current/ksqldb/concepts/tables.html",
+        "kind": "official"
+      },
+      {
+        "title": "ksqlDB: Streams",
+        "url": "https://docs.confluent.io/platform/current/ksqldb/concepts/streams.html",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "likely",
+    "source": "original"
+  },
+  {
+    "id": "cp-ksql-002",
+    "domain": "confluent-platform",
+    "topics": [
+      "ksqldb"
+    ],
+    "type": "multi",
+    "stem": "Which statements about ksqlDB query types are correct? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "A pull query returns the current result and then closes, like a query against a relational database."
+      },
+      {
+        "id": "b",
+        "text": "A push query subscribes to results and keeps sending changes as they happen (`EMIT CHANGES`)."
+      },
+      {
+        "id": "c",
+        "text": "A push query writes its results to a new Kafka topic."
+      },
+      {
+        "id": "d",
+        "text": "A pull query runs forever on the server and writes to a backing topic."
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "- A pull query \"retrieves a result as of 'now'\" and \"returns immediately with a finite result and closes its connection\".\n- A push query lets a client subscribe to a result \"as it changes in real-time\".\n\nNeither one persists its output. \"The result of a push query isn't persisted to a backing Kafka topic.\" To write results to a topic, use a persistent query (`CREATE STREAM AS SELECT` or `CREATE TABLE AS SELECT`), which runs indefinitely on the server.",
+    "references": [
+      {
+        "title": "ksqlDB: Queries",
+        "url": "https://docs.confluent.io/platform/current/ksqldb/concepts/queries.html#pull",
+        "kind": "official"
+      },
+      {
+        "title": "ksqlDB: Push queries",
+        "url": "https://docs.confluent.io/platform/current/ksqldb/concepts/queries.html#push",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "likely",
+    "source": "original"
+  },
+  {
+    "id": "cp-ksql-003",
+    "domain": "confluent-platform",
+    "topics": [
+      "ksqldb"
+    ],
+    "type": "single",
+    "stem": "Which ksqlDB statement starts a persistent query that continuously writes its results to a Kafka topic?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`CREATE STREAM high_value AS SELECT * FROM orders WHERE amount > 1000 EMIT CHANGES;`"
+      },
+      {
+        "id": "b",
+        "text": "`SELECT * FROM orders WHERE amount > 1000 EMIT CHANGES;`"
+      },
+      {
+        "id": "c",
+        "text": "`SELECT * FROM order_totals WHERE customer_id = 'c42';`"
+      },
+      {
+        "id": "d",
+        "text": "`DESCRIBE orders;`"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "Persistent queries \"are server-side queries that run indefinitely\" and are created by deriving new streams or tables (`CREATE STREAM AS SELECT` or `CREATE TABLE AS SELECT`), whose results go to a Kafka topic.\n\n- A bare `SELECT ... EMIT CHANGES` is a push query; its results are not persisted.\n- A `SELECT` with a key lookup and no `EMIT CHANGES` is a pull query.\n- `DESCRIBE` shows metadata.",
+    "references": [
+      {
+        "title": "ksqlDB: Persistent queries",
+        "url": "https://docs.confluent.io/platform/current/ksqldb/concepts/queries.html#persistent",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "likely",
+    "source": "original"
+  },
+  {
+    "id": "cp-ksql-004",
+    "domain": "confluent-platform",
+    "topics": [
+      "ksqldb"
+    ],
+    "type": "single",
+    "stem": "What does ksqlDB run underneath to execute its persistent queries?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Kafka Streams applications that ksqlDB generates from the SQL"
+      },
+      {
+        "id": "b",
+        "text": "Kafka Connect source and sink tasks"
+      },
+      {
+        "id": "c",
+        "text": "A relational database that copies data out of Kafka"
+      },
+      {
+        "id": "d",
+        "text": "Batch jobs that the REST Proxy schedules"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "\"ksqlDB is built on Kafka Streams\": the engine turns a SQL statement into a Kafka Streams application and runs it, and that application talks to the Kafka cluster like any other Kafka Streams application. It is the same machinery as `KStream`, `KTable`, state stores and changelog topics.",
+    "references": [
+      {
+        "title": "ksqlDB architecture: ksqlDB and Kafka Streams",
+        "url": "https://docs.confluent.io/platform/current/ksqldb/operate-and-deploy/how-it-works.html#ksqldb-and-kstreams",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "likely",
+    "source": "original"
+  },
+  {
+    "id": "cp-rest-005",
+    "domain": "confluent-platform",
+    "topics": [
+      "rest-proxy"
+    ],
+    "type": "single",
+    "stem": "A legacy application written in a language without a Kafka client library has to publish events to Kafka. Which Confluent Platform component is meant for this?",
+    "options": [
+      {
+        "id": "a",
+        "text": "REST Proxy, which lets the application produce over HTTP"
+      },
+      {
+        "id": "b",
+        "text": "Control Center"
+      },
+      {
+        "id": "c",
+        "text": "Schema Registry"
+      },
+      {
+        "id": "d",
+        "text": "ksqlDB push queries"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "REST Proxy \"provides a RESTful interface to an Apache Kafka cluster, making it easy to produce and consume messages... without using the native Kafka protocol or clients\". One listed use case is reporting data to Kafka \"from any frontend application built in any language not supported by official Confluent clients\".\n\n- Control Center is a management and monitoring UI.\n- Schema Registry stores schemas.\n- Push queries read results; they don't produce events.",
+    "references": [
+      {
+        "title": "Confluent REST Proxy overview",
+        "url": "https://docs.confluent.io/platform/current/kafka-rest/index.html",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "likely",
+    "source": "original"
+  },
+  {
+    "id": "cp-rest-006",
+    "domain": "confluent-platform",
+    "topics": [
+      "rest-proxy"
+    ],
+    "type": "single",
+    "stem": "A client consumes through REST Proxy: it creates a consumer instance with `POST /consumers/{group}`, subscribes, then polls with `GET .../records`. Behind a load balancer, some poll requests return 404. Why?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Consumer instances are stateful and tied to the REST Proxy instance that created them, so requests must go to the URL returned at creation."
+      },
+      {
+        "id": "b",
+        "text": "REST Proxy only supports producing; consuming requires the v3 API."
+      },
+      {
+        "id": "c",
+        "text": "Each poll must create a new consumer instance first."
+      },
+      {
+        "id": "d",
+        "text": "The consumer group must be created with `kafka-consumer-groups.sh` first."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "\"Because consumers are stateful, any consumer instances created with the REST API are tied to a specific REST Proxy instance... Failing to use the returned URL for future consumer requests will result in 404 errors because the consumer instance will not be found.\"\n\n- Consuming with consumer instances is part of the v2 API; v3 adds produce and admin endpoints.\n- A consumer instance is created once and then reused.\n- Groups don't need to be created up front.",
+    "references": [
+      {
+        "title": "REST Proxy API reference: v2",
+        "url": "https://docs.confluent.io/platform/current/kafka-rest/api.html#crest-api-v2",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "likely",
+    "source": "original"
+  },
+  {
+    "id": "cp-c3-007",
+    "domain": "confluent-platform",
+    "topics": [
+      "control-center"
+    ],
+    "type": "single",
+    "stem": "What is Confluent Control Center?",
+    "options": [
+      {
+        "id": "a",
+        "text": "A web UI for managing and monitoring Confluent Platform: cluster health, topics, consumer lag, connectors and ksqlDB"
+      },
+      {
+        "id": "b",
+        "text": "A command-line tool that replaces `kafka-topics.sh`"
+      },
+      {
+        "id": "c",
+        "text": "The KRaft controller quorum that stores cluster metadata"
+      },
+      {
+        "id": "d",
+        "text": "A Kafka Connect plugin that copies metrics into a topic"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "Control Center \"is a web-based tool for managing and monitoring Apache Kafka in Confluent Platform\". It collects metrics about brokers, topics and consumer group lag, and manages connectors and ksqlDB by sending requests to those services. By default it is at `http://localhost:9021/`.\n\nDespite the name, it has nothing to do with KRaft controllers.",
+    "references": [
+      {
+        "title": "Control Center for Confluent Platform",
+        "url": "https://docs.confluent.io/control-center/current/overview.html",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "likely",
+    "source": "original"
+  }
+]

@@ -1,0 +1,51 @@
+The exam expects you to read and write the common commands: `kafka-topics`, the console producer and consumer, and `kafka-consumer-groups`. In Kafka 4.x every tool connects with `--bootstrap-server`; ZooKeeper mode and `--zookeeper` are gone.
+
+## How it works
+
+- `kafka-topics.sh` options:
+  - `--create` with `--partitions` and `--replication-factor`
+  - `--describe`, which shows the leader, replicas and ISR for each partition
+  - `--alter --partitions N`, which can only increase the count
+  - `--delete`
+- Topic configs such as `retention.ms` are changed with `kafka-configs.sh --entity-type topics --alter --add-config`.
+- `kafka-console-consumer.sh`:
+  - `--from-beginning`
+  - `--group`
+  - `--formatter-property print.key=true` (older form: `--property print.key=true`)
+- `kafka-console-producer.sh` reads keys from input with `parse.key=true` and `key.separator`.
+- `kafka-consumer-groups.sh` options:
+  - `--list`
+  - `--describe`, with `--members [--verbose]` or `--state`
+  - `--reset-offsets`
+  - `--delete`
+
+## Gotchas the exam loves
+
+- You can't reduce a topic's partition count. Adding partitions moves keys to new partitions but never moves existing data.
+- `--from-beginning` only applies when the group has no committed offset.
+- `--reset-offsets` rules:
+  - It defaults to `--dry-run`; add `--execute` to apply.
+  - The group must be inactive.
+  - It works on one group at a time.
+  - It needs a scope: `--topic` or `--all-topics`.
+- Reset scenarios:
+  - `--to-earliest`
+  - `--to-latest`
+  - `--to-offset`
+  - `--to-datetime YYYY-MM-DDThh:mm:ss.sss`
+  - `--by-duration PnDTnHnMnS`
+  - `--shift-by ±n`
+- Out-of-range results are clamped to the available offsets.
+
+## Java sample
+
+```java
+// Programmatic equivalent of kafka-topics --create
+try (Admin admin = Admin.create(Map.of("bootstrap.servers", "localhost:9092"))) {
+    admin.createTopics(List.of(new NewTopic("payments", 6, (short) 3))).all().get();
+}
+```
+
+## Version notes
+
+<Note>Kafka 4.2 (KIP-1147) deprecated several console options in favour of new names, to be removed in 5.0. On the console consumer, `--property` becomes `--formatter-property`. On the console producer, `--property` becomes `--reader-property`. `--consumer.config` and `--producer.config` become `--command-config`.</Note>

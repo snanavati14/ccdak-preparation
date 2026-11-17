@@ -1,0 +1,27 @@
+ksqlDB is Confluent's streaming SQL engine for Kafka. **This topic is low priority:** only some prep sources list it, so study it last and stick to the concepts.
+
+## How it works
+
+- A **stream** is an immutable, append-only series of events, like a `KStream`.
+- A **table** is mutable and keeps the latest row per key, like a `KTable`.
+- There are three kinds of query:
+  - **Persistent:** `CREATE STREAM AS SELECT` or `CREATE TABLE AS SELECT`. It runs on the server indefinitely and writes to a Kafka topic.
+  - **Push:** `SELECT ... EMIT CHANGES`. The client subscribes and receives changes as they happen. Nothing is persisted.
+  - **Pull:** `SELECT ... WHERE key = ...`. It returns the current value and closes, like a database query.
+- ksqlDB is built on Kafka Streams: each persistent query is compiled into a Kafka Streams application.
+
+## Gotchas the exam loves
+
+- Push queries are not persisted; use a persistent query to write results to a topic.
+- Pull queries suit request/response flows; push queries suit asynchronous flows.
+- Confluent now recommends Flink for new stream processing, while ksqlDB remains supported.
+
+## Java sample
+
+```java
+// Kafka Streams equivalent of:
+// CREATE STREAM high_value AS SELECT * FROM orders WHERE amount > 1000 EMIT CHANGES;
+builder.stream("orders", Consumed.with(Serdes.String(), orderSerde))
+       .filter((k, o) -> o.amount() > 1000)
+       .to("high_value");
+```

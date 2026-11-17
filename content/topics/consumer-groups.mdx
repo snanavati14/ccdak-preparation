@@ -1,0 +1,91 @@
+A consumer group is a set of consumers that share a `group.id` and split a topic's partitions between them. Each partition goes to exactly one member of the group, so the partition count caps how many members can do useful work. Rebalancing is how the group moves partitions when members come and go.
+
+## How it works
+
+One broker acts as the **group coordinator** for each group: the `group.id` is hashed to a partition of the internal `__consumer_offsets` topic, and that partition's leader coordinates the group. Members heartbeat to it. When membership or the subscribed topics change (a member joins, leaves, or misses heartbeats for the session timeout, or partitions are added), the group rebalances.
+
+Different groups are independent. Each one gets every record and keeps its own committed offsets, which is how Kafka acts both as a queue (one group) and as pub-sub (many groups).
+
+<Figure caption="One topic with 4 partitions read by two groups. Group B has more members than partitions, so one member sits idle until another fails.">
+  <svg viewBox="0 0 640 230" role="img" aria-label="Partitions assigned to consumers in two groups">
+    <text x="90" y="22" textAnchor="middle" fontSize="14" fill="currentColor">topic: orders</text>
+    <rect x="40" y="35" width="100" height="32" fill="none" stroke="currentColor" strokeWidth="1.5" />
+    <rect x="40" y="75" width="100" height="32" fill="none" stroke="currentColor" strokeWidth="1.5" />
+    <rect x="40" y="115" width="100" height="32" fill="none" stroke="currentColor" strokeWidth="1.5" />
+    <rect x="40" y="155" width="100" height="32" fill="none" stroke="currentColor" strokeWidth="1.5" />
+    <text x="90" y="56" textAnchor="middle" fontSize="13" fill="currentColor">P0</text>
+    <text x="90" y="96" textAnchor="middle" fontSize="13" fill="currentColor">P1</text>
+    <text x="90" y="136" textAnchor="middle" fontSize="13" fill="currentColor">P2</text>
+    <text x="90" y="176" textAnchor="middle" fontSize="13" fill="currentColor">P3</text>
+    <text x="300" y="22" textAnchor="middle" fontSize="14" fill="currentColor">group A (2 members)</text>
+    <rect x="240" y="50" width="120" height="40" fill="none" stroke="currentColor" strokeWidth="1.5" />
+    <rect x="240" y="130" width="120" height="40" fill="none" stroke="currentColor" strokeWidth="1.5" />
+    <text x="300" y="75" textAnchor="middle" fontSize="13" fill="currentColor">A1: P0, P1</text>
+    <text x="300" y="155" textAnchor="middle" fontSize="13" fill="currentColor">A2: P2, P3</text>
+    <text x="530" y="22" textAnchor="middle" fontSize="14" fill="currentColor">group B (5 members)</text>
+    <rect x="470" y="32" width="120" height="30" fill="none" stroke="currentColor" strokeWidth="1.5" />
+    <rect x="470" y="68" width="120" height="30" fill="none" stroke="currentColor" strokeWidth="1.5" />
+    <rect x="470" y="104" width="120" height="30" fill="none" stroke="currentColor" strokeWidth="1.5" />
+    <rect x="470" y="140" width="120" height="30" fill="none" stroke="currentColor" strokeWidth="1.5" />
+    <rect className="accent" x="470" y="176" width="120" height="30" fill="none" stroke="currentColor" strokeWidth="2.5" strokeDasharray="5 4" />
+    <text x="530" y="52" textAnchor="middle" fontSize="13" fill="currentColor">B1: P0</text>
+    <text x="530" y="88" textAnchor="middle" fontSize="13" fill="currentColor">B2: P1</text>
+    <text x="530" y="124" textAnchor="middle" fontSize="13" fill="currentColor">B3: P2</text>
+    <text x="530" y="160" textAnchor="middle" fontSize="13" fill="currentColor">B4: P3</text>
+    <text x="530" y="196" textAnchor="middle" fontSize="13" fill="currentColor">B5: idle</text>
+    <line x1="140" y1="111" x2="240" y2="111" stroke="currentColor" strokeWidth="1" strokeDasharray="3 3" />
+    <line x1="360" y1="111" x2="470" y2="111" stroke="currentColor" strokeWidth="1" strokeDasharray="3 3" />
+    <text x="320" y="222" textAnchor="middle" fontSize="13" fill="currentColor">Every record reaches one member of A and one member of B.</text>
+  </svg>
+</Figure>
+
+There are two group protocols in Kafka 4.x:
+
+- **Classic** (`group.protocol=classic`, still the client default in 4.4). One member, the group leader, computes the assignment with a client-side assignor from `partition.assignment.strategy`. **Eager** assignors (`RangeAssignor`, `RoundRobinAssignor`, `StickyAssignor`) make every member give up all its partitions at the start of each rebalance. **Cooperative** (`CooperativeStickyAssignor`) only revokes the partitions that move.
+- **Consumer** (`group.protocol=consumer`, KIP-848, GA since 4.0). The broker coordinator computes assignments with a server-side assignor (`uniform` by default, or `range`; pick one with `group.remote.assignor`). Rebalances are incremental with no group-wide barrier. Heartbeat interval and session timeout move to broker configs.
+
+**Static membership** (`group.instance.id`) gives a member a fixed identity. A static member that restarts within the session timeout gets its partitions back without a rebalance.
+
+## Gotchas the exam loves
+
+- More consumers than partitions: the extras sit idle. Adding members past the partition count adds no throughput.
+- Default `partition.assignment.strategy` is `[RangeAssignor, CooperativeStickyAssignor]`, so a classic group uses **range (eager)** until a rolling bounce removes `RangeAssignor` from the list.
+- `RangeAssignor` works per topic: 2 consumers, 2 topics of 3 partitions each gives one consumer 4 partitions and the other 2.
+- With an eager assignor, `onPartitionsRevoked` gets the whole assignment at the start of every rebalance. With cooperative or the consumer protocol, it is only called when something is actually revoked.
+- `onPartitionsLost` (not `onPartitionsRevoked`) runs when partitions were taken away without a graceful revoke, for example after a session timeout. Do not commit there.
+- Two live instances with the same `group.instance.id`: the duplicate gets `FencedInstanceIdException`.
+- `assign()` means no group coordination and no rebalances; `group.id` is then only used for commits. Mixing `assign()` with `subscribe()` throws `IllegalStateException`.
+- With `group.protocol=consumer`, `session.timeout.ms`, `heartbeat.interval.ms`, `partition.assignment.strategy` and `enforceRebalance()` can no longer be used. `max.poll.interval.ms` and `group.instance.id` still apply.
+- A classic group can move to the consumer protocol online, by rolling out `group.protocol=consumer`, as long as its assignor embeds no custom metadata. An empty group converts automatically.
+
+## Java sample
+
+```java
+Properties props = new Properties();
+props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
+props.put(ConsumerConfig.GROUP_ID_CONFIG, "orders-service");
+props.put(ConsumerConfig.GROUP_INSTANCE_ID_CONFIG, "orders-service-" + podName); // static member
+props.put(ConsumerConfig.PARTITION_ASSIGNMENT_STRATEGY_CONFIG,
+          CooperativeStickyAssignor.class.getName());                       // classic protocol only
+props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
+props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
+
+KafkaConsumer<String, String> consumer = new KafkaConsumer<>(props);
+consumer.subscribe(List.of("orders"), new ConsumerRebalanceListener() {
+    public void onPartitionsRevoked(Collection<TopicPartition> parts) {
+        consumer.commitSync();                       // still own them: commit before handing over
+    }
+    public void onPartitionsAssigned(Collection<TopicPartition> parts) { }
+    public void onPartitionsLost(Collection<TopicPartition> parts) {
+        // already owned by someone else: clean up, do not commit
+    }
+});
+```
+
+## Version notes
+
+<Note>
+KIP-848 (`group.protocol=consumer`) is GA since Kafka 4.0 and enabled on brokers by default, but the 4.4 client still defaults to `classic`. The published plan (KIP-1274) makes `consumer` the client default in 5.0 and drops client support for `classic` in 6.0. How much the CCDAK asks about the new protocol is a guess.
+</Note>
+
+See the [consumer rebalance protocol page](https://kafka.apache.org/44/operations/consumer-rebalance-protocol/) and [static membership](https://kafka.apache.org/44/design/design/#static-membership) in the Kafka docs.

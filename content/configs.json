@@ -1,0 +1,1745 @@
+[
+  {
+    "name": "bootstrap.servers",
+    "scope": "producer",
+    "default": "(none; required)",
+    "values": "Comma-separated list of host:port pairs",
+    "meaning": "Initial brokers the client contacts to discover the whole cluster; it does not need to list every broker, just enough to survive one being down.",
+    "interactsWith": [
+      "client.id"
+    ],
+    "topics": [
+      "acks-durability",
+      "streams-dsl"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_bootstrap.servers"
+  },
+  {
+    "name": "client.id",
+    "scope": "producer",
+    "default": "\"\" (empty string)",
+    "values": "Any string",
+    "meaning": "Logical name sent with every request so brokers can tag logs, metrics and quotas with the application, not just its IP and port.",
+    "interactsWith": [
+      "bootstrap.servers"
+    ],
+    "topics": [
+      "client-deployment"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_client.id"
+  },
+  {
+    "name": "key.serializer",
+    "scope": "producer",
+    "default": "(none; required)",
+    "values": "Class implementing org.apache.kafka.common.serialization.Serializer",
+    "meaning": "Turns the record key into bytes; it is required, and with Schema Registry it is usually KafkaAvroSerializer or a sibling.",
+    "interactsWith": [
+      "value.serializer",
+      "key.deserializer",
+      "schema.registry.url"
+    ],
+    "topics": [
+      "serialization-wire-format"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_key.serializer"
+  },
+  {
+    "name": "value.serializer",
+    "scope": "producer",
+    "default": "(none; required)",
+    "values": "Class implementing org.apache.kafka.common.serialization.Serializer",
+    "meaning": "Turns the record value into bytes; it must match the deserializer the consumers use or they fail to read the data.",
+    "interactsWith": [
+      "key.serializer",
+      "value.deserializer",
+      "schema.registry.url",
+      "auto.register.schemas"
+    ],
+    "topics": [
+      "serialization-wire-format"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_value.serializer"
+  },
+  {
+    "name": "acks",
+    "scope": "producer",
+    "default": "all",
+    "values": "all, -1, 0, 1 (all and -1 are the same)",
+    "meaning": "How many replicas must confirm a write before the producer counts it as sent: 0 = no wait, 1 = leader only, all = every in-sync replica, which is the durable choice the exam expects.",
+    "interactsWith": [
+      "min.insync.replicas",
+      "enable.idempotence",
+      "retries",
+      "replication.factor"
+    ],
+    "topics": [
+      "acks-durability",
+      "idempotence-retries"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_acks"
+  },
+  {
+    "name": "enable.idempotence",
+    "scope": "producer",
+    "default": "true",
+    "values": "true, false",
+    "meaning": "Gives each producer an ID and per-partition sequence numbers so broker-side retries never write duplicates; it needs acks=all, retries > 0 and max.in.flight.requests.per.connection <= 5.",
+    "interactsWith": [
+      "acks",
+      "retries",
+      "max.in.flight.requests.per.connection",
+      "transactional.id"
+    ],
+    "topics": [
+      "idempotence-retries",
+      "partitioning-ordering",
+      "transactions-eos"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_enable.idempotence",
+    "versionNote": "Enabled by default if no conflicting configs are set; if conflicting configs are set and it is not explicitly enabled, it is silently disabled; if explicitly enabled with conflicts, a ConfigException is thrown. Since 4.0 it no longer automatically falls back when max.in.flight.requests.per.connection exceeds 5 (4.0 upgrade notes)."
+  },
+  {
+    "name": "retries",
+    "scope": "producer",
+    "default": "2147483647 (Integer.MAX_VALUE)",
+    "values": "0 to 2147483647",
+    "meaning": "How many times a send that hit a transient error is retried; in practice delivery.timeout.ms is what stops retrying, so the docs advise leaving retries alone.",
+    "interactsWith": [
+      "delivery.timeout.ms",
+      "retry.backoff.ms",
+      "enable.idempotence",
+      "max.in.flight.requests.per.connection",
+      "acks"
+    ],
+    "topics": [
+      "idempotence-retries"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_retries"
+  },
+  {
+    "name": "delivery.timeout.ms",
+    "scope": "producer",
+    "default": "120000 (2 minutes)",
+    "values": "0 and up; should be >= request.timeout.ms + linger.ms",
+    "meaning": "Upper bound on the time from send() returning to the callback reporting success or failure, covering batching, waiting for acks and all retries.",
+    "interactsWith": [
+      "request.timeout.ms",
+      "linger.ms",
+      "retries",
+      "retry.backoff.ms"
+    ],
+    "topics": [
+      "idempotence-retries"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_delivery.timeout.ms"
+  },
+  {
+    "name": "request.timeout.ms",
+    "scope": "producer",
+    "default": "30000 (30 seconds)",
+    "values": "0 and up",
+    "meaning": "How long the client waits for a response to a single request before retrying it or failing; one retry attempt, not the whole delivery budget.",
+    "interactsWith": [
+      "delivery.timeout.ms",
+      "retries"
+    ],
+    "topics": [
+      "idempotence-retries"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_request.timeout.ms"
+  },
+  {
+    "name": "retry.backoff.ms",
+    "scope": "producer",
+    "default": "100",
+    "values": "0 and up (ms)",
+    "meaning": "Starting wait before retrying a failed request; the backoff grows exponentially (with jitter) up to retry.backoff.max.ms.",
+    "interactsWith": [
+      "retry.backoff.max.ms",
+      "retries",
+      "delivery.timeout.ms"
+    ],
+    "topics": [
+      "idempotence-retries"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_retry.backoff.ms"
+  },
+  {
+    "name": "retry.backoff.max.ms",
+    "scope": "producer",
+    "default": "1000 (1 second)",
+    "values": "0 and up (ms)",
+    "meaning": "Cap for the exponential retry backoff; if retry.backoff.ms is set higher than this, the max is used as a constant backoff.",
+    "interactsWith": [
+      "retry.backoff.ms"
+    ],
+    "topics": [
+      "idempotence-retries"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_retry.backoff.max.ms"
+  },
+  {
+    "name": "linger.ms",
+    "scope": "producer",
+    "default": "5",
+    "values": "0 and up (ms)",
+    "meaning": "How long the producer waits for more records to fill a batch before sending it; a batch is sent as soon as it reaches batch.size or the linger time passes.",
+    "interactsWith": [
+      "batch.size",
+      "compression.type",
+      "delivery.timeout.ms"
+    ],
+    "topics": [
+      "batching-compression"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_linger.ms",
+    "versionNote": "Default changed from 0 to 5 in Apache Kafka 4.0 (4.0 upgrade notes; also stated on the producer config page)."
+  },
+  {
+    "name": "batch.size",
+    "scope": "producer",
+    "default": "16384 (16 KiB)",
+    "values": "0 and up (bytes); 0 disables batching",
+    "meaning": "Upper bound in bytes for one per-partition batch; bigger batches mean fewer requests and better compression, at the cost of memory.",
+    "interactsWith": [
+      "linger.ms",
+      "buffer.memory",
+      "compression.type",
+      "max.request.size"
+    ],
+    "topics": [
+      "batching-compression",
+      "partitioning-ordering"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_batch.size",
+    "versionNote": "Because linger.ms now defaults to 5 (since 4.0), a batch waits up to 5 ms to fill to batch.size by default."
+  },
+  {
+    "name": "compression.type",
+    "scope": "producer",
+    "default": "none",
+    "values": "none, gzip, snappy, lz4, zstd",
+    "meaning": "Codec the producer applies to whole batches; compression is per batch, so more batching (linger.ms, batch.size) gives better ratios.",
+    "interactsWith": [
+      "linger.ms",
+      "batch.size"
+    ],
+    "topics": [
+      "batching-compression"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_compression.type"
+  },
+  {
+    "name": "buffer.memory",
+    "scope": "producer",
+    "default": "33554432 (32 MiB)",
+    "values": "0 and up (bytes)",
+    "meaning": "Total memory for records waiting to be sent; when it fills up, send() blocks for up to max.block.ms and then throws.",
+    "interactsWith": [
+      "max.block.ms",
+      "batch.size"
+    ],
+    "topics": [
+      "batching-compression"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_buffer.memory"
+  },
+  {
+    "name": "max.block.ms",
+    "scope": "producer",
+    "default": "60000 (1 minute)",
+    "values": "0 and up (ms)",
+    "meaning": "How long send() (and partitionsFor() and the transaction methods) may block waiting for metadata or buffer space before throwing a TimeoutException.",
+    "interactsWith": [
+      "buffer.memory"
+    ],
+    "topics": [
+      "batching-compression"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_max.block.ms"
+  },
+  {
+    "name": "max.in.flight.requests.per.connection",
+    "scope": "producer",
+    "default": "5",
+    "values": "1 and up",
+    "meaning": "Unacknowledged requests allowed per broker connection; with idempotence on, ordering is kept for any value up to 5, but with idempotence off and retries, a value above 1 can reorder records.",
+    "interactsWith": [
+      "enable.idempotence",
+      "retries"
+    ],
+    "topics": [
+      "idempotence-retries",
+      "partitioning-ordering"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_max.in.flight.requests.per.connection",
+    "versionNote": "Since 4.0, enable.idempotence no longer automatically falls back when this value exceeds 5 (4.0 upgrade notes)."
+  },
+  {
+    "name": "max.request.size",
+    "scope": "producer",
+    "default": "1048576 (1 MiB)",
+    "values": "0 and up (bytes)",
+    "meaning": "Largest request the producer will send, which also caps the largest uncompressed record batch; the broker enforces its own limit separately.",
+    "interactsWith": [
+      "message.max.bytes",
+      "max.message.bytes",
+      "batch.size"
+    ],
+    "topics": [
+      "batching-compression",
+      "topic-design"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_max.request.size"
+  },
+  {
+    "name": "partitioner.class",
+    "scope": "producer",
+    "default": "null (built-in partitioning: key hash, or sticky when there is no key)",
+    "values": "null, org.apache.kafka.clients.producer.RoundRobinPartitioner, or a custom Partitioner class",
+    "meaning": "Chooses the partition for each record; by default a keyed record goes to hash(key) mod partitions, and an unkeyed record goes to a sticky partition that switches after batch.size bytes.",
+    "interactsWith": [
+      "partitioner.ignore.keys",
+      "batch.size"
+    ],
+    "topics": [
+      "partitioning-ordering"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_partitioner.class",
+    "versionNote": "The DefaultPartitioner and UniformStickyPartitioner classes were removed in 4.0 (4.0 upgrade notes); leave partitioner.class unset for the built-in behaviour."
+  },
+  {
+    "name": "partitioner.ignore.keys",
+    "scope": "producer",
+    "default": "false",
+    "values": "true, false",
+    "meaning": "When true, the built-in partitioner ignores keys and spreads records with the sticky strategy, losing per-key ordering; it has no effect with a custom partitioner.",
+    "interactsWith": [
+      "partitioner.class"
+    ],
+    "topics": [
+      "partitioning-ordering"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_partitioner.ignore.keys"
+  },
+  {
+    "name": "transactional.id",
+    "scope": "producer",
+    "default": "null",
+    "values": "Non-empty string, unique and stable per producer instance",
+    "meaning": "Turns on transactions and lets a restarted producer with the same ID fence off its old instance (zombie fencing); setting it implies enable.idempotence.",
+    "interactsWith": [
+      "enable.idempotence",
+      "transaction.timeout.ms",
+      "isolation.level",
+      "transaction.state.log.replication.factor"
+    ],
+    "topics": [
+      "transactions-eos"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_transactional.id",
+    "versionNote": "Kafka 4.0 adds Transactions Server-Side Defense (KIP-890): 4.0 producers bump the epoch on every transaction once the upgrade is finalized (4.0 upgrade notes)."
+  },
+  {
+    "name": "transaction.timeout.ms",
+    "scope": "producer",
+    "default": "60000 (1 minute)",
+    "values": "int ms; must not exceed broker transaction.max.timeout.ms",
+    "meaning": "How long a transaction may stay open before the coordinator aborts it; a value above the broker limit fails with InvalidTxnTimeoutException.",
+    "interactsWith": [
+      "transactional.id",
+      "transaction.max.timeout.ms"
+    ],
+    "topics": [
+      "transactions-eos"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_transaction.timeout.ms"
+  },
+  {
+    "name": "security.protocol",
+    "scope": "producer",
+    "default": "PLAINTEXT",
+    "values": "PLAINTEXT, SSL, SASL_PLAINTEXT, SASL_SSL (case insensitive)",
+    "meaning": "Transport for the connection to brokers: SSL adds TLS encryption, SASL_* adds authentication, and SASL_SSL is both. Same setting on producer, consumer and admin clients.",
+    "interactsWith": [
+      "sasl.mechanism",
+      "sasl.jaas.config",
+      "ssl.truststore.location"
+    ],
+    "topics": [
+      "security-basics"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_security.protocol"
+  },
+  {
+    "name": "sasl.mechanism",
+    "scope": "producer",
+    "default": "GSSAPI",
+    "values": "GSSAPI (Kerberos), PLAIN, SCRAM-SHA-256, SCRAM-SHA-512, OAUTHBEARER, or any mechanism with a security provider",
+    "meaning": "Which SASL mechanism the client uses to authenticate; only used when security.protocol is SASL_PLAINTEXT or SASL_SSL. The default is Kerberos.",
+    "interactsWith": [
+      "security.protocol",
+      "sasl.jaas.config"
+    ],
+    "topics": [
+      "security-basics"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_sasl.mechanism"
+  },
+  {
+    "name": "sasl.jaas.config",
+    "scope": "producer",
+    "default": "null",
+    "values": "A JAAS login module line, e.g. org.apache.kafka.common.security.plain.PlainLoginModule required username=\"...\" password=\"...\";",
+    "meaning": "Client credentials for SASL, given inline instead of in a separate JAAS file; the login module must match sasl.mechanism.",
+    "interactsWith": [
+      "sasl.mechanism",
+      "security.protocol"
+    ],
+    "topics": [
+      "security-basics"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_sasl.jaas.config"
+  },
+  {
+    "name": "ssl.truststore.location",
+    "scope": "producer",
+    "default": "null",
+    "values": "File path",
+    "meaning": "Truststore holding the CA certificates the client uses to verify the brokers' TLS certificates; needed for SSL and SASL_SSL.",
+    "interactsWith": [
+      "security.protocol",
+      "ssl.keystore.location"
+    ],
+    "topics": [
+      "security-basics"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_ssl.truststore.location"
+  },
+  {
+    "name": "ssl.keystore.location",
+    "scope": "producer",
+    "default": "null",
+    "values": "File path",
+    "meaning": "Keystore with the client's own certificate and key; only needed when brokers require client authentication (mutual TLS, ssl.client.auth=required).",
+    "interactsWith": [
+      "ssl.truststore.location",
+      "security.protocol"
+    ],
+    "topics": [
+      "security-basics"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_ssl.keystore.location"
+  },
+  {
+    "name": "group.id",
+    "scope": "consumer",
+    "default": "null",
+    "values": "Any string",
+    "meaning": "Names the consumer group; needed for subscribe() and for committing offsets to Kafka. Consumers sharing a group.id split the partitions between them.",
+    "interactsWith": [
+      "group.instance.id",
+      "group.protocol",
+      "enable.auto.commit",
+      "partition.assignment.strategy"
+    ],
+    "topics": [
+      "consumer-groups"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_group.id"
+  },
+  {
+    "name": "group.instance.id",
+    "scope": "consumer",
+    "default": "null",
+    "values": "Non-empty string, unique within the group",
+    "meaning": "Makes the consumer a static member: a restart within the session timeout gets its old partitions back without a rebalance.",
+    "interactsWith": [
+      "group.id",
+      "session.timeout.ms",
+      "max.poll.interval.ms"
+    ],
+    "topics": [
+      "consumer-groups"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_group.instance.id"
+  },
+  {
+    "name": "group.protocol",
+    "scope": "consumer",
+    "default": "classic",
+    "values": "classic, consumer (case insensitive)",
+    "meaning": "Picks the rebalance protocol: classic is the client-side assignment protocol, consumer is the KIP-848 protocol where the broker computes assignments and heartbeat and session timing are set on the broker.",
+    "interactsWith": [
+      "session.timeout.ms",
+      "heartbeat.interval.ms",
+      "partition.assignment.strategy",
+      "group.consumer.session.timeout.ms",
+      "group.consumer.heartbeat.interval.ms"
+    ],
+    "topics": [
+      "consumer-groups"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_group.protocol",
+    "versionNote": "The KIP-848 consumer rebalance protocol is Generally Available in Kafka 4.0 and enabled on the server when the 4.0 upgrade is finalized, but the client default is still classic (4.0 upgrade notes, consumer config page)."
+  },
+  {
+    "name": "partition.assignment.strategy",
+    "scope": "consumer",
+    "default": "class org.apache.kafka.clients.consumer.RangeAssignor,class org.apache.kafka.clients.consumer.CooperativeStickyAssignor",
+    "values": "List of assignor classes: RangeAssignor, RoundRobinAssignor, StickyAssignor, CooperativeStickyAssignor, or custom",
+    "meaning": "Client-side assignors for the classic protocol in order of preference; the default uses Range but lets you move to CooperativeSticky (incremental rebalancing) with one rolling bounce.",
+    "interactsWith": [
+      "group.protocol",
+      "group.id"
+    ],
+    "topics": [
+      "consumer-groups"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_partition.assignment.strategy"
+  },
+  {
+    "name": "key.deserializer",
+    "scope": "consumer",
+    "default": "(none; required)",
+    "values": "Class implementing org.apache.kafka.common.serialization.Deserializer",
+    "meaning": "Turns key bytes back into an object; it must match the producer's key.serializer.",
+    "interactsWith": [
+      "key.serializer",
+      "value.deserializer"
+    ],
+    "topics": [
+      "serialization-wire-format"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_key.deserializer"
+  },
+  {
+    "name": "value.deserializer",
+    "scope": "consumer",
+    "default": "(none; required)",
+    "values": "Class implementing org.apache.kafka.common.serialization.Deserializer",
+    "meaning": "Turns value bytes back into an object; with Avro and Schema Registry it is KafkaAvroDeserializer, which returns GenericRecord unless specific.avro.reader=true.",
+    "interactsWith": [
+      "value.serializer",
+      "key.deserializer",
+      "specific.avro.reader",
+      "schema.registry.url"
+    ],
+    "topics": [
+      "serialization-wire-format"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_value.deserializer"
+  },
+  {
+    "name": "auto.offset.reset",
+    "scope": "consumer",
+    "default": "latest",
+    "values": "latest, earliest, none, by_duration:<ISO-8601 duration>",
+    "meaning": "Where to start when the group has no committed offset or the offset is out of range: latest skips existing data, earliest reads from the start, none throws.",
+    "interactsWith": [
+      "enable.auto.commit",
+      "group.id",
+      "offsets.retention.minutes"
+    ],
+    "topics": [
+      "offsets-commits"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_auto.offset.reset"
+  },
+  {
+    "name": "enable.auto.commit",
+    "scope": "consumer",
+    "default": "true",
+    "values": "true, false",
+    "meaning": "Commits the offsets returned by poll() in the background every auto.commit.interval.ms; this is at-least-once at best, so EOS and manual-commit designs turn it off.",
+    "interactsWith": [
+      "auto.commit.interval.ms",
+      "auto.offset.reset",
+      "isolation.level"
+    ],
+    "topics": [
+      "offsets-commits",
+      "transactions-eos"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_enable.auto.commit"
+  },
+  {
+    "name": "auto.commit.interval.ms",
+    "scope": "consumer",
+    "default": "5000 (5 seconds)",
+    "values": "0 and up (ms)",
+    "meaning": "How often offsets are auto-committed when enable.auto.commit=true; a crash can replay up to this much work.",
+    "interactsWith": [
+      "enable.auto.commit"
+    ],
+    "topics": [
+      "offsets-commits"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_auto.commit.interval.ms"
+  },
+  {
+    "name": "isolation.level",
+    "scope": "consumer",
+    "default": "read_uncommitted",
+    "values": "read_committed, read_uncommitted",
+    "meaning": "read_committed hides records from aborted and still-open transactions and reads only up to the last stable offset; the default read_uncommitted returns everything.",
+    "interactsWith": [
+      "transactional.id",
+      "enable.auto.commit",
+      "processing.guarantee"
+    ],
+    "topics": [
+      "offsets-commits",
+      "transactions-eos"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_isolation.level"
+  },
+  {
+    "name": "max.poll.records",
+    "scope": "consumer",
+    "default": "500",
+    "values": "1 and up",
+    "meaning": "Maximum records a single poll() returns; it does not change fetching, only how much your loop processes before the next poll.",
+    "interactsWith": [
+      "max.poll.interval.ms",
+      "fetch.max.bytes"
+    ],
+    "topics": [
+      "poll-liveness"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_max.poll.records"
+  },
+  {
+    "name": "max.poll.interval.ms",
+    "scope": "consumer",
+    "default": "300000 (5 minutes)",
+    "values": "1 and up (ms)",
+    "meaning": "Maximum gap between poll() calls; if processing takes longer, the consumer is considered failed and its partitions are reassigned.",
+    "interactsWith": [
+      "max.poll.records",
+      "session.timeout.ms",
+      "group.instance.id"
+    ],
+    "topics": [
+      "poll-liveness"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_max.poll.interval.ms"
+  },
+  {
+    "name": "session.timeout.ms",
+    "scope": "consumer",
+    "default": "45000 (45 seconds)",
+    "values": "Within broker group.min.session.timeout.ms .. group.max.session.timeout.ms",
+    "meaning": "If the coordinator receives no heartbeat within this time, it removes the consumer and rebalances. Classic protocol only.",
+    "interactsWith": [
+      "heartbeat.interval.ms",
+      "max.poll.interval.ms",
+      "group.instance.id",
+      "group.protocol",
+      "group.consumer.session.timeout.ms"
+    ],
+    "topics": [
+      "consumer-groups",
+      "poll-liveness"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_session.timeout.ms",
+    "versionNote": "Not supported with group.protocol=consumer (KIP-848); the session timeout is then the broker config group.consumer.session.timeout.ms (consumer config page)."
+  },
+  {
+    "name": "heartbeat.interval.ms",
+    "scope": "consumer",
+    "default": "3000 (3 seconds)",
+    "values": "Must be lower than session.timeout.ms; usually no more than 1/3 of it",
+    "meaning": "How often the background thread heartbeats to the group coordinator; it detects dead processes, while max.poll.interval.ms detects stuck ones. Classic protocol only.",
+    "interactsWith": [
+      "session.timeout.ms",
+      "group.protocol",
+      "group.consumer.heartbeat.interval.ms"
+    ],
+    "topics": [
+      "poll-liveness"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_heartbeat.interval.ms",
+    "versionNote": "Not supported with group.protocol=consumer; the broker's group.consumer.heartbeat.interval.ms controls it instead (consumer config page)."
+  },
+  {
+    "name": "fetch.min.bytes",
+    "scope": "consumer",
+    "default": "1",
+    "values": "0 and up (bytes)",
+    "meaning": "Minimum data the broker gathers before answering a fetch; raising it improves throughput at the cost of latency, bounded by fetch.max.wait.ms.",
+    "interactsWith": [
+      "fetch.max.wait.ms",
+      "fetch.max.bytes"
+    ],
+    "topics": [
+      "poll-liveness"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_fetch.min.bytes"
+  },
+  {
+    "name": "fetch.max.wait.ms",
+    "scope": "consumer",
+    "default": "500",
+    "values": "0 and up (ms)",
+    "meaning": "Longest the broker holds a fetch waiting for fetch.min.bytes to accumulate.",
+    "interactsWith": [
+      "fetch.min.bytes"
+    ],
+    "topics": [
+      "poll-liveness"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_fetch.max.wait.ms"
+  },
+  {
+    "name": "fetch.max.bytes",
+    "scope": "consumer",
+    "default": "52428800 (50 mebibytes)",
+    "values": "0 and up (bytes)",
+    "meaning": "Soft cap on data returned by one fetch request across all partitions; a single larger batch is still returned so the consumer can make progress.",
+    "interactsWith": [
+      "max.partition.fetch.bytes",
+      "fetch.min.bytes",
+      "message.max.bytes"
+    ],
+    "topics": [
+      "poll-liveness"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_fetch.max.bytes"
+  },
+  {
+    "name": "max.partition.fetch.bytes",
+    "scope": "consumer",
+    "default": "1048576 (1 mebibyte)",
+    "values": "0 and up (bytes)",
+    "meaning": "Soft cap on data returned per partition in a fetch; an oversized first batch is still returned, so it cannot block consumption.",
+    "interactsWith": [
+      "fetch.max.bytes",
+      "max.message.bytes",
+      "message.max.bytes"
+    ],
+    "topics": [
+      "poll-liveness"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_max.partition.fetch.bytes"
+  },
+  {
+    "name": "client.rack",
+    "scope": "consumer",
+    "default": "\"\" (empty string)",
+    "values": "Any string matching a broker.rack value",
+    "meaning": "Tells brokers where the consumer runs so that, with a rack-aware replica selector, it can fetch from a follower in the same rack (KIP-392).",
+    "interactsWith": [
+      "broker.rack"
+    ],
+    "topics": [
+      "replication-isr"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_client.rack"
+  },
+  {
+    "name": "allow.auto.create.topics",
+    "scope": "consumer",
+    "default": "true",
+    "values": "true, false",
+    "meaning": "Lets subscribing or assigning create a missing topic, but only if the broker also has auto.create.topics.enable=true.",
+    "interactsWith": [
+      "auto.create.topics.enable"
+    ],
+    "topics": [
+      "topic-design"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_allow.auto.create.topics"
+  },
+  {
+    "name": "replication.factor",
+    "scope": "topic",
+    "default": "No topic-level default: set it at creation (kafka-topics.sh --replication-factor); if omitted, the cluster default.replication.factor is used (1 unless changed)",
+    "values": "An integer from 1 to the number of brokers",
+    "meaning": "How many copies of each partition exist; RF 3 survives 2 broker failures for reads, and with min.insync.replicas=2 and acks=all it survives 1 failure without blocking writes. This is a topic creation setting, not a config in topic-configs.",
+    "interactsWith": [
+      "min.insync.replicas",
+      "acks",
+      "default.replication.factor",
+      "unclean.leader.election.enable"
+    ],
+    "topics": [
+      "acks-durability",
+      "replication-isr",
+      "topic-design"
+    ],
+    "url": "https://kafka.apache.org/44/operations/basic-kafka-operations/#adding-and-removing-topics"
+  },
+  {
+    "name": "min.insync.replicas",
+    "scope": "topic",
+    "default": "1",
+    "values": "1 and up",
+    "meaning": "Minimum ISR size for an acks=all write to succeed; below it, producers get NotEnoughReplicas. It has no effect on acks=0 or acks=1.",
+    "interactsWith": [
+      "acks",
+      "replication.factor",
+      "unclean.leader.election.enable"
+    ],
+    "topics": [
+      "acks-durability",
+      "replication-isr"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_min.insync.replicas"
+  },
+  {
+    "name": "unclean.leader.election.enable",
+    "scope": "topic",
+    "default": "false",
+    "values": "true, false",
+    "meaning": "Lets an out-of-sync replica become leader as a last resort, choosing availability over durability (committed data can be lost).",
+    "interactsWith": [
+      "min.insync.replicas",
+      "replication.factor",
+      "replica.lag.time.max.ms"
+    ],
+    "topics": [
+      "acks-durability",
+      "replication-isr"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_unclean.leader.election.enable",
+    "versionNote": "In KRaft mode, enabling it dynamically takes effect when the unclean election thread runs (every 5 minutes by default) unless you run kafka-leader-election.sh with the unclean option (topic config page)."
+  },
+  {
+    "name": "cleanup.policy",
+    "scope": "topic",
+    "default": "delete",
+    "values": "delete, compact, delete,compact, or empty (infinite retention)",
+    "meaning": "delete drops old segments by time or size; compact keeps the latest value per key; both together compact and also expire by retention.",
+    "interactsWith": [
+      "retention.ms",
+      "retention.bytes",
+      "delete.retention.ms",
+      "min.cleanable.dirty.ratio",
+      "min.compaction.lag.ms",
+      "max.compaction.lag.ms"
+    ],
+    "topics": [
+      "log-retention-compaction"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_cleanup.policy",
+    "versionNote": "Since 4.2 (KIP-1161) an empty cleanup.policy is allowed and means infinite retention, like retention.ms=-1 with retention.bytes=-1 (upgrade notes)."
+  },
+  {
+    "name": "retention.ms",
+    "scope": "topic",
+    "default": "604800000 (7 days)",
+    "values": "-1 (no time limit) and up (ms)",
+    "meaning": "How long data is kept before old segments are deleted under the delete policy; deletion is per segment, so data can live a little longer than this.",
+    "interactsWith": [
+      "retention.bytes",
+      "segment.ms",
+      "segment.bytes",
+      "cleanup.policy",
+      "log.retention.hours"
+    ],
+    "topics": [
+      "log-retention-compaction"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_retention.ms"
+  },
+  {
+    "name": "retention.bytes",
+    "scope": "topic",
+    "default": "-1 (no size limit)",
+    "values": "long; -1 = unlimited",
+    "meaning": "Maximum size of each partition before old segments are deleted; it is per partition, so multiply by the partition count for the topic total.",
+    "interactsWith": [
+      "retention.ms",
+      "segment.bytes",
+      "cleanup.policy"
+    ],
+    "topics": [
+      "log-retention-compaction"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_retention.bytes"
+  },
+  {
+    "name": "segment.bytes",
+    "scope": "topic",
+    "default": "1073741824 (1 gibibyte)",
+    "values": "1048576 (1 MiB) and up",
+    "meaning": "Size at which the active segment rolls; only closed segments can be deleted or compacted, so huge segments delay retention.",
+    "interactsWith": [
+      "segment.ms",
+      "retention.ms",
+      "retention.bytes"
+    ],
+    "topics": [
+      "log-retention-compaction"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_segment.bytes",
+    "versionNote": "The minimum segment.bytes/log.segment.bytes changed from 14 bytes to 1 MB in 4.0 (KIP-1030, 4.0 upgrade notes)."
+  },
+  {
+    "name": "segment.ms",
+    "scope": "topic",
+    "default": "604800000 (7 days)",
+    "values": "1 and up (ms)",
+    "meaning": "Forces the active segment to roll after this time even if it is not full, so low-traffic topics can still be cleaned.",
+    "interactsWith": [
+      "segment.bytes",
+      "retention.ms",
+      "max.compaction.lag.ms"
+    ],
+    "topics": [
+      "log-retention-compaction"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_segment.ms"
+  },
+  {
+    "name": "delete.retention.ms",
+    "scope": "topic",
+    "default": "86400000 (1 day)",
+    "values": "0 and up (ms)",
+    "meaning": "How long tombstones (null-value records) stay in a compacted topic before removal, giving consumers time to see the delete.",
+    "interactsWith": [
+      "cleanup.policy",
+      "min.compaction.lag.ms"
+    ],
+    "topics": [
+      "log-retention-compaction"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_delete.retention.ms"
+  },
+  {
+    "name": "min.compaction.lag.ms",
+    "scope": "topic",
+    "default": "0",
+    "values": "0 and up (ms)",
+    "meaning": "Minimum age before a record can be compacted away, which guarantees readers a window to see every update.",
+    "interactsWith": [
+      "max.compaction.lag.ms",
+      "min.cleanable.dirty.ratio",
+      "cleanup.policy"
+    ],
+    "topics": [
+      "log-retention-compaction"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_min.compaction.lag.ms"
+  },
+  {
+    "name": "max.compaction.lag.ms",
+    "scope": "topic",
+    "default": "9223372036854775807 (Long.MAX_VALUE: no forced deadline)",
+    "values": "1 and up (ms)",
+    "meaning": "Maximum time a record may stay uncompacted; once reached, the log becomes eligible for compaction even if the dirty ratio is not met.",
+    "interactsWith": [
+      "min.compaction.lag.ms",
+      "min.cleanable.dirty.ratio",
+      "segment.ms"
+    ],
+    "topics": [
+      "log-retention-compaction"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_max.compaction.lag.ms"
+  },
+  {
+    "name": "min.cleanable.dirty.ratio",
+    "scope": "topic",
+    "default": "0.5",
+    "values": "0 to 1",
+    "meaning": "Fraction of the log that must be uncompacted (\"dirty\") before the cleaner compacts it; higher means fewer, more efficient cleanings but more wasted space.",
+    "interactsWith": [
+      "min.compaction.lag.ms",
+      "max.compaction.lag.ms",
+      "cleanup.policy"
+    ],
+    "topics": [
+      "log-retention-compaction"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_min.cleanable.dirty.ratio"
+  },
+  {
+    "name": "max.message.bytes",
+    "scope": "topic",
+    "default": "1048588 (about 1 MiB)",
+    "values": "0 and up (bytes)",
+    "meaning": "Largest record batch (after compression) the topic accepts; the per-topic override of the broker message.max.bytes. Raise consumer fetch sizes to match.",
+    "interactsWith": [
+      "message.max.bytes",
+      "max.request.size",
+      "max.partition.fetch.bytes"
+    ],
+    "topics": [
+      "topic-design"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_max.message.bytes"
+  },
+  {
+    "name": "compression.type",
+    "scope": "topic",
+    "default": "producer",
+    "values": "producer, uncompressed, gzip, snappy, lz4, zstd",
+    "meaning": "Final codec for the topic on disk; producer keeps whatever codec the producer used, while any other value makes the broker recompress if the codecs differ.",
+    "interactsWith": [
+      "compression.type"
+    ],
+    "topics": [
+      "batching-compression"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_compression.type"
+  },
+  {
+    "name": "message.timestamp.type",
+    "scope": "topic",
+    "default": "CreateTime",
+    "values": "CreateTime, LogAppendTime",
+    "meaning": "Whether record timestamps come from the producer (CreateTime) or are overwritten with the broker append time (LogAppendTime); it matters for time-based retention and Streams windowing.",
+    "interactsWith": [
+      "retention.ms"
+    ],
+    "topics": [
+      "topic-design",
+      "streams-joins-windows"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_message.timestamp.type",
+    "versionNote": "In 4.0 the default of message.timestamp.after.max.ms changed from Long.MAX to 1 hour, so CreateTime records more than 1 hour in the future are rejected (KIP-1030, 4.0 upgrade notes)."
+  },
+  {
+    "name": "default.replication.factor",
+    "scope": "broker",
+    "default": "1",
+    "values": "int",
+    "meaning": "Replication factor for auto-created topics and for AdminClient createTopics with replication factor -1; production clusters usually set it to 3.",
+    "interactsWith": [
+      "replication.factor",
+      "auto.create.topics.enable",
+      "min.insync.replicas"
+    ],
+    "topics": [
+      "replication-isr",
+      "topic-design"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/broker-configs/#brokerconfigs_default.replication.factor"
+  },
+  {
+    "name": "num.partitions",
+    "scope": "broker",
+    "default": "1",
+    "values": "1 and up",
+    "meaning": "Partition count for auto-created topics and for createTopics with partitions -1; you can add partitions later but never remove them.",
+    "interactsWith": [
+      "auto.create.topics.enable",
+      "default.replication.factor"
+    ],
+    "topics": [
+      "topic-design"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/broker-configs/#brokerconfigs_num.partitions"
+  },
+  {
+    "name": "auto.create.topics.enable",
+    "scope": "broker",
+    "default": "true",
+    "values": "true, false",
+    "meaning": "Creates a topic automatically when a client produces to or fetches metadata for a missing one, using num.partitions and default.replication.factor; usually disabled in production.",
+    "interactsWith": [
+      "num.partitions",
+      "default.replication.factor",
+      "allow.auto.create.topics"
+    ],
+    "topics": [
+      "topic-design"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/broker-configs/#brokerconfigs_auto.create.topics.enable"
+  },
+  {
+    "name": "min.insync.replicas",
+    "scope": "broker",
+    "default": "1",
+    "values": "1 and up",
+    "meaning": "Cluster-wide default for the topic-level min.insync.replicas.",
+    "interactsWith": [
+      "acks",
+      "replication.factor"
+    ],
+    "topics": [
+      "acks-durability",
+      "replication-isr"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/broker-configs/#brokerconfigs_min.insync.replicas",
+    "versionNote": "From 4.1, Eligible Leader Replicas (KIP-966) is on by default for new clusters; once ELR is enabled, a broker-level min.insync.replicas setting is removed, so set it at the cluster level (4.1 upgrade notes)."
+  },
+  {
+    "name": "unclean.leader.election.enable",
+    "scope": "broker",
+    "default": "false",
+    "values": "true, false",
+    "meaning": "Cluster-wide default for the topic-level unclean.leader.election.enable.",
+    "interactsWith": [
+      "min.insync.replicas",
+      "replication.factor"
+    ],
+    "topics": [
+      "replication-isr"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/broker-configs/#brokerconfigs_unclean.leader.election.enable"
+  },
+  {
+    "name": "replica.lag.time.max.ms",
+    "scope": "broker",
+    "default": "30000 (30 seconds)",
+    "values": "long (ms)",
+    "meaning": "A follower that has not fetched, or has not caught up to the leader's log end offset, for this long is removed from the ISR.",
+    "interactsWith": [
+      "min.insync.replicas",
+      "unclean.leader.election.enable"
+    ],
+    "topics": [
+      "replication-isr"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/broker-configs/#brokerconfigs_replica.lag.time.max.ms"
+  },
+  {
+    "name": "message.max.bytes",
+    "scope": "broker",
+    "default": "1048588 (about 1 MiB)",
+    "values": "0 and up (bytes)",
+    "meaning": "Largest record batch (after compression) the broker accepts; topics can override it with max.message.bytes.",
+    "interactsWith": [
+      "max.message.bytes",
+      "max.request.size",
+      "fetch.max.bytes"
+    ],
+    "topics": [
+      "topic-design"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/broker-configs/#brokerconfigs_message.max.bytes"
+  },
+  {
+    "name": "log.retention.hours",
+    "scope": "broker",
+    "default": "168 (7 days)",
+    "values": "int (hours)",
+    "meaning": "Broker default retention time; it is the lowest priority of the three (log.retention.ms beats log.retention.minutes, which beats log.retention.hours), and topics override it with retention.ms.",
+    "interactsWith": [
+      "retention.ms"
+    ],
+    "topics": [
+      "log-retention-compaction"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/broker-configs/#brokerconfigs_log.retention.hours"
+  },
+  {
+    "name": "offsets.retention.minutes",
+    "scope": "broker",
+    "default": "10080 (7 days)",
+    "values": "1 and up (minutes)",
+    "meaning": "How long committed offsets are kept after a group becomes empty (or stops subscribing to a topic); after that, the group falls back to auto.offset.reset.",
+    "interactsWith": [
+      "auto.offset.reset",
+      "offsets.topic.replication.factor"
+    ],
+    "topics": [
+      "offsets-commits"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/broker-configs/#brokerconfigs_offsets.retention.minutes"
+  },
+  {
+    "name": "offsets.topic.replication.factor",
+    "scope": "broker",
+    "default": "3",
+    "values": "1 and up",
+    "meaning": "Replication factor of the internal __consumer_offsets topic; creating it fails until the cluster has this many brokers.",
+    "interactsWith": [
+      "offsets.retention.minutes"
+    ],
+    "topics": [
+      "offsets-commits",
+      "replication-isr"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/broker-configs/#brokerconfigs_offsets.topic.replication.factor"
+  },
+  {
+    "name": "transaction.state.log.replication.factor",
+    "scope": "broker",
+    "default": "3",
+    "values": "1 and up",
+    "meaning": "Replication factor of the internal __transaction_state topic; this is why transactions and Streams EOS need at least 3 brokers by default.",
+    "interactsWith": [
+      "transaction.state.log.min.isr",
+      "transactional.id",
+      "processing.guarantee"
+    ],
+    "topics": [
+      "transactions-eos",
+      "streams-state-eos"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/broker-configs/#brokerconfigs_transaction.state.log.replication.factor"
+  },
+  {
+    "name": "transaction.state.log.min.isr",
+    "scope": "broker",
+    "default": "2",
+    "values": "1 and up",
+    "meaning": "min.insync.replicas for the __transaction_state topic; lower it with the replication factor on small dev clusters.",
+    "interactsWith": [
+      "transaction.state.log.replication.factor"
+    ],
+    "topics": [
+      "transactions-eos"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/broker-configs/#brokerconfigs_transaction.state.log.min.isr"
+  },
+  {
+    "name": "transaction.max.timeout.ms",
+    "scope": "broker",
+    "default": "900000 (15 minutes)",
+    "values": "1 and up (ms)",
+    "meaning": "Largest transaction.timeout.ms a producer may ask for; larger requests are rejected so a stuck transaction cannot block read_committed consumers for too long.",
+    "interactsWith": [
+      "transaction.timeout.ms"
+    ],
+    "topics": [
+      "transactions-eos"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/broker-configs/#brokerconfigs_transaction.max.timeout.ms"
+  },
+  {
+    "name": "group.consumer.session.timeout.ms",
+    "scope": "broker",
+    "default": "45000 (45 seconds)",
+    "values": "1 and up (ms)",
+    "meaning": "Session timeout for consumer groups on the KIP-848 protocol (group.protocol=consumer); set on the broker, not on the client.",
+    "interactsWith": [
+      "session.timeout.ms",
+      "group.protocol"
+    ],
+    "topics": [
+      "consumer-groups",
+      "poll-liveness"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/broker-configs/#brokerconfigs_group.consumer.session.timeout.ms"
+  },
+  {
+    "name": "group.consumer.heartbeat.interval.ms",
+    "scope": "broker",
+    "default": "5000 (5 seconds)",
+    "values": "1 and up (ms)",
+    "meaning": "Heartbeat interval for consumer groups on the KIP-848 protocol; the broker tells clients how often to heartbeat.",
+    "interactsWith": [
+      "heartbeat.interval.ms",
+      "group.protocol"
+    ],
+    "topics": [
+      "consumer-groups",
+      "poll-liveness"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/broker-configs/#brokerconfigs_group.consumer.heartbeat.interval.ms"
+  },
+  {
+    "name": "broker.rack",
+    "scope": "broker",
+    "default": "null",
+    "values": "Any string, e.g. us-east-1d",
+    "meaning": "Rack or availability zone of the broker; used to spread replicas across racks and to match consumers' client.rack for follower fetching.",
+    "interactsWith": [
+      "client.rack",
+      "replication.factor"
+    ],
+    "topics": [
+      "replication-isr"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/broker-configs/#brokerconfigs_broker.rack"
+  },
+  {
+    "name": "application.id",
+    "scope": "streams",
+    "default": "(none; required)",
+    "values": "String unique within the cluster",
+    "meaning": "Identifies the Streams app: it becomes the consumer group.id, the default client.id prefix and the prefix of internal changelog and repartition topics, so changing it starts the app from scratch.",
+    "interactsWith": [
+      "bootstrap.servers",
+      "state.dir"
+    ],
+    "topics": [
+      "streams-dsl"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/kafka-streams-configs/#streamsconfigs_application.id"
+  },
+  {
+    "name": "bootstrap.servers",
+    "scope": "streams",
+    "default": "(none; required)",
+    "values": "Comma-separated list of host:port pairs",
+    "meaning": "Brokers the Streams app connects to; together with application.id it is one of the two required Streams configs.",
+    "interactsWith": [
+      "application.id"
+    ],
+    "topics": [
+      "streams-dsl"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/kafka-streams-configs/#streamsconfigs_bootstrap.servers"
+  },
+  {
+    "name": "num.stream.threads",
+    "scope": "streams",
+    "default": "1",
+    "values": "int",
+    "meaning": "Processing threads per instance; tasks (one per input partition) are spread over all threads of all instances, so threads beyond the partition count sit idle.",
+    "interactsWith": [
+      "num.standby.replicas"
+    ],
+    "topics": [
+      "streams-dsl"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/kafka-streams-configs/#streamsconfigs_num.stream.threads"
+  },
+  {
+    "name": "default.key.serde",
+    "scope": "streams",
+    "default": "null",
+    "values": "Class implementing org.apache.kafka.common.serialization.Serde",
+    "meaning": "Serde used for keys when an operator gets no explicit Serde; with no default and no override, Streams throws a ConfigException.",
+    "interactsWith": [
+      "default.value.serde"
+    ],
+    "topics": [
+      "streams-dsl"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/kafka-streams-configs/#streamsconfigs_default.key.serde",
+    "versionNote": "Default changed from ByteArraySerde to null (KIP-741), so a missing serde now fails fast (Streams upgrade guide)."
+  },
+  {
+    "name": "default.value.serde",
+    "scope": "streams",
+    "default": "null",
+    "values": "Class implementing org.apache.kafka.common.serialization.Serde",
+    "meaning": "Serde used for values when an operator gets no explicit Serde (Consumed.with, Produced.with, Grouped.with, Materialized.with).",
+    "interactsWith": [
+      "default.key.serde"
+    ],
+    "topics": [
+      "streams-dsl"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/kafka-streams-configs/#streamsconfigs_default.value.serde",
+    "versionNote": "Default changed from ByteArraySerde to null (KIP-741) (Streams upgrade guide)."
+  },
+  {
+    "name": "processing.guarantee",
+    "scope": "streams",
+    "default": "at_least_once",
+    "values": "at_least_once, exactly_once_v2",
+    "meaning": "exactly_once_v2 wraps read-process-write in Kafka transactions, so output, state changelogs and input offsets commit atomically; it needs brokers 2.5+ and by default at least 3 brokers.",
+    "interactsWith": [
+      "commit.interval.ms",
+      "isolation.level",
+      "transaction.state.log.replication.factor",
+      "num.standby.replicas"
+    ],
+    "topics": [
+      "streams-state-eos",
+      "transactions-eos"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/kafka-streams-configs/#streamsconfigs_processing.guarantee",
+    "versionNote": "The 4.4 docs list only at_least_once and exactly_once_v2 as valid; the older exactly_once and exactly_once_beta values are gone, so migrate them to exactly_once_v2 (Streams upgrade guide)."
+  },
+  {
+    "name": "commit.interval.ms",
+    "scope": "streams",
+    "default": "30000 (30 seconds); 100 when processing.guarantee=exactly_once_v2",
+    "values": "0 and up (ms)",
+    "meaning": "How often Streams commits progress (offsets, or the transaction under EOS); the default drops to 100 ms under exactly_once_v2 to keep latency low.",
+    "interactsWith": [
+      "processing.guarantee",
+      "statestore.cache.max.bytes"
+    ],
+    "topics": [
+      "streams-state-eos"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/kafka-streams-configs/#streamsconfigs_commit.interval.ms"
+  },
+  {
+    "name": "num.standby.replicas",
+    "scope": "streams",
+    "default": "0",
+    "values": "int",
+    "meaning": "Number of warm copies of each state store kept on other instances, so failover does not have to replay the whole changelog.",
+    "interactsWith": [
+      "state.dir",
+      "num.stream.threads",
+      "replication.factor"
+    ],
+    "topics": [
+      "streams-state-eos"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/kafka-streams-configs/#streamsconfigs_num.standby.replicas",
+    "versionNote": "With the new Streams rebalance protocol (group.protocol=streams, KIP-1071) this becomes a group-level config (streams.num.standby.replicas) set with kafka-configs.sh, and the client setting is ignored (Streams upgrade guide)."
+  },
+  {
+    "name": "state.dir",
+    "scope": "streams",
+    "default": "${java.io.tmpdir}",
+    "values": "Directory path",
+    "meaning": "Local directory for RocksDB state stores; it must be unique per instance on a shared filesystem, and the tmp default should be changed in production.",
+    "interactsWith": [
+      "application.id",
+      "num.standby.replicas"
+    ],
+    "topics": [
+      "streams-state-eos"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/kafka-streams-configs/#streamsconfigs_state.dir"
+  },
+  {
+    "name": "replication.factor",
+    "scope": "streams",
+    "default": "-1 (use the broker default.replication.factor)",
+    "values": "int; -1 = broker default",
+    "meaning": "Replication factor for the changelog and repartition topics that Streams creates; set it to 3 in production so state survives broker loss.",
+    "interactsWith": [
+      "default.replication.factor",
+      "num.standby.replicas"
+    ],
+    "topics": [
+      "streams-state-eos"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/kafka-streams-configs/#streamsconfigs_replication.factor"
+  },
+  {
+    "name": "statestore.cache.max.bytes",
+    "scope": "streams",
+    "default": "10485760 (10 mebibytes)",
+    "values": "0 and up (bytes)",
+    "meaning": "Total record cache across all threads; it de-duplicates updates to the same key before they reach the store and downstream, so with caching you see fewer, later KTable updates.",
+    "interactsWith": [
+      "commit.interval.ms"
+    ],
+    "topics": [
+      "streams-state-eos",
+      "streams-dsl"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/kafka-streams-configs/#streamsconfigs_statestore.cache.max.bytes",
+    "versionNote": "Added in 3.4 (KIP-770), replacing the deprecated cache.max.bytes.buffering (Streams upgrade guide)."
+  },
+  {
+    "name": "group.id",
+    "scope": "connect",
+    "default": "(none; required in distributed mode)",
+    "values": "String",
+    "meaning": "Identifies the Connect cluster: workers with the same group.id share connectors and tasks. It must not clash with any consumer group name.",
+    "interactsWith": [
+      "config.storage.topic",
+      "offset.storage.topic",
+      "status.storage.topic"
+    ],
+    "topics": [
+      "connect-architecture"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/kafka-connect-configs/#connectconfigs_group.id"
+  },
+  {
+    "name": "config.storage.topic",
+    "scope": "connect",
+    "default": "(none; required in distributed mode)",
+    "values": "Topic name",
+    "meaning": "Compacted, single-partition topic holding connector and task configs for a distributed Connect cluster.",
+    "interactsWith": [
+      "group.id",
+      "offset.storage.topic",
+      "status.storage.topic"
+    ],
+    "topics": [
+      "connect-architecture"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/kafka-connect-configs/#connectconfigs_config.storage.topic"
+  },
+  {
+    "name": "offset.storage.topic",
+    "scope": "connect",
+    "default": "(none; required in distributed mode)",
+    "values": "Topic name",
+    "meaning": "Compacted topic holding source connector offsets; sink connectors track progress as normal consumer group offsets instead.",
+    "interactsWith": [
+      "group.id",
+      "config.storage.topic",
+      "offset.flush.interval.ms"
+    ],
+    "topics": [
+      "connect-architecture"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/kafka-connect-configs/#connectconfigs_offset.storage.topic"
+  },
+  {
+    "name": "status.storage.topic",
+    "scope": "connect",
+    "default": "(none; required in distributed mode)",
+    "values": "Topic name",
+    "meaning": "Compacted topic holding the running, paused or failed status of connectors and tasks.",
+    "interactsWith": [
+      "group.id",
+      "config.storage.topic"
+    ],
+    "topics": [
+      "connect-architecture"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/kafka-connect-configs/#connectconfigs_status.storage.topic"
+  },
+  {
+    "name": "key.converter",
+    "scope": "connect",
+    "default": "(none; required at worker level)",
+    "values": "Converter class, e.g. org.apache.kafka.connect.json.JsonConverter, io.confluent.connect.avro.AvroConverter, org.apache.kafka.connect.storage.StringConverter",
+    "meaning": "Converts record keys between Connect's internal format and bytes in Kafka; the worker sets a default that each connector can override.",
+    "interactsWith": [
+      "value.converter",
+      "schema.registry.url"
+    ],
+    "topics": [
+      "connect-converters-errors"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/kafka-connect-configs/#connectconfigs_key.converter"
+  },
+  {
+    "name": "value.converter",
+    "scope": "connect",
+    "default": "(none; required at worker level)",
+    "values": "Converter class, e.g. JsonConverter, AvroConverter, ProtobufConverter, StringConverter",
+    "meaning": "Converts record values; converters are separate from connectors, so any connector can write any format. Avro, Protobuf and JSON Schema converters need schema.registry.url.",
+    "interactsWith": [
+      "key.converter",
+      "schema.registry.url",
+      "errors.tolerance"
+    ],
+    "topics": [
+      "connect-converters-errors"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/kafka-connect-configs/#connectconfigs_value.converter"
+  },
+  {
+    "name": "offset.flush.interval.ms",
+    "scope": "connect",
+    "default": "60000 (1 minute)",
+    "values": "long (ms)",
+    "meaning": "How often the worker commits task offsets; after a crash, up to this much source data may be produced again.",
+    "interactsWith": [
+      "offset.storage.topic"
+    ],
+    "topics": [
+      "connect-architecture"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/kafka-connect-configs/#connectconfigs_offset.flush.interval.ms"
+  },
+  {
+    "name": "plugin.path",
+    "scope": "connect",
+    "default": "null",
+    "values": "Comma-separated directories or archives",
+    "meaning": "Where the worker finds connector, converter and transform plugins, each loaded in its own isolated classloader.",
+    "interactsWith": [
+      "key.converter",
+      "value.converter",
+      "transforms"
+    ],
+    "topics": [
+      "connect-architecture"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/kafka-connect-configs/#connectconfigs_plugin.path"
+  },
+  {
+    "name": "tasks.max",
+    "scope": "connect",
+    "default": "1",
+    "values": "1 and up",
+    "meaning": "Upper bound on tasks for a connector; the connector may create fewer (a single-table JDBC source cannot split), and for sinks more tasks than partitions sit idle.",
+    "interactsWith": [
+      "group.id"
+    ],
+    "topics": [
+      "connect-architecture"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/kafka-connect-configs/#sinkconnectorconfigs_tasks.max"
+  },
+  {
+    "name": "transforms",
+    "scope": "connect",
+    "default": "\"\" (none)",
+    "values": "Comma-separated list of unique transform aliases",
+    "meaning": "Aliases of single message transforms (SMTs) applied in order to each record; each alias is configured with transforms.<alias>.type and its own options.",
+    "interactsWith": [
+      "key.converter",
+      "value.converter",
+      "errors.tolerance"
+    ],
+    "topics": [
+      "connect-converters-errors"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/kafka-connect-configs/#sinkconnectorconfigs_transforms"
+  },
+  {
+    "name": "errors.tolerance",
+    "scope": "connect",
+    "default": "none",
+    "values": "none, all",
+    "meaning": "none fails the task on the first conversion or transform error; all skips bad records (logging them or sending them to the DLQ if configured).",
+    "interactsWith": [
+      "errors.deadletterqueue.topic.name",
+      "errors.log.enable"
+    ],
+    "topics": [
+      "connect-converters-errors"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/kafka-connect-configs/#sinkconnectorconfigs_errors.tolerance"
+  },
+  {
+    "name": "errors.deadletterqueue.topic.name",
+    "scope": "connect",
+    "default": "\"\" (no DLQ)",
+    "values": "Topic name",
+    "meaning": "Sink-only: records that fail in converters or transforms are written to this topic; it only takes effect together with errors.tolerance=all.",
+    "interactsWith": [
+      "errors.tolerance",
+      "errors.deadletterqueue.context.headers.enable"
+    ],
+    "topics": [
+      "connect-converters-errors"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/kafka-connect-configs/#sinkconnectorconfigs_errors.deadletterqueue.topic.name",
+    "versionNote": "Since 4.4, share groups also have a group-level errors.deadletterqueue.topic.name (KIP-1191); that is a different setting from this Connect sink config (4.4 upgrade notes)."
+  },
+  {
+    "name": "errors.deadletterqueue.context.headers.enable",
+    "scope": "connect",
+    "default": "false",
+    "values": "true, false",
+    "meaning": "Adds __connect.errors.* headers to DLQ records describing what failed and where, so you can diagnose them.",
+    "interactsWith": [
+      "errors.deadletterqueue.topic.name"
+    ],
+    "topics": [
+      "connect-converters-errors"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/kafka-connect-configs/#sinkconnectorconfigs_errors.deadletterqueue.context.headers.enable"
+  },
+  {
+    "name": "errors.log.enable",
+    "scope": "connect",
+    "default": "false",
+    "values": "true, false",
+    "meaning": "Logs every error and failed operation to the Connect log, including tolerated ones; by default only errors that are not tolerated are reported.",
+    "interactsWith": [
+      "errors.tolerance",
+      "errors.deadletterqueue.topic.name"
+    ],
+    "topics": [
+      "connect-converters-errors"
+    ],
+    "url": "https://kafka.apache.org/44/configuration/kafka-connect-configs/#sinkconnectorconfigs_errors.log.enable"
+  },
+  {
+    "name": "schema.registry.url",
+    "scope": "schema-registry",
+    "default": "\"\" (must be set)",
+    "values": "Comma-separated list of Schema Registry URLs",
+    "meaning": "Where Confluent serializers, deserializers and converters register and look up schemas; the record itself carries only a magic byte and a 4-byte schema ID.",
+    "interactsWith": [
+      "auto.register.schemas",
+      "value.serializer",
+      "value.converter"
+    ],
+    "topics": [
+      "serialization-wire-format"
+    ],
+    "url": "https://docs.confluent.io/platform/current/schema-registry/connect.html#configuration-options"
+  },
+  {
+    "name": "auto.register.schemas",
+    "scope": "schema-registry",
+    "default": "true",
+    "values": "true, false",
+    "meaning": "Lets the serializer register the schema of the object it serializes; turn it off in production so only CI or admins register schemas.",
+    "interactsWith": [
+      "use.latest.version",
+      "schema.registry.url",
+      "value.subject.name.strategy",
+      "compatibility"
+    ],
+    "topics": [
+      "serialization-wire-format",
+      "schema-compatibility"
+    ],
+    "url": "https://docs.confluent.io/platform/current/schema-registry/connect.html#configuration-options"
+  },
+  {
+    "name": "use.latest.version",
+    "scope": "schema-registry",
+    "default": "false",
+    "values": "true, false",
+    "meaning": "When auto.register.schemas=false, serialize with the latest registered version in the subject instead of deriving a schema from the object.",
+    "interactsWith": [
+      "auto.register.schemas"
+    ],
+    "topics": [
+      "serialization-wire-format"
+    ],
+    "url": "https://docs.confluent.io/platform/current/schema-registry/connect.html#configuration-options"
+  },
+  {
+    "name": "value.subject.name.strategy",
+    "scope": "schema-registry",
+    "default": "io.confluent.kafka.serializers.subject.TopicNameStrategy (subject <topic>-value)",
+    "values": "TopicNameStrategy, RecordNameStrategy, TopicRecordNameStrategy, or a custom SubjectNameStrategy",
+    "meaning": "Decides which subject the value schema is registered under, and therefore where compatibility is checked; RecordNameStrategy or TopicRecordNameStrategy allow several event types in one topic.",
+    "interactsWith": [
+      "key.subject.name.strategy",
+      "auto.register.schemas",
+      "compatibility"
+    ],
+    "topics": [
+      "serialization-wire-format",
+      "schema-compatibility"
+    ],
+    "url": "https://docs.confluent.io/platform/current/schema-registry/fundamentals/serdes-develop/index.html#configuration-details"
+  },
+  {
+    "name": "key.subject.name.strategy",
+    "scope": "schema-registry",
+    "default": "io.confluent.kafka.serializers.subject.TopicNameStrategy (subject <topic>-key)",
+    "values": "TopicNameStrategy, RecordNameStrategy, TopicRecordNameStrategy, or a custom SubjectNameStrategy",
+    "meaning": "Same as value.subject.name.strategy but for the key schema.",
+    "interactsWith": [
+      "value.subject.name.strategy"
+    ],
+    "topics": [
+      "serialization-wire-format"
+    ],
+    "url": "https://docs.confluent.io/platform/current/schema-registry/fundamentals/serdes-develop/index.html#configuration-details"
+  },
+  {
+    "name": "specific.avro.reader",
+    "scope": "schema-registry",
+    "default": "false",
+    "values": "true, false",
+    "meaning": "Makes KafkaAvroDeserializer return generated SpecificRecord classes instead of GenericRecord.",
+    "interactsWith": [
+      "value.deserializer"
+    ],
+    "topics": [
+      "serialization-wire-format"
+    ],
+    "url": "https://docs.confluent.io/platform/current/schema-registry/fundamentals/serdes-develop/serdes-avro.html#using-avro-specific-records"
+  },
+  {
+    "name": "compatibility",
+    "scope": "schema-registry",
+    "default": "BACKWARD (server setting schema.compatibility.level, default \"backward\")",
+    "values": "NONE, BACKWARD, BACKWARD_TRANSITIVE, FORWARD, FORWARD_TRANSITIVE, FULL, FULL_TRANSITIVE",
+    "meaning": "Compatibility rule the registry enforces when a new schema version is registered, set globally or per subject (PUT /config); BACKWARD means consumers on the new schema can read data written with the latest old one, so upgrade consumers first.",
+    "interactsWith": [
+      "auto.register.schemas",
+      "value.subject.name.strategy"
+    ],
+    "topics": [
+      "schema-compatibility"
+    ],
+    "url": "https://docs.confluent.io/platform/current/schema-registry/installation/config.html#schema-compatibility-level",
+    "versionNote": "In Confluent Platform 5.5.0 and later the server property is schema.compatibility.level; avro.compatibility.level is deprecated (Schema Registry config reference)."
+  }
+]

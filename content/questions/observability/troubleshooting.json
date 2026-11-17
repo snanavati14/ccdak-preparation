@@ -1,0 +1,810 @@
+[
+  {
+    "id": "obs-trbl-001",
+    "domain": "observability",
+    "topics": [
+      "troubleshooting",
+      "batching-compression"
+    ],
+    "type": "single",
+    "stem": "Three producer services log these send failures:\n\n1. `TimeoutException: Topic payments-v2 not present in metadata after 60000 ms.`\n2. `BufferExhaustedException: Failed to allocate 16384 bytes within the configured max blocking time 60000 ms. ...`\n3. `RecordTooLargeException: The message is 2097240 bytes when serialized which is larger than 1048576, which is the value of the max.request.size configuration.`\n\nWhich pairing of error to cause is correct?",
+    "options": [
+      {
+        "id": "a",
+        "text": "1: no metadata for the topic arrived within `max.block.ms` (missing topic or wrong name) · 2: `buffer.memory` stayed full for `max.block.ms` · 3: one record is bigger than the producer's `max.request.size`"
+      },
+      {
+        "id": "b",
+        "text": "1: the batch expired after `delivery.timeout.ms` · 2: the broker rejected a batch larger than the topic's `max.message.bytes` · 3: `buffer.memory` is smaller than the record"
+      },
+      {
+        "id": "c",
+        "text": "1: `request.timeout.ms` expired while waiting for the partition leader · 2: `batch.size` is too small for the record · 3: the broker rejected the record against the topic's `max.message.bytes`"
+      },
+      {
+        "id": "d",
+        "text": "1: `buffer.memory` stayed full for `max.block.ms` · 2: no metadata for the topic arrived within `max.block.ms` · 3: one record is bigger than the producer's `max.request.size`"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "Each message names its own limit, which is the fastest way to diagnose a failed send.\n\n- **Metadata wait.** `max.block.ms` (default 60000) \"bounds the total time waiting for both metadata fetch and buffer allocation\" in `send()`. \"Topic ... not present in metadata\" means the producer never learned about the topic: it doesn't exist (and auto-creation is off) or the name is wrong.\n- **Buffer full.** `BufferExhaustedException` \"is thrown if the producer cannot allocate memory for a record within `max.block.ms` due to the buffer being too full\". It extends `TimeoutException`. Look at why the brokers can't keep up, or raise `buffer.memory`.\n- **Client-side size check.** The producer compares each serialized record with `max.request.size` (default 1048576) before sending, so this one never reached a broker.\n\n`delivery.timeout.ms` expiry and broker-side `max.message.bytes` rejections produce different messages, and `batch.size` never causes a send to fail.",
+    "references": [
+      {
+        "title": "BufferExhaustedException javadoc (Kafka 4.4)",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/producer/BufferExhaustedException.html",
+        "kind": "official"
+      },
+      {
+        "title": "Producer config: max.block.ms",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_max.block.ms",
+        "kind": "official"
+      },
+      {
+        "title": "Producer config: max.request.size",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_max.request.size",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "obs-trbl-002",
+    "domain": "observability",
+    "topics": [
+      "troubleshooting",
+      "batching-compression"
+    ],
+    "type": "single",
+    "stem": "A producer uses `compression.type=zstd` and default size settings. It sends one JSON record of 3 MB that compresses to about 300 KB. The send fails at once with `RecordTooLargeException: The message is 3145828 bytes when serialized which is larger than 1048576, which is the value of the max.request.size configuration.` The topic's `max.message.bytes` is at its default. What is the smallest change that lets this record through?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Raise the producer's `max.request.size` above the record's uncompressed size. The topic limit can stay, because the broker checks the compressed batch."
+      },
+      {
+        "id": "b",
+        "text": "Raise only the topic's `max.message.bytes`, because the producer's check uses the compressed size."
+      },
+      {
+        "id": "c",
+        "text": "Raise both `max.request.size` and the topic's `max.message.bytes` above 3 MB."
+      },
+      {
+        "id": "d",
+        "text": "Raise `batch.size` above 3 MB so the record fits in one batch."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The two limits measure different things:\n\n- `max.request.size` (default 1048576) is \"effectively a cap on the maximum **uncompressed** record batch size\". The producer checks the serialized record against it before compressing, which is what the error message reports.\n- The topic's `max.message.bytes` (default 1048588) is \"the largest record batch size allowed by Kafka (**after compression** if compression is enabled)\". A 300 KB compressed batch is well under it.\n\nSo only the producer limit has to change. Raising the topic limit as well works but isn't needed, and raising only the topic limit doesn't help because the producer rejects the record first. `batch.size` is a batching target, not a size limit, and doesn't affect the `max.request.size` check.",
+    "references": [
+      {
+        "title": "Producer config: max.request.size",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_max.request.size",
+        "kind": "official"
+      },
+      {
+        "title": "Topic config: max.message.bytes",
+        "url": "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_max.message.bytes",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "obs-trbl-003",
+    "domain": "observability",
+    "topics": [
+      "troubleshooting",
+      "acks-durability"
+    ],
+    "type": "single",
+    "stem": "A developer creates topic `audit-dev` with `--replication-factor 1` on a cluster whose brokers set `min.insync.replicas=2`. All brokers are healthy. A producer with default settings logs repeated retries with `NOT_ENOUGH_REPLICAS` for every partition of `audit-dev`, while other topics work normally. What is the cause, and what fixes it?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Each partition's ISR can never have more than one member, which is below `min.insync.replicas`. Recreate the topic with a replication factor of at least 2, or override `min.insync.replicas=1` on that topic."
+      },
+      {
+        "id": "b",
+        "text": "A follower broker is down. Wait until it rejoins the ISR."
+      },
+      {
+        "id": "c",
+        "text": "The producer gives up too early. Raise `retries`."
+      },
+      {
+        "id": "d",
+        "text": "Single-replica topics need `max.in.flight.requests.per.connection=1` when idempotence is on."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`NotEnoughReplicasException` means the \"number of insync replicas for the partition is lower than `min.insync.replicas`\". The producer defaults to `acks=all`, and \"if `acks=all` and the current ISR set contains fewer than `min.insync.replicas` members, then the producer will raise an exception\". With a replication factor of 1 the ISR is at most the leader, so every `acks=all` write to this topic fails no matter how healthy the brokers are.\n\nFix the mismatch: give the topic at least as many replicas as `min.insync.replicas`, or lower `min.insync.replicas` for this topic only (accepting weaker durability).\n\n- No broker is down; other topics work.\n- `retries` already defaults to `2147483647`; more retries can't grow the ISR. The error is retriable, so the producer keeps retrying until `delivery.timeout.ms`.\n- In-flight request limits have nothing to do with replica counts.",
+    "references": [
+      {
+        "title": "Topic config: min.insync.replicas",
+        "url": "https://kafka.apache.org/44/configuration/topic-configs/#topicconfigs_min.insync.replicas",
+        "kind": "official"
+      },
+      {
+        "title": "NotEnoughReplicasException javadoc (Kafka 4.4)",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/common/errors/NotEnoughReplicasException.html",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "obs-trbl-004",
+    "domain": "observability",
+    "topics": [
+      "troubleshooting",
+      "poll-liveness"
+    ],
+    "type": "single",
+    "stem": "A consumer with default `max.poll.records` and `max.poll.interval.ms` calls a slow REST API for each record, at about 1 second per record. Its log shows it left the group because the poll timeout expired, and then `commitSync()` throws `CommitFailedException`. The group rebalances every few minutes. Which single change fixes this?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Set `max.poll.records=200`."
+      },
+      {
+        "id": "b",
+        "text": "Set `max.poll.records=400`."
+      },
+      {
+        "id": "c",
+        "text": "Set `session.timeout.ms=600000`."
+      },
+      {
+        "id": "d",
+        "text": "Set `heartbeat.interval.ms=1000`."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "Do the arithmetic. The defaults are `max.poll.records=500` and `max.poll.interval.ms=300000` (5 minutes). A full batch takes about 500 × 1 s = 500 s, longer than the 300 s allowed between `poll()` calls, so \"the client will proactively leave the group\" and the next `commitSync()` fails with `CommitFailedException`. Each time it rejoins, the cycle repeats.\n\n- 200 records take about 200 s, inside the 300 s budget with headroom.\n- 400 records take about 400 s, which still exceeds it.\n- `session.timeout.ms` and `heartbeat.interval.ms` control the background heartbeat, which is working fine here. The poll interval is a separate check.\n\nRaising `max.poll.interval.ms` above the batch time, or making processing faster, would also work.",
+    "references": [
+      {
+        "title": "KafkaConsumer javadoc: Detecting Consumer Failures (Kafka 4.4)",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html#detecting-consumer-failures-heading",
+        "kind": "official"
+      },
+      {
+        "title": "Consumer config: max.poll.records",
+        "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_max.poll.records",
+        "kind": "official"
+      },
+      {
+        "title": "Consumer config: max.poll.interval.ms",
+        "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_max.poll.interval.ms",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "obs-trbl-005",
+    "domain": "observability",
+    "topics": [
+      "troubleshooting",
+      "poll-liveness"
+    ],
+    "type": "single",
+    "stem": "A consumer in a three-member group (classic protocol) takes longer than `max.poll.interval.ms` to process one batch, while its background heartbeats keep reaching the coordinator. Which order of events is correct?",
+    "options": [
+      {
+        "id": "a",
+        "text": "The time since the last `poll()` passes `max.poll.interval.ms` → the client proactively leaves the group → the group rebalances and other members take its partitions → the slow consumer finishes and its `commitSync()` throws `CommitFailedException`"
+      },
+      {
+        "id": "b",
+        "text": "The time since the last `poll()` passes `max.poll.interval.ms` → `commitSync()` throws `CommitFailedException` → the client leaves the group → the group rebalances"
+      },
+      {
+        "id": "c",
+        "text": "Heartbeats stop → `session.timeout.ms` expires → the group rebalances → the slow consumer's `commitSync()` succeeds for its old partitions"
+      },
+      {
+        "id": "d",
+        "text": "The slow consumer's `commitSync()` throws `CommitFailedException` → the time since the last `poll()` passes `max.poll.interval.ms` → the group rebalances → the client leaves the group"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The `KafkaConsumer` javadoc describes this \"livelock\" case: \"if you don't call poll at least as frequently as the configured max interval, then the client will proactively leave the group so that another consumer can take over its partitions. When this happens, you may see an offset commit failure (as indicated by a `CommitFailedException` thrown from a call to `commitSync()`).\"\n\nSo the commit failure comes last: the consumer only tries to commit after it finishes the slow batch, by which time its partitions belong to someone else. Heartbeats don't stop in this scenario, so `session.timeout.ms` isn't what triggers the rebalance, and a member that has left the group can't commit for partitions it no longer owns.",
+    "references": [
+      {
+        "title": "KafkaConsumer javadoc: Detecting Consumer Failures (Kafka 4.4)",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html#detecting-consumer-failures-heading",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "obs-trbl-006",
+    "domain": "observability",
+    "topics": [
+      "troubleshooting",
+      "poll-liveness"
+    ],
+    "type": "single",
+    "stem": "A consumer's `commitSync()` throws `CommitFailedException`. What does this tell you?",
+    "options": [
+      {
+        "id": "a",
+        "text": "The commit can't be applied because the group rebalanced and the partitions may now belong to another member. Retrying the same commit won't help."
+      },
+      {
+        "id": "b",
+        "text": "A transient network error occurred. Call `commitSync()` again until it succeeds."
+      },
+      {
+        "id": "c",
+        "text": "The topic was deleted while the consumer was reading it."
+      },
+      {
+        "id": "d",
+        "text": "`enable.auto.commit` is `true`, which doesn't allow manual commits."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`CommitFailedException` \"is generated on the client side, typically when a group rebalance completes before the commit could be successfully applied. In this case, the commit cannot generally be retried because some of the partitions may have already been assigned to another member in the group.\" The `commitSync()` javadoc calls it a fatal error that happens \"when you are trying to commit to partitions that are no longer assigned to this consumer\".\n\nThe usual root cause is processing that exceeds `max.poll.interval.ms`. The consumer rejoins on its next `poll()`; records it processed but couldn't commit will be delivered again to whoever owns the partition.\n\nTransient problems surface as other exceptions (a `commitSync()` that runs out of time throws `TimeoutException`), and manual commits are allowed even with auto-commit on.",
+    "references": [
+      {
+        "title": "CommitFailedException javadoc (Kafka 4.4)",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/CommitFailedException.html",
+        "kind": "official"
+      },
+      {
+        "title": "KafkaConsumer javadoc: Detecting Consumer Failures (Kafka 4.4)",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html#detecting-consumer-failures-heading",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "obs-trbl-007",
+    "domain": "observability",
+    "topics": [
+      "troubleshooting",
+      "offsets-commits"
+    ],
+    "type": "multi",
+    "stem": "In a test environment a developer produces 1,000 keyed records to `orders` (6 partitions), then starts a new consumer application. Its `poll()` keeps returning empty batches, nothing more is being produced, and no exceptions are logged. Which three causes fit these symptoms? (Choose three.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "The consumer uses a brand-new `group.id` and leaves `auto.offset.reset` at its default, so it starts at the end of each partition."
+      },
+      {
+        "id": "b",
+        "text": "The `group.id` was copied from another application that already consumed `orders`, so the consumer resumes from that group's committed offsets at the end of the log."
+      },
+      {
+        "id": "c",
+        "text": "The consumer calls `assign()` for partition 0 only, and the test records' keys all hash to other partitions."
+      },
+      {
+        "id": "d",
+        "text": "`max.poll.records` is left at 500, which is lower than the 1,000 records waiting."
+      },
+      {
+        "id": "e",
+        "text": "`enable.auto.commit=true` commits offsets before records are returned, so they are skipped."
+      },
+      {
+        "id": "f",
+        "text": "`fetch.min.bytes` is left at 1, so the broker never answers the fetch."
+      }
+    ],
+    "correct": [
+      "a",
+      "b",
+      "c"
+    ],
+    "explanation": "All three correct options put the consumer's position at or past the existing data, which explains empty polls with no errors.\n\n- **New group, default reset.** `auto.offset.reset` defaults to `latest`: with no committed offset the consumer starts at the log end and only sees new records. Use `earliest` or `by_duration:<duration>` for a new group that must read existing data.\n- **Wrong `group.id`.** Committed offsets \"will be used on the first fetch after every rebalance and also on startup\", so borrowing another group's id inherits its position. Give each application its own group.\n- **`assign()` to the wrong partition.** With manual assignment the consumer reads only the partitions it lists; there is no group to hand it the others.\n\nThe distractors don't stop delivery: `max.poll.records` only caps how many records one `poll()` returns, auto-commit commits offsets of records already returned by `poll()`, and `fetch.min.bytes=1` means the broker answers as soon as any data is available.",
+    "references": [
+      {
+        "title": "Consumer config: auto.offset.reset",
+        "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_auto.offset.reset",
+        "kind": "official"
+      },
+      {
+        "title": "KafkaConsumer javadoc: Manual Partition Assignment (Kafka 4.4)",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html#manual-partition-assignment-heading",
+        "kind": "official"
+      },
+      {
+        "title": "Consumer config: max.poll.records",
+        "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_max.poll.records",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "obs-trbl-008",
+    "domain": "observability",
+    "topics": [
+      "troubleshooting",
+      "offsets-commits"
+    ],
+    "type": "single",
+    "stem": "A nightly reconciliation job runs a consumer group with `auto.offset.reset=none` and has worked for months. After a 9-day change freeze in which the job didn't run, its first `poll()` throws `NoOffsetForPartitionException` for every partition. Brokers use default settings and the topic still holds the data. What happened, and what is a correct fix?",
+    "options": [
+      {
+        "id": "a",
+        "text": "The group was empty for longer than `offsets.retention.minutes` (7 days by default), so its committed offsets expired, and `none` defines no reset. Set the starting offsets explicitly, for example with `kafka-consumer-groups --reset-offsets`, or choose a reset policy such as `earliest` or `by_duration`."
+      },
+      {
+        "id": "b",
+        "text": "Retention deleted the records at the committed offsets. The consumer would throw the same exception with `auto.offset.reset=earliest`."
+      },
+      {
+        "id": "c",
+        "text": "The freeze moved the group to a different coordinator, which invalidates committed offsets. Restart the brokers."
+      },
+      {
+        "id": "d",
+        "text": "`none` isn't a valid value in Kafka 4.x. Change it to `latest`."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`NoOffsetForPartitionException` \"indicates that there is no stored offset for a partition and no defined offset reset policy\". The offsets disappeared because, by default, a group's committed offsets expire when `offsets.retention.minutes` (default 10080, 7 days) \"has elapsed after the consumer group loses all its consumers (i.e. becomes empty)\". Nine idle days is enough.\n\nWith `none` the consumer won't guess a position, so set one: reset the group's offsets with the CLI, `seek()` in code, or pick `earliest` or `by_duration:<duration>`.\n\n- If the offsets still existed but pointed at deleted data, a consumer with `none` would get `OffsetOutOfRangeException`, and one with `earliest` would simply reset. The exception named here is about a missing offset.\n- Committed offsets live in the `__consumer_offsets` topic; a coordinator change doesn't invalidate them.\n- `none` is a documented value: \"throw exception to the consumer if no previous offset is found for the consumer's group\".",
+    "references": [
+      {
+        "title": "Broker config: offsets.retention.minutes",
+        "url": "https://kafka.apache.org/44/configuration/broker-configs/#brokerconfigs_offsets.retention.minutes",
+        "kind": "official"
+      },
+      {
+        "title": "NoOffsetForPartitionException javadoc (Kafka 4.4)",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/NoOffsetForPartitionException.html",
+        "kind": "official"
+      },
+      {
+        "title": "Consumer config: auto.offset.reset",
+        "url": "https://kafka.apache.org/44/configuration/consumer-configs/#consumerconfigs_auto.offset.reset",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "obs-trbl-009",
+    "domain": "observability",
+    "topics": [
+      "troubleshooting",
+      "serialization-wire-format"
+    ],
+    "type": "single",
+    "stem": "A consumer loop catches every exception from `poll()`, logs it and calls `poll()` again. After a producer bug writes one malformed value to partition 3 of `payments` at offset 5120, the log fills with the same `RecordDeserializationException` and that partition makes no progress. What fixes this while keeping the rest of the data?",
+    "options": [
+      {
+        "id": "a",
+        "text": "In the catch block, read `topicPartition()` and `offset()` from the exception, park or log the bad bytes if needed, then call `seek(partition, offset + 1)` before polling again."
+      },
+      {
+        "id": "b",
+        "text": "Call `commitSync()` in the catch block so the bad offset counts as consumed."
+      },
+      {
+        "id": "c",
+        "text": "Restart the consumer; a new instance skips records that failed earlier."
+      },
+      {
+        "id": "d",
+        "text": "Raise `max.poll.records` so the bad record is returned along with valid ones."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`RecordDeserializationException` is \"raised for any error that occurs while deserializing records received by the consumer\". The consumer's position doesn't move past a record it couldn't deserialize, so every `poll()` fails on the same offset: a classic poison pill.\n\nThe exception tells you exactly where the bad record is through `topicPartition()` and `offset()` (since 3.9 it also exposes `keyBuffer()`, `valueBuffer()` and `headers()`, so you can copy the raw bytes to a dead-letter topic). `seek(partition, offset + 1)` moves past it.\n\n- `commitSync()` commits the offsets returned by the last successful `poll()`, which doesn't include the bad record.\n- A restarted consumer resumes from the committed offset and hits the same record.\n- `max.poll.records` doesn't change deserialization.",
+    "references": [
+      {
+        "title": "RecordDeserializationException javadoc (Kafka 4.4)",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/common/errors/RecordDeserializationException.html",
+        "kind": "official"
+      },
+      {
+        "title": "KafkaConsumer javadoc: Controlling the Consumer's Position (Kafka 4.4)",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html#controlling-the-consumer-s-position-heading",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "likely",
+    "source": "original"
+  },
+  {
+    "id": "obs-trbl-010",
+    "domain": "observability",
+    "topics": [
+      "troubleshooting",
+      "streams-dsl"
+    ],
+    "type": "single",
+    "stem": "A Kafka Streams 4.4 application stops after an upstream service writes one record that the value serde can't read. No exception handlers are configured. Which change lets the application log and skip such records?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Set `deserialization.exception.handler` to `LogAndContinueExceptionHandler`."
+      },
+      {
+        "id": "b",
+        "text": "Set `processing.exception.handler` to `LogAndContinueProcessingExceptionHandler`."
+      },
+      {
+        "id": "c",
+        "text": "Set `errors.tolerance=all`."
+      },
+      {
+        "id": "d",
+        "text": "Return `REPLACE_THREAD` from a `StreamsUncaughtExceptionHandler`."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`deserialization.exception.handler` defaults to `LogAndFailExceptionHandler`, which \"logs the deserialization exception and then signals the processing pipeline to stop processing more records\". `LogAndContinueExceptionHandler` \"logs the deserialization exception and then signals the processing pipeline to continue\", so Streams can make progress past bad input.\n\n- `processing.exception.handler` covers exceptions thrown by processing logic, after a record was deserialized.\n- `errors.tolerance` is a Kafka Connect setting.\n- A replacement thread would read the same record and fail again.",
+    "references": [
+      {
+        "title": "Kafka Streams developer guide: deserialization.exception.handler",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/config-streams/#deserializationexceptionhandler-deprecated-defaultdeserializationexceptionhandler",
+        "kind": "official"
+      },
+      {
+        "title": "Streams config: deserialization.exception.handler",
+        "url": "https://kafka.apache.org/44/configuration/kafka-streams-configs/#streamsconfigs_deserialization.exception.handler",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original",
+    "kafkaVersionNote": "Kafka 4.0 deprecated `default.deserialization.exception.handler` and `default.production.exception.handler` (KIP-1056) in favour of `deserialization.exception.handler` and `production.exception.handler`. Older material uses the `default.` names."
+  },
+  {
+    "id": "obs-trbl-011",
+    "domain": "observability",
+    "topics": [
+      "troubleshooting",
+      "streams-dsl"
+    ],
+    "type": "multi",
+    "stem": "A Kafka Streams application must keep running in two situations: a `mapValues()` lambda throws `NullPointerException` for records that lack a field, and the broker rejects an output record with `RecordTooLargeException`. Which two settings handle these? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "`processing.exception.handler` with a handler that continues, such as `LogAndContinueProcessingExceptionHandler`"
+      },
+      {
+        "id": "b",
+        "text": "`production.exception.handler` with a custom handler that continues on `RecordTooLargeException`"
+      },
+      {
+        "id": "c",
+        "text": "`deserialization.exception.handler` set to `LogAndContinueExceptionHandler`"
+      },
+      {
+        "id": "d",
+        "text": "`errors.tolerance=all` with `errors.deadletterqueue.topic.name`"
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "Kafka Streams has one handler per stage:\n\n- **Processing** (since 3.9, KIP-1033): `processing.exception.handler` manages \"exceptions triggered during the processing of a record\". Its default, `LogAndFailProcessingExceptionHandler`, stops processing; `LogAndContinueProcessingExceptionHandler` logs and skips.\n- **Production**: `production.exception.handler` manages \"exceptions triggered when trying to interact with a broker such as attempting to produce a record that is too large\". The default `DefaultProductionExceptionHandler` \"always fails\"; the docs show a custom handler that returns CONTINUE for `RecordTooLargeException`.\n- **Deserialization** handles bad input bytes, which isn't either failure here.\n\n`errors.tolerance` and `errors.deadletterqueue.topic.name` are Kafka Connect settings. Streams has its own `errors.dead.letter.queue.topic.name` (4.2+), used by the built-in handlers.",
+    "references": [
+      {
+        "title": "Kafka Streams developer guide: processing.exception.handler",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/config-streams/#processingexceptionhandler",
+        "kind": "official"
+      },
+      {
+        "title": "Kafka Streams developer guide: production.exception.handler",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/config-streams/#productionexceptionhandler-deprecated-defaultproductionexceptionhandler",
+        "kind": "official"
+      },
+      {
+        "title": "Streams config: processing.exception.handler",
+        "url": "https://kafka.apache.org/44/configuration/kafka-streams-configs/#streamsconfigs_processing.exception.handler",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "verified",
+    "source": "original",
+    "kafkaVersionNote": "`processing.exception.handler` arrived in Kafka 3.9 (KIP-1033). Kafka 4.2 added Streams DLQ support (`errors.dead.letter.queue.topic.name`) and a new handler response API (KIP-1034)."
+  },
+  {
+    "id": "obs-trbl-012",
+    "domain": "observability",
+    "topics": [
+      "troubleshooting",
+      "streams-dsl"
+    ],
+    "type": "multi",
+    "stem": "A team registers a `StreamsUncaughtExceptionHandler` with `KafkaStreams.setUncaughtExceptionHandler(...)` before calling `start()`. Which two statements about the responses it can return are correct? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "`REPLACE_THREAD` replaces the failed stream thread with a new one, so the instance keeps running."
+      },
+      {
+        "id": "b",
+        "text": "`SHUTDOWN_APPLICATION` asks every instance of the application to shut down, on a best-effort basis."
+      },
+      {
+        "id": "c",
+        "text": "`SHUTDOWN_CLIENT` closes the client and restarts it automatically after a backoff."
+      },
+      {
+        "id": "d",
+        "text": "Without a registered handler, a failed thread is replaced by default."
+      },
+      {
+        "id": "e",
+        "text": "The handler can also be set with a `streams.uncaught.exception.handler` config."
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "The three responses are `REPLACE_THREAD` (\"Replace the failed thread with a new one\"), `SHUTDOWN_CLIENT` (\"Shut down this KafkaStreams client\") and `SHUTDOWN_APPLICATION` (\"Request all instances of the application to shut down. This is best-effort: the signal is propagated via the rebalance protocol\").\n\n- Nothing restarts a shut-down client; that's up to your deployment.\n- The default handler closes the client, which moves to the `ERROR` state.\n- The handler is set through the `KafkaStreams` method, not a config.\n\n`REPLACE_THREAD` suits transient errors. For a poison-pill record it just fails again, so use the deserialization or processing handlers for those.",
+    "references": [
+      {
+        "title": "Kafka Streams developer guide: Uncaught exception handler",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/running-app/#uncaught-exception-handler",
+        "kind": "official"
+      },
+      {
+        "title": "StreamThreadExceptionResponse javadoc (Kafka 4.4)",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/streams/errors/StreamsUncaughtExceptionHandler.StreamThreadExceptionResponse.html",
+        "kind": "official"
+      },
+      {
+        "title": "Kafka Streams upgrade guide: Streams API changes in 2.8.0",
+        "url": "https://kafka.apache.org/44/streams/upgrade-guide/#streams-api-changes-in-280",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original",
+    "kafkaVersionNote": "Kafka 4.0 removed the old `setUncaughtExceptionHandler(Thread.UncaughtExceptionHandler)` overload; only the `StreamsUncaughtExceptionHandler` form remains."
+  },
+  {
+    "id": "obs-trbl-013",
+    "domain": "observability",
+    "topics": [
+      "troubleshooting",
+      "topic-design"
+    ],
+    "type": "multi",
+    "stem": "A producer's `send()` blocks for a minute and then fails with `TimeoutException: Topic orders_v2 not present in metadata after 60000 ms.` The cluster has `auto.create.topics.enable=false`, and the team's topic is called `orders-v2`. Producer settings are defaults. Which two actions are appropriate fixes? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "Correct the topic name in the producer to `orders-v2`."
+      },
+      {
+        "id": "b",
+        "text": "If a new topic is intended, create it first with `kafka-topics --create` or `Admin.createTopics()`."
+      },
+      {
+        "id": "c",
+        "text": "Raise `max.block.ms` so the producer waits longer for the topic."
+      },
+      {
+        "id": "d",
+        "text": "Raise `delivery.timeout.ms`, because the record expired in the accumulator."
+      },
+      {
+        "id": "e",
+        "text": "Raise `retries` so the metadata request is retried more often."
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "The message comes from the metadata wait in `send()`, which `max.block.ms` (default 60000) bounds. The producer never found metadata for `orders_v2` because no such topic exists, and with `auto.create.topics.enable=false` (the broker default is `true`) nothing creates it. Fix the name, or create the topic explicitly before producing.\n\n- Waiting longer can't make a missing topic appear.\n- The record never reached the accumulator, so `delivery.timeout.ms` wasn't involved.\n- `retries` (default `2147483647`) applies to produce requests, not to the metadata wait.",
+    "references": [
+      {
+        "title": "Producer config: max.block.ms",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_max.block.ms",
+        "kind": "official"
+      },
+      {
+        "title": "Broker config: auto.create.topics.enable",
+        "url": "https://kafka.apache.org/44/configuration/broker-configs/#brokerconfigs_auto.create.topics.enable",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "obs-trbl-014",
+    "domain": "observability",
+    "topics": [
+      "troubleshooting",
+      "security-basics"
+    ],
+    "type": "single",
+    "stem": "Match each client error to its cause:\n\n1. `SaslAuthenticationException`\n2. `TopicAuthorizationException`\n3. `GroupAuthorizationException` (thrown to a consumer)\n\nWhich pairing is correct?",
+    "options": [
+      {
+        "id": "a",
+        "text": "1: wrong credentials or other SASL settings · 2: the principal lacks an ACL for the topic operation, such as READ or WRITE · 3: the principal lacks READ on the consumer group"
+      },
+      {
+        "id": "b",
+        "text": "1: the principal lacks an ACL for the topic · 2: wrong credentials · 3: the `group.id` doesn't exist yet"
+      },
+      {
+        "id": "c",
+        "text": "1: the TLS truststore is missing · 2: the topic doesn't exist · 3: `group.instance.id` is set twice"
+      },
+      {
+        "id": "d",
+        "text": "1: wrong credentials or other SASL settings · 2: the topic doesn't exist · 3: the principal lacks WRITE on the topic"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "Authentication (who are you?) fails before any request runs; authorization (are you allowed?) fails per resource.\n\n- `SaslAuthenticationException`: \"SASL authentication failures typically indicate invalid credentials\". On authentication failure clients \"abort the operation requested\", so check `sasl.jaas.config` and `sasl.mechanism`.\n- `TopicAuthorizationException`: the user authenticated but has no ACL for the topic operation, for example WRITE for a producer or READ for a consumer.\n- `GroupAuthorizationException`: `poll()` throws an `AuthorizationException` \"if caller lacks Read access to any of the subscribed topics or to the configured groupId\". A consumer group needs READ on the group resource as well as on the topic.\n\nA missing topic gives `UnknownTopicOrPartitionException` or a metadata timeout, and TLS problems give `SslAuthenticationException`.",
+    "references": [
+      {
+        "title": "SaslAuthenticationException javadoc (Kafka 4.4)",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/common/errors/SaslAuthenticationException.html",
+        "kind": "official"
+      },
+      {
+        "title": "Authorization and ACLs: operations and resources on protocols",
+        "url": "https://kafka.apache.org/44/security/authorization-and-acls/#operations-and-resources-on-protocols",
+        "kind": "official"
+      },
+      {
+        "title": "KafkaConsumer javadoc (Kafka 4.4)",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "obs-trbl-015",
+    "domain": "observability",
+    "topics": [
+      "troubleshooting",
+      "transactions-eos"
+    ],
+    "type": "single",
+    "stem": "A transactional service runs as three replicas. After a deploy, the replicas keep failing with `ProducerFencedException`, restarting and failing again, though none of them is stalled. Each replica reads `transactional.id=billing-tx` from the same config map. What is the cause?",
+    "options": [
+      {
+        "id": "a",
+        "text": "All replicas share one `transactional.id`, so each `initTransactions()` fences the producer that started before it. Give every replica its own stable `transactional.id`."
+      },
+      {
+        "id": "b",
+        "text": "The transaction coordinator is overloaded. Raise `transaction.timeout.ms`."
+      },
+      {
+        "id": "c",
+        "text": "Downstream consumers use `isolation.level=read_uncommitted`."
+      },
+      {
+        "id": "d",
+        "text": "Idempotence is off. Set `enable.idempotence=true`."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`ProducerFencedException` \"indicates that another producer with the same `transactional.id` has been started. It is only possible to have one producer instance with a `transactional.id` at any given time, and the latest one to be started fences the previous instances.\" Fencing exists to stop zombies, but here three live instances share one id and keep fencing each other.\n\nEach instance needs its own `transactional.id` that stays the same across its restarts (for example derived from a stable instance name). After a fence the producer must be closed.\n\n- `transaction.timeout.ms` controls how long an open transaction may last, not who owns an id.\n- Consumer isolation level doesn't affect producers.\n- Setting a `transactional.id` already enables idempotence.",
+    "references": [
+      {
+        "title": "ProducerFencedException javadoc (Kafka 4.4)",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/common/errors/ProducerFencedException.html",
+        "kind": "official"
+      },
+      {
+        "title": "KafkaProducer javadoc (Kafka 4.4)",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/producer/KafkaProducer.html#class-description",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "obs-trbl-016",
+    "domain": "observability",
+    "topics": [
+      "troubleshooting",
+      "idempotence-retries"
+    ],
+    "type": "multi",
+    "stem": "To raise throughput, a team set `enable.idempotence=false` and `max.in.flight.requests.per.connection=10` on a producer that uses `acks=all` and default retries. After a period of broker request timeouts, consumers see some records twice and some records for the same key out of order. Which two statements explain or fix this? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "With idempotence off, resending a batch whose acknowledgement was lost writes it a second time."
+      },
+      {
+        "id": "b",
+        "text": "Removing `enable.idempotence=false` and using at most 5 in-flight requests stops both the duplicates and the reordering caused by retries."
+      },
+      {
+        "id": "c",
+        "text": "`acks=all` should have prevented the duplicates, so the brokers must be misconfigured."
+      },
+      {
+        "id": "d",
+        "text": "Reordering within a partition can come only from the partitioner, never from retries."
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "The producer docs describe both symptoms:\n\n- `enable.idempotence`: \"If 'false', producer retries due to broker failures, etc., may write duplicates of the retried message in the stream.\"\n- `max.in.flight.requests.per.connection`: \"if this configuration is set to be greater than 1 and `enable.idempotence` is set to false, there is a risk of message reordering after a failed send due to retries\". A later batch can succeed while an earlier one is being retried.\n\nWith idempotence on, \"ordering will be preserved\" and the broker drops resent batches, but idempotence \"requires the value of this configuration to be less than or equal to 5\". The default (`true`, 5 in flight) avoids both problems.\n\n`acks=all` is about durability: a write can be stored on all in-sync replicas and its acknowledgement still be lost, which is exactly when a retry duplicates it.",
+    "references": [
+      {
+        "title": "Producer config: enable.idempotence",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_enable.idempotence",
+        "kind": "official"
+      },
+      {
+        "title": "Producer config: max.in.flight.requests.per.connection",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_max.in.flight.requests.per.connection",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "verified",
+    "source": "original",
+    "kafkaVersionNote": "Kafka 4.0 removed the silent fallback: leaving idempotence unset with more than 5 in-flight requests now throws a `ConfigException`, so using 10 requires `enable.idempotence=false` explicitly."
+  }
+]

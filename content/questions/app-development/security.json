@@ -1,0 +1,595 @@
+[
+  {
+    "id": "ops-sec-024",
+    "domain": "app-development",
+    "topics": [
+      "security-basics"
+    ],
+    "type": "single",
+    "stem": "A client must authenticate with a username and password using SCRAM, and all traffic must be encrypted. Which `security.protocol` should it use?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`SASL_SSL`"
+      },
+      {
+        "id": "b",
+        "text": "`SSL`"
+      },
+      {
+        "id": "c",
+        "text": "`SASL_PLAINTEXT`"
+      },
+      {
+        "id": "d",
+        "text": "`PLAINTEXT`"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`security.protocol` accepts `PLAINTEXT` (the default), `SSL`, `SASL_PLAINTEXT` and `SASL_SSL`. \"SASL may be used with PLAINTEXT or SSL as the transport layer using the security protocol SASL_PLAINTEXT or SASL_SSL respectively.\" Username/password authentication through SASL plus encryption means `SASL_SSL`.\n\n- `SSL` encrypts, and can authenticate with certificates, but doesn't use SASL.\n- `SASL_PLAINTEXT` authenticates without encryption.\n- `PLAINTEXT` does neither.",
+    "references": [
+      {
+        "title": "Producer configs: security.protocol",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_security.protocol",
+        "kind": "official"
+      },
+      {
+        "title": "Authentication using SASL: SASL configuration",
+        "url": "https://kafka.apache.org/44/security/authentication-using-sasl/#sasl-configuration",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "ops-sec-025",
+    "domain": "app-development",
+    "topics": [
+      "security-basics"
+    ],
+    "type": "multi",
+    "stem": "Brokers expose an SSL listener and do not require client authentication (`ssl.client.auth=none`). Which client settings are needed to connect with encryption? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "`security.protocol=SSL`"
+      },
+      {
+        "id": "b",
+        "text": "`ssl.truststore.location` (with `ssl.truststore.password`) pointing at a truststore that trusts the brokers' CA"
+      },
+      {
+        "id": "c",
+        "text": "`ssl.keystore.location` with the client's own certificate"
+      },
+      {
+        "id": "d",
+        "text": "`sasl.mechanism=PLAIN`"
+      },
+      {
+        "id": "e",
+        "text": "`ssl.client.auth=required`"
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "The SSL guide gives the minimal client configuration when client authentication is not required: `security.protocol=SSL`, `ssl.truststore.location` and `ssl.truststore.password`. The truststore lets the client verify the broker's certificate.\n\n- A keystore is only needed \"if client authentication is required\".\n- `sasl.mechanism` is for SASL protocols.\n- `ssl.client.auth` is a broker setting.",
+    "references": [
+      {
+        "title": "Encryption and authentication using SSL: configuring clients",
+        "url": "https://kafka.apache.org/44/security/encryption-and-authentication-using-ssl/#configuring-kafka-clients",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "ops-sec-026",
+    "domain": "app-development",
+    "topics": [
+      "security-basics"
+    ],
+    "type": "single",
+    "stem": "The security team changes the brokers to `ssl.client.auth=required` (mutual TLS). Clients already use `security.protocol=SSL` with a truststore. What must each client add?",
+    "options": [
+      {
+        "id": "a",
+        "text": "A keystore holding its own certificate: `ssl.keystore.location`, `ssl.keystore.password` and `ssl.key.password`"
+      },
+      {
+        "id": "b",
+        "text": "`sasl.jaas.config` with its username and password"
+      },
+      {
+        "id": "c",
+        "text": "Nothing; the truststore is enough for mutual TLS."
+      },
+      {
+        "id": "d",
+        "text": "`ssl.endpoint.identification.algorithm=` (empty) to turn on client authentication"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "\"If client authentication is required, then a keystore must be created... and the following must also be configured: `ssl.keystore.location`, `ssl.keystore.password`, `ssl.key.password`.\" With mutual TLS the client presents its own certificate from the keystore, and the broker uses it to authenticate the client.\n\n- `sasl.jaas.config` is for SASL.\n- A truststore only verifies the server.\n- An empty `ssl.endpoint.identification.algorithm` disables server hostname verification; it has nothing to do with client authentication.",
+    "references": [
+      {
+        "title": "Encryption and authentication using SSL: configuring clients",
+        "url": "https://kafka.apache.org/44/security/encryption-and-authentication-using-ssl/#configuring-kafka-clients",
+        "kind": "official"
+      },
+      {
+        "title": "Producer configs: ssl.keystore.location",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_ssl.keystore.location",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "ops-sec-027",
+    "domain": "app-development",
+    "topics": [
+      "security-basics"
+    ],
+    "type": "multi",
+    "stem": "Which of these are SASL mechanisms that Apache Kafka supports? (Choose three.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "`GSSAPI`"
+      },
+      {
+        "id": "b",
+        "text": "`SCRAM-SHA-512`"
+      },
+      {
+        "id": "c",
+        "text": "`OAUTHBEARER`"
+      },
+      {
+        "id": "d",
+        "text": "`SASL_SSL`"
+      },
+      {
+        "id": "e",
+        "text": "`DIGEST-MD5`"
+      },
+      {
+        "id": "f",
+        "text": "`LDAP`"
+      }
+    ],
+    "correct": [
+      "a",
+      "b",
+      "c"
+    ],
+    "explanation": "Kafka supports these SASL mechanisms: `GSSAPI` (Kerberos), `PLAIN`, `SCRAM-SHA-256`, `SCRAM-SHA-512` and `OAUTHBEARER`.\n\n- `SASL_SSL` is a `security.protocol` value, not a mechanism.\n- `DIGEST-MD5` is mentioned in the docs only as an older mechanism whose weaknesses SCRAM addresses.\n- `LDAP` is not a SASL mechanism.",
+    "references": [
+      {
+        "title": "Authentication using SASL: SASL mechanisms",
+        "url": "https://kafka.apache.org/44/security/authentication-using-sasl/#sasl-mechanisms",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "ops-sec-028",
+    "domain": "app-development",
+    "topics": [
+      "security-basics"
+    ],
+    "type": "multi",
+    "stem": "A Java consumer must connect to a `SASL_SSL` listener using SCRAM-SHA-256 as user `alice`. The brokers' CA is already trusted. Which properties does it need? (Choose three.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "`security.protocol=SASL_SSL`"
+      },
+      {
+        "id": "b",
+        "text": "`sasl.mechanism=SCRAM-SHA-256`"
+      },
+      {
+        "id": "c",
+        "text": "`sasl.jaas.config=org.apache.kafka.common.security.scram.ScramLoginModule required username=\"alice\" password=\"alice-secret\";`"
+      },
+      {
+        "id": "d",
+        "text": "`sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required username=\"alice\" password=\"alice-secret\";`"
+      },
+      {
+        "id": "e",
+        "text": "`sasl.kerberos.service.name=kafka`"
+      },
+      {
+        "id": "f",
+        "text": "`ssl.keystore.location=/etc/kafka/alice.keystore.jks`"
+      }
+    ],
+    "correct": [
+      "a",
+      "b",
+      "c"
+    ],
+    "explanation": "The SCRAM client example sets `security.protocol=SASL_SSL`, `sasl.mechanism=SCRAM-SHA-256` (or `SCRAM-SHA-512`) and a `sasl.jaas.config` that uses `ScramLoginModule`.\n\n- `PlainLoginModule` is for `PLAIN`.\n- `sasl.kerberos.service.name` is for `GSSAPI`.\n- A keystore is only needed if the broker also requires TLS client certificates.",
+    "references": [
+      {
+        "title": "Authentication using SASL: SASL/SCRAM",
+        "url": "https://kafka.apache.org/44/security/authentication-using-sasl/#authentication-using-saslscram",
+        "kind": "official"
+      },
+      {
+        "title": "Producer configs: sasl.jaas.config",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_sasl.jaas.config",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "ops-sec-029",
+    "domain": "app-development",
+    "topics": [
+      "security-basics"
+    ],
+    "type": "single",
+    "stem": "A client sets `security.protocol=SASL_SSL` and a `sasl.jaas.config` using `ScramLoginModule`, but leaves out `sasl.mechanism`. The broker only enables `SCRAM-SHA-512`. What happens?",
+    "options": [
+      {
+        "id": "a",
+        "text": "The client uses the default mechanism `GSSAPI`, which the broker doesn't enable, so authentication fails."
+      },
+      {
+        "id": "b",
+        "text": "The client infers `SCRAM-SHA-512` from the login module and connects."
+      },
+      {
+        "id": "c",
+        "text": "The client falls back to `PLAIN` over TLS."
+      },
+      {
+        "id": "d",
+        "text": "The client connects without authenticating, as if it were using `SSL`."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`sasl.mechanism` defaults to `GSSAPI`. The client doesn't derive the mechanism from the JAAS login module, so it tries Kerberos against a broker that doesn't offer it, and the SASL handshake fails. Always set `sasl.mechanism` to match a mechanism enabled on the broker.\n\nKafka never falls back to `PLAIN` or to an unauthenticated connection.",
+    "references": [
+      {
+        "title": "Producer configs: sasl.mechanism",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_sasl.mechanism",
+        "kind": "official"
+      },
+      {
+        "title": "Authentication using SASL: configuring clients",
+        "url": "https://kafka.apache.org/44/security/authentication-using-sasl/#sasl-configuration-for-kafka-clients",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "likely",
+    "source": "original"
+  },
+  {
+    "id": "ops-sec-030",
+    "domain": "app-development",
+    "topics": [
+      "security-basics"
+    ],
+    "type": "single",
+    "stem": "A JVM runs two producers that must authenticate as different SASL users. How should their credentials be configured?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Set `sasl.jaas.config` separately in each producer's properties."
+      },
+      {
+        "id": "b",
+        "text": "Use one static JAAS file passed with `-Djava.security.auth.login.config` and list both users in its `KafkaClient` section."
+      },
+      {
+        "id": "c",
+        "text": "Put both users in `sasl.jaas.config` on one producer and share that producer."
+      },
+      {
+        "id": "d",
+        "text": "Set `sasl.mechanism` to the username on each producer."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "Configuring JAAS through the client property `sasl.jaas.config` \"enables different producers and consumers within the same JVM to use different credentials by specifying different properties for each client\". If both a static JAAS file and `sasl.jaas.config` are set, \"the client property will be used\".\n\n- A single static `KafkaClient` section gives every client in the JVM the same login.\n- One producer authenticates as one user.\n- `sasl.mechanism` names the mechanism, not a user.",
+    "references": [
+      {
+        "title": "Authentication using SASL: JAAS configuration for clients",
+        "url": "https://kafka.apache.org/44/security/authentication-using-sasl/#jaas-configuration-for-kafka-clients",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "ops-sec-031",
+    "domain": "app-development",
+    "topics": [
+      "security-basics"
+    ],
+    "type": "single",
+    "stem": "Why should SASL/PLAIN only be used with `SASL_SSL` rather than `SASL_PLAINTEXT`?",
+    "options": [
+      {
+        "id": "a",
+        "text": "PLAIN sends the password itself; without TLS it crosses the network unencrypted."
+      },
+      {
+        "id": "b",
+        "text": "PLAIN only works with Kerberos tickets, which need TLS."
+      },
+      {
+        "id": "c",
+        "text": "`SASL_PLAINTEXT` does not support any SASL mechanism except `GSSAPI`."
+      },
+      {
+        "id": "d",
+        "text": "PLAIN needs a client keystore, which only exists with SSL."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "\"SASL/PLAIN should be used only with SSL as transport layer to ensure that clear passwords are not transmitted on the wire without encryption.\"\n\n- PLAIN is a username/password mechanism, unrelated to Kerberos.\n- `SASL_PLAINTEXT` can carry any enabled mechanism.\n- PLAIN doesn't use a keystore.",
+    "references": [
+      {
+        "title": "Authentication using SASL: use of SASL/PLAIN in production",
+        "url": "https://kafka.apache.org/44/security/authentication-using-sasl/#use-of-saslplain-in-production",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "ops-sec-032",
+    "domain": "app-development",
+    "topics": [
+      "security-basics"
+    ],
+    "type": "multi",
+    "stem": "Principal `User:billing-svc` runs a consumer in group `billing` that reads topic `invoices`, on a cluster where ACL authorization is on. Which ACLs does it need at minimum to consume and commit offsets? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "`READ` on topic `invoices`"
+      },
+      {
+        "id": "b",
+        "text": "`READ` on group `billing`"
+      },
+      {
+        "id": "c",
+        "text": "`WRITE` on topic `invoices`"
+      },
+      {
+        "id": "d",
+        "text": "`ALTER` on the cluster"
+      },
+      {
+        "id": "e",
+        "text": "`IDEMPOTENT_WRITE` on the cluster"
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "A consumer needs `READ` on the topic and `READ` on its consumer group, so it can join the group and commit offsets. The `kafka-acls --consumer` convenience option \"will generate acls that allows READ, DESCRIBE on topic and READ on consumer-group\", and the docs note that \"for consumer option we must also specify the consumer group\".\n\n- `WRITE` and `IDEMPOTENT_WRITE` are producer permissions.\n- `ALTER` on the cluster is an admin permission.",
+    "references": [
+      {
+        "title": "Authorization and ACLs: command line interface",
+        "url": "https://kafka.apache.org/44/security/authorization-and-acls/#command-line-interface",
+        "kind": "official"
+      },
+      {
+        "title": "Authorization and ACLs: resources in Kafka",
+        "url": "https://kafka.apache.org/44/security/authorization-and-acls/#resources-in-kafka",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "ops-sec-033",
+    "domain": "app-development",
+    "topics": [
+      "security-basics"
+    ],
+    "type": "single",
+    "stem": "A cluster uses `StandardAuthorizer` with default settings. A new topic `audit` has no ACLs at all. A non-super user tries to produce to it. What happens?",
+    "options": [
+      {
+        "id": "a",
+        "text": "The request is denied; with no matching ACL, only super users can access the resource."
+      },
+      {
+        "id": "b",
+        "text": "The request is allowed, because a resource without ACLs is open to everyone by default."
+      },
+      {
+        "id": "c",
+        "text": "The request is allowed only if the client uses `SASL_SSL`."
+      },
+      {
+        "id": "d",
+        "text": "Kafka creates an allow ACL for the first principal that writes to the topic."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "\"If a resource (R) does not have any ACLs defined... Kafka will restrict access to that resource. In this situation, only super users are allowed to access it.\" Setting `allow.everyone.if.no.acl.found=true` changes that, but it defaults to `false` and is meant mainly for development or phased rollouts.\n\nThe security protocol doesn't grant permissions, and Kafka never creates ACLs on its own.",
+    "references": [
+      {
+        "title": "Authorization and ACLs",
+        "url": "https://kafka.apache.org/44/security/authorization-and-acls/",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "ops-sec-034",
+    "domain": "app-development",
+    "topics": [
+      "security-basics"
+    ],
+    "type": "single",
+    "stem": "Which `kafka-acls.sh` convenience option grants a principal `WRITE`, `DESCRIBE` and `CREATE` on a topic?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`--producer`"
+      },
+      {
+        "id": "b",
+        "text": "`--consumer`"
+      },
+      {
+        "id": "c",
+        "text": "`--idempotent`"
+      },
+      {
+        "id": "d",
+        "text": "`--operation All`"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "\"`--producer`: Convenience option to add/remove acls for producer role. This will generate acls that allows WRITE, DESCRIBE and CREATE on topic.\"\n\n- `--consumer` generates `READ` and `DESCRIBE` on the topic plus `READ` on the group.\n- `--idempotent` is used together with `--producer` for idempotent producers.\n- `--operation All` grants every operation, which is broader than needed.",
+    "references": [
+      {
+        "title": "Authorization and ACLs: command line interface",
+        "url": "https://kafka.apache.org/44/security/authorization-and-acls/#command-line-interface",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "ops-sec-035",
+    "domain": "app-development",
+    "topics": [
+      "security-basics"
+    ],
+    "type": "single",
+    "stem": "A producer with `transactional.id=payments-tx` runs on a cluster with ACLs enabled. Besides `WRITE` on its output topic, which resource needs an ACL for its transactional produce requests?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`WRITE` on the `TransactionalId` resource `payments-tx`"
+      },
+      {
+        "id": "b",
+        "text": "`READ` on the consumer group `payments-tx`"
+      },
+      {
+        "id": "c",
+        "text": "`ALTER` on the topic `__transaction_state`"
+      },
+      {
+        "id": "d",
+        "text": "`CLUSTER_ACTION` on the cluster"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The protocol table lists `PRODUCE` requiring `Write` on `TransactionalId`: \"A transactional producer which has its `transactional.id` set requires this privilege.\" `TransactionalId` is its own ACL resource type, and errors on it return `TRANSACTIONAL_ID_AUTHORIZATION_FAILED`.\n\n- A consumer-group ACL is not involved in producing.\n- Clients never need ACLs on the internal `__transaction_state` topic.\n- `CLUSTER_ACTION` is for inter-broker operations.",
+    "references": [
+      {
+        "title": "Authorization and ACLs: operations and resources on protocols",
+        "url": "https://kafka.apache.org/44/security/authorization-and-acls/#operations-and-resources-on-protocols",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "ops-sec-036",
+    "domain": "app-development",
+    "topics": [
+      "security-basics"
+    ],
+    "type": "single",
+    "stem": "A client connects over `SSL` to `broker1.internal`, but the broker's certificate only lists `kafka.example.com`. Nothing else in the client config changes. What happens?",
+    "options": [
+      {
+        "id": "a",
+        "text": "The TLS handshake fails, because `ssl.endpoint.identification.algorithm` defaults to `https` and hostname verification is on."
+      },
+      {
+        "id": "b",
+        "text": "The connection succeeds, because hostname verification is off by default."
+      },
+      {
+        "id": "c",
+        "text": "The connection succeeds but falls back to `PLAINTEXT`."
+      },
+      {
+        "id": "d",
+        "text": "The client automatically retries using `kafka.example.com`."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`ssl.endpoint.identification.algorithm` defaults to `https`. \"As of Kafka 2.0.0 host name verification of servers is enabled by default for client connections.\" Verification fails when the certificate doesn't match the host the client connected to. It can be disabled by setting the property to an empty string, but the better fix is a certificate whose SAN includes the broker's hostname.\n\nKafka never falls back to `PLAINTEXT` or switches to a different hostname.",
+    "references": [
+      {
+        "title": "Producer configs: ssl.endpoint.identification.algorithm",
+        "url": "https://kafka.apache.org/44/configuration/producer-configs/#producerconfigs_ssl.endpoint.identification.algorithm",
+        "kind": "official"
+      },
+      {
+        "title": "Encryption and authentication using SSL: host name verification",
+        "url": "https://kafka.apache.org/44/security/encryption-and-authentication-using-ssl/#host-name-verification",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  }
+]

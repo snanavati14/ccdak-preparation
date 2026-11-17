@@ -1,0 +1,72 @@
+Kafka Streams is a client library: your application is an ordinary JVM process that reads from Kafka, processes records one at a time, and writes back to Kafka. The DSL gives you three abstractions, `KStream`, `KTable` and `GlobalKTable`, plus stateless and stateful operators. Exam questions mostly ask which abstraction fits, and which operators add a repartition topic.
+
+## How it works
+
+The same topic can be read in two ways. A **`KStream`** is a record stream: every record is an independent fact (an INSERT). A **`KTable`** is a changelog stream: every record is an UPSERT of the latest value for its key, and a `null` value is a DELETE (tombstone). Summing `("alice", 1)` then `("alice", 3)` gives 4 on a `KStream` and 3 on a `KTable`. This is the stream-table duality: aggregating a stream gives a table, and the changes to a table form a stream.
+
+<Figure caption="The same records read as a KStream (every record counts) and as a KTable (the latest value per key wins).">
+<svg viewBox="0 0 560 170" role="img" aria-label="Stream-table duality">
+  <text x="10" y="20" fontSize="13" fill="currentColor">topic (in offset order)</text>
+  <rect x="10" y="30" width="100" height="28" fill="none" stroke="currentColor" />
+  <text x="22" y="49" fontSize="13" fill="currentColor">alice, 1</text>
+  <rect x="115" y="30" width="100" height="28" fill="none" stroke="currentColor" />
+  <text x="130" y="49" fontSize="13" fill="currentColor">bob, 5</text>
+  <rect x="220" y="30" width="100" height="28" fill="none" stroke="currentColor" />
+  <text x="232" y="49" fontSize="13" fill="currentColor">alice, 3</text>
+  <text x="10" y="95" fontSize="13" fill="currentColor">KStream: sum per key</text>
+  <text x="10" y="115" fontSize="13" fill="currentColor">alice = 1 + 3 = 4, bob = 5</text>
+  <text x="300" y="95" fontSize="13" fill="currentColor">KTable: latest value per key</text>
+  <rect className="accent" x="300" y="105" width="120" height="50" fill="none" stroke="currentColor" />
+  <text x="312" y="125" fontSize="13" fill="currentColor">alice | 3</text>
+  <text x="312" y="145" fontSize="13" fill="currentColor">bob   | 5</text>
+</svg>
+</Figure>
+
+A `KTable` on each instance holds only the partitions assigned to it. A **`GlobalKTable`** holds **all** partitions on every instance. That costs more storage and broker traffic, but joins against it need no co-partitioning, and you can look it up by a field of the stream value.
+
+**Stateless** operators (`filter`, `filterNot`, `map`, `mapValues`, `flatMap`, `flatMapValues`, `selectKey`, `peek`, `foreach`, `split`, `merge`) need no state store. **Stateful** operators (`count`, `reduce`, `aggregate`, joins, windowing) use a local state store backed by a changelog topic. Aggregations always return a `KTable`.
+
+**Repartitioning.** `map`, `flatMap` and `selectKey` may change the key, so they *mark* the stream. If a grouping or join follows, Streams writes the records to an internal `-repartition` topic so each key reaches one task. `mapValues` and `flatMapValues` cannot change the key, so they never mark the stream. `groupByKey` repartitions only if the stream is marked; `groupBy` always repartitions. `repartition()` forces it explicitly.
+
+**`application.id`** is required and identifies the application. It is the consumer `group.id`, the prefix of every internal topic (`<application.id>-<name>-changelog`, `<application.id>-<name>-repartition`), the subdirectory under `state.dir`, and the default `client.id` prefix.
+
+**Parallelism.** Streams creates one task per input partition (per sub-topology). Tasks are spread over all threads (`num.stream.threads`, default 1) of all instances. More threads or instances than tasks leaves some idle, ready to take over.
+
+**Processor API.** Implement `Processor<KIn, VIn, KOut, VOut>`. In `init(context)`, schedule punctuations with `context.schedule(interval, PunctuationType.STREAM_TIME or WALL_CLOCK_TIME, ...)`. In `process(record)`, emit results with `context.forward(record)`. In the DSL, plug a processor in with `process()`, or `processValues()` when the key must not change.
+
+## Gotchas the exam loves
+
+- `KStream`: log compaction would change results. `KTable`: compaction is safe.
+- `map` that returns the same key still marks the stream for repartitioning; use `mapValues`.
+- `groupBy` is `selectKey(...).groupByKey()`, so it always repartitions.
+- `split()` sends a record to the **first** matching branch only; with no `defaultBranch()`, unmatched records are dropped.
+- `peek` returns the stream; `foreach` and `print` are terminal. Side effects in them are outside Kafka's processing guarantees.
+- `count()` on a `KGroupedStream` ignores `null` keys and values; on a `KGroupedTable` a `null` value is a tombstone.
+- Table aggregations need an adder **and** a subtractor: an update subtracts the old value, then adds the new one.
+- `STREAM_TIME` punctuations fire only when records arrive; no input means no punctuation.
+- Two instances on one host need different `state.dir` values.
+- Name stateful operators (`Materialized.as`, `Grouped.as`), so that changing the topology does not rename changelog and repartition topics.
+
+## Java sample
+
+```java
+Properties props = new Properties();
+props.put(StreamsConfig.APPLICATION_ID_CONFIG, "orders-per-customer");
+props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
+
+StreamsBuilder builder = new StreamsBuilder();
+builder.stream("orders", Consumed.with(Serdes.String(), orderSerde))
+       .filter((id, order) -> order.amount() > 0)            // stateless
+       .selectKey((id, order) -> order.customerId())          // marks for repartition
+       .groupByKey(Grouped.with("by-customer", Serdes.String(), orderSerde))
+       .count(Materialized.as("order-counts"))                // stateful, KTable
+       .toStream()
+       .to("order-counts", Produced.with(Serdes.String(), Serdes.Long()));
+
+KafkaStreams streams = new KafkaStreams(builder.build(), props);
+streams.start();
+```
+
+## Version notes
+
+<Note>Kafka Streams 4.0 removed APIs deprecated up to 3.5: `KStream#branch` (use `split()`), `KStream#through` (use `repartition()`), the `transform`/`transformValues` family (use `process()`/`processValues()`), and the `TimeWindows.of(...)` style builders. See the [Streams upgrade guide](https://kafka.apache.org/44/streams/upgrade-guide/#streams-api-changes-in-400).</Note>

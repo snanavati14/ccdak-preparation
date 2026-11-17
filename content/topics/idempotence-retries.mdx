@@ -1,0 +1,64 @@
+The Java producer retries transient errors by itself, and in Kafka 4.x it is idempotent by default, so those retries don't create duplicates. Most exam questions here are about what happens when a config conflicts with idempotence, and about which timeout actually ends retrying.
+
+## How it works
+
+An idempotent producer gets a producer ID from the broker and numbers its batches per partition. If a batch is resent after a lost response, the broker sees a sequence number it already has and doesn't write it again. That's why the default producer can retry without duplicating records and still keep them in order.
+
+Idempotence needs three things, and the defaults satisfy all of them:
+
+- `acks=all` (default `all`)
+- `retries` greater than 0 (default `2147483647`)
+- `max.in.flight.requests.per.connection` of 5 or less (default `5`)
+
+When a setting conflicts with idempotence, what happens depends on whether you set `enable.idempotence` yourself:
+
+| You set | `enable.idempotence` unset | `enable.idempotence=true` |
+|---|---|---|
+| `acks=1` or `acks=0` | idempotence silently disabled | `ConfigException` |
+| `retries=0` | idempotence silently disabled | `ConfigException` |
+| `max.in.flight.requests.per.connection=6` or more | `ConfigException` (4.x) | `ConfigException` |
+
+Retrying is limited by time, not by count. Three timeouts work together:
+
+- `request.timeout.ms` (default 30000): how long to wait for one response before resending.
+- `retry.backoff.ms` (default 100), growing exponentially up to `retry.backoff.max.ms` (default 1000), with ±20% jitter: how long to wait between attempts.
+- `delivery.timeout.ms` (default 120000): the total time after `send()` returns before success or failure is reported. This is what ends retrying in practice.
+
+## Gotchas the exam loves
+
+- `enable.idempotence` has defaulted to `true` since Kafka 3.0, but only if nothing conflicts with it.
+- The docs recommend leaving `retries` unset and controlling retrying with `delivery.timeout.ms`.
+- `delivery.timeout.ms` should be at least `linger.ms` + `request.timeout.ms`. If you set it explicitly below that, the Java client throws a `ConfigException`. If it was left at its default, the client raises it and logs a warning. Since `linger.ms` now defaults to 5, setting both timeouts to 30000 fails.
+- `request.timeout.ms` should be larger than the broker's `replica.lag.time.max.ms` (default 30000), so the producer doesn't resend writes that were only waiting for a slow follower to be dropped.
+- Retriable errors include `NotEnoughReplicasException`, `NotEnoughReplicasAfterAppendException`, `UnknownTopicOrPartitionException`, `TimeoutException` and `CorruptRecordException`. Non-retriable ones include `RecordTooLargeException`, `InvalidTopicException`, `AuthorizationException` and `AuthenticationException`.
+- Idempotence only covers one producer session. If the application crashes and sends the same record again from a new producer, it is a new write.
+- Setting `transactional.id` implies `enable.idempotence`. Atomic writes across partitions need transactions; idempotence alone doesn't give you that.
+- If an idempotent producer without a `transactional.id` gets an `OutOfOrderSequenceException`, it can keep going, but ordering may break. Close it and create a new one to be safe.
+
+## Java sample
+
+```java
+Properties props = new Properties();
+props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
+props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+// Idempotence, acks=all and retries are already the defaults.
+// Bound retrying by time; keep it >= linger.ms + request.timeout.ms.
+props.put(ProducerConfig.DELIVERY_TIMEOUT_MS_CONFIG, 60_000);
+
+try (Producer<String, String> producer = new KafkaProducer<>(props)) {
+    producer.send(new ProducerRecord<>("orders", "o-1", "created"), (md, e) -> {
+        if (e instanceof RetriableException) {
+            // retries already ran out within delivery.timeout.ms
+        } else if (e != null) {
+            // non-retriable: fix the record or the config
+        }
+    });
+}
+```
+
+## Version notes
+
+- Kafka 3.0 made `enable.idempotence=true` and `acks=all` the defaults.
+- Kafka 4.0 removed the silent fallback for `max.in.flight.requests.per.connection` above 5. Leaving idempotence unset with such a value now throws a `ConfigException`. To use more than 5 in-flight requests, set `enable.idempotence=false` yourself and accept that retries can reorder records.
+- Kafka 4.0 changed `linger.ms` to 5, which raises the minimum valid `delivery.timeout.ms` by 5 ms.

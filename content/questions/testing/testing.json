@@ -1,0 +1,1343 @@
+[
+  {
+    "id": "ops-mock-001",
+    "domain": "testing",
+    "topics": [
+      "unit-testing"
+    ],
+    "type": "single",
+    "stem": "A unit test creates `new MockProducer<>()` with the no-argument constructor, injects it into the code under test and calls `producer.send(record).get()`. The test hangs. Why?",
+    "options": [
+      {
+        "id": "a",
+        "text": "The no-argument constructor sets `autoComplete` to `false`, so the future only completes after the test calls `completeNext()` or `errorNext(...)`."
+      },
+      {
+        "id": "b",
+        "text": "`MockProducer` needs a running broker on `localhost:9092`."
+      },
+      {
+        "id": "c",
+        "text": "`MockProducer` doesn't support `send()` with a `get()` on the returned future."
+      },
+      {
+        "id": "d",
+        "text": "The test must call `flush()` before any send can complete, even with `autoComplete=true`."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`MockProducer()` is \"equivalent to `new MockProducer(Cluster.empty(), false, null, null, null)`\", so `autoComplete` is `false`. With `autoComplete=false` \"the user must call `completeNext()` or `errorNext(RuntimeException)` after `send()` to complete the call and unblock the Future\". Pass `true` (for example `new MockProducer<>(true, null, new StringSerializer(), new StringSerializer())`) to complete every send immediately.\n\n- `MockProducer` never talks to a broker.\n- `send().get()` works once the send is completed.\n- `flush()` isn't needed when `autoComplete` is `true`.",
+    "references": [
+      {
+        "title": "MockProducer javadoc (Kafka 4.4)",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/producer/MockProducer.html",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "unsure",
+    "source": "original",
+    "kafkaVersionNote": "Under review: in the 4.4.0 source the no-argument MockProducer has null serializers, so send() may throw NullPointerException rather than hang."
+  },
+  {
+    "id": "ops-mock-002",
+    "domain": "testing",
+    "topics": [
+      "unit-testing"
+    ],
+    "type": "single",
+    "stem": "Your service takes a `Producer<String, String>` in its constructor. In a test you pass a `MockProducer` with `autoComplete=true`. How do you assert which records the service sent?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Call `history()` on the mock, which returns the records sent since the last `clear()`."
+      },
+      {
+        "id": "b",
+        "text": "Start a `KafkaConsumer` against the mock and poll the topic."
+      },
+      {
+        "id": "c",
+        "text": "Read the records from a `TestOutputTopic`."
+      },
+      {
+        "id": "d",
+        "text": "Check the producer metric `record-send-total`."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`MockProducer.history()` returns \"the list of sent records since the last call to `clear()`\", so a test can assert on topics, keys and values directly.\n\n- A real consumer can't read from a mock; nothing is written anywhere.\n- `TestOutputTopic` belongs to `TopologyTestDriver` for Kafka Streams.\n- A count metric wouldn't show the content of the records.",
+    "references": [
+      {
+        "title": "MockProducer javadoc (Kafka 4.4)",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/producer/MockProducer.html",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "ops-mock-003",
+    "domain": "testing",
+    "topics": [
+      "unit-testing"
+    ],
+    "type": "single",
+    "stem": "You want to test that your code handles a failed send correctly, for example by logging and retrying. How do you make one `send()` on a `MockProducer` fail?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Create the mock with `autoComplete=false`, call `send()`, then call `errorNext(new RuntimeException(...))`."
+      },
+      {
+        "id": "b",
+        "text": "Create the mock with `autoComplete=true` and send a record to a topic that doesn't exist."
+      },
+      {
+        "id": "c",
+        "text": "Call `close()` on the mock before sending."
+      },
+      {
+        "id": "d",
+        "text": "Set `retries=0` in the mock's configuration."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`errorNext(RuntimeException e)` will \"complete the earliest uncompleted call with the given error\". That needs `autoComplete=false`, so sends stay pending until the test decides how each one ends: `completeNext()` for success or `errorNext(...)` for failure. The exception reaches both the callback and the returned future.\n\n- With `autoComplete=true` and invented metadata, sends to any topic succeed.\n- Closing the mock tests a different path.\n- The mock takes no client configuration.",
+    "references": [
+      {
+        "title": "MockProducer javadoc (Kafka 4.4)",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/producer/MockProducer.html",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "ops-mock-004",
+    "domain": "testing",
+    "topics": [
+      "unit-testing"
+    ],
+    "type": "multi",
+    "stem": "A test uses `new MockConsumer<String, String>(\"earliest\")`, calls `assign(List.of(tp))` and then expects `poll()` to return two records. Which steps does the test need before polling? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "Call `updateBeginningOffsets(Map.of(tp, 0L))` so the consumer can reset its position to the earliest offset."
+      },
+      {
+        "id": "b",
+        "text": "Call `addRecord(...)` for each record that `poll()` should return."
+      },
+      {
+        "id": "c",
+        "text": "Start an embedded Kafka broker and set `bootstrap.servers`."
+      },
+      {
+        "id": "d",
+        "text": "Call `completeNext()` once for each record."
+      },
+      {
+        "id": "e",
+        "text": "Call `commitSync()` so that the records become visible."
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "`addRecord(ConsumerRecord)` \"adds a record to be returned when `poll(Duration)` is called\". A freshly assigned partition has no position, so the mock resets it with the `earliest` strategy, which needs the beginning offsets that `updateBeginningOffsets(...)` provides.\n\n- No broker is involved.\n- `completeNext()` is a `MockProducer` method.\n- Committing doesn't make records visible.",
+    "references": [
+      {
+        "title": "MockConsumer javadoc (Kafka 4.4)",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/MockConsumer.html",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "likely",
+    "source": "original"
+  },
+  {
+    "id": "ops-mock-005",
+    "domain": "testing",
+    "topics": [
+      "unit-testing"
+    ],
+    "type": "single",
+    "stem": "How do you create a `MockConsumer` in Kafka 4.x without using deprecated API?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`new MockConsumer<>(\"earliest\")`, passing the `auto.offset.reset` value as a string"
+      },
+      {
+        "id": "b",
+        "text": "`new MockConsumer<>(OffsetResetStrategy.EARLIEST)`"
+      },
+      {
+        "id": "c",
+        "text": "`new MockConsumer<>(props)`, passing a full consumer `Properties` object"
+      },
+      {
+        "id": "d",
+        "text": "`MockConsumer.create(\"localhost:9092\")`"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The 4.4 javadoc shows `MockConsumer(String offsetResetStrategy)`: \"A mock consumer is instantiated by providing `ConsumerConfig.AUTO_OFFSET_RESET_CONFIG` value as the input.\" The `MockConsumer(OffsetResetStrategy)` constructor is \"Deprecated. Since 4.0.\"\n\nThere is no `Properties` constructor and no `create` factory, and the mock never connects to a broker.",
+    "references": [
+      {
+        "title": "MockConsumer javadoc (Kafka 4.4)",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/MockConsumer.html",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original",
+    "kafkaVersionNote": "The String constructor arrived with Kafka 4.0, which deprecated MockConsumer(OffsetResetStrategy). Material written for 3.x uses the enum form."
+  },
+  {
+    "id": "ops-ttd-006",
+    "domain": "testing",
+    "topics": [
+      "unit-testing"
+    ],
+    "type": "single",
+    "stem": "Which statement about `TopologyTestDriver` is correct?",
+    "options": [
+      {
+        "id": "a",
+        "text": "It runs a `Topology` without a Kafka broker; tests write input with `TestInputTopic` and read results with `TestOutputTopic`."
+      },
+      {
+        "id": "b",
+        "text": "It starts an embedded single-node Kafka cluster for the duration of the test."
+      },
+      {
+        "id": "c",
+        "text": "It replaces `MockProducer` and `MockConsumer` for testing plain client code."
+      },
+      {
+        "id": "d",
+        "text": "It is part of the `kafka-clients` artifact."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`TopologyTestDriver` \"works without a real Kafka broker, so the tests execute very quickly\". You create a `TestInputTopic` with serializers to pipe input and a `TestOutputTopic` with deserializers to read and check output.\n\n- It doesn't start an embedded cluster.\n- It tests Kafka Streams topologies; `MockProducer` and `MockConsumer` are for plain producer and consumer code.\n- It ships in `kafka-streams-test-utils`, not `kafka-clients`.",
+    "references": [
+      {
+        "title": "Testing a Streams application",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/testing/#testing-a-streams-application",
+        "kind": "official"
+      },
+      {
+        "title": "TopologyTestDriver javadoc (Kafka 4.4)",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/streams/TopologyTestDriver.html",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "ops-ttd-007",
+    "domain": "testing",
+    "topics": [
+      "unit-testing"
+    ],
+    "type": "multi",
+    "stem": "Which can you do with `TopologyTestDriver`? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "Read or pre-populate a state store with `getKeyValueStore(\"store-name\")`."
+      },
+      {
+        "id": "b",
+        "text": "Trigger wall-clock punctuations with `advanceWallClockTime(...)`."
+      },
+      {
+        "id": "c",
+        "text": "Measure end-to-end latency against a production cluster."
+      },
+      {
+        "id": "d",
+        "text": "Read output records by calling `readKeyValue()` on a `TestInputTopic`."
+      },
+      {
+        "id": "e",
+        "text": "Test a topology without adding any test dependency beyond `kafka-streams`."
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "The testing guide shows both: \"you can access state stores via the test driver before or after a test\", for example to pre-populate them, and wall-clock punctuations \"can also be triggered by advancing the test driver's wall-clock-time\" with `testDriver.advanceWallClockTime(...)`.\n\n- The driver never touches a real cluster.\n- `readKeyValue()` is a `TestOutputTopic` method; `TestInputTopic` is for piping input.\n- The driver lives in the separate `kafka-streams-test-utils` artifact, usually with test scope.",
+    "references": [
+      {
+        "title": "Testing a Streams application",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/testing/#testing-a-streams-application",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "kstr-test-001",
+    "domain": "testing",
+    "topics": [
+      "unit-testing",
+      "streams-state-eos"
+    ],
+    "type": "single",
+    "stem": "A team wants fast unit tests for a DSL topology, with no Kafka broker. Which approach does the Kafka Streams testing guide describe?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Build a `TopologyTestDriver` from the topology, pipe records in with `TestInputTopic` and read results with `TestOutputTopic`"
+      },
+      {
+        "id": "b",
+        "text": "Start a `KafkaStreams` instance against `MockProducer` and `MockConsumer`"
+      },
+      {
+        "id": "c",
+        "text": "Call each lambda directly and compare the results"
+      },
+      {
+        "id": "d",
+        "text": "Use `kafka-console-producer` and `kafka-console-consumer` in the test"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`kafka-streams-test-utils` provides `TopologyTestDriver`, which simulates the Streams runtime for a `Topology` built with the DSL or the Processor API. `testDriver.createInputTopic(name, keySerializer, valueSerializer)` returns a `TestInputTopic` to pipe records; `createOutputTopic(name, keyDeserializer, valueDeserializer)` returns a `TestOutputTopic` to read results. No broker is involved. Always `close()` the driver at the end.\n\n`MockProducer` and `MockConsumer` are for plain client code. Calling lambdas directly skips the topology's wiring, repartitioning and state.",
+    "references": [
+      {
+        "title": "Testing Kafka Streams: testing a Streams application",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/testing/#testing-a-streams-application",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "kstr-test-002",
+    "domain": "testing",
+    "topics": [
+      "unit-testing",
+      "streams-state-eos"
+    ],
+    "type": "multi",
+    "stem": "Which statements about `TopologyTestDriver` are true? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "`advanceWallClockTime()` triggers wall-clock-time punctuations"
+      },
+      {
+        "id": "b",
+        "text": "State stores can be read or pre-filled with methods such as `getKeyValueStore(\"store-name\")`"
+      },
+      {
+        "id": "c",
+        "text": "It needs an embedded broker on `localhost:9092`"
+      },
+      {
+        "id": "d",
+        "text": "Event-time (stream-time) punctuations must be triggered by hand; piping records never triggers them"
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "The testing guide: event-time punctuations fire **automatically** from the timestamps of piped records. Wall-clock punctuations fire when you call `advanceWallClockTime(...)`, because the driver mocks wall-clock time. You can access state stores before a test (to pre-fill them) or after (to check them).\n\nThe driver runs entirely in-process; no broker is needed.",
+    "references": [
+      {
+        "title": "Testing Kafka Streams: testing a Streams application",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/testing/#testing-a-streams-application",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "kstr-test-003",
+    "domain": "testing",
+    "topics": [
+      "unit-testing",
+      "streams-state-eos"
+    ],
+    "type": "single",
+    "stem": "A `Processor` is unit-tested in isolation with `MockProcessorContext`. Its `init()` schedules a punctuator. What does the mock context do with it?",
+    "options": [
+      {
+        "id": "a",
+        "text": "It captures the punctuator so the test can inspect and invoke it; it does not run it automatically"
+      },
+      {
+        "id": "b",
+        "text": "It runs the punctuator automatically every interval of wall-clock time"
+      },
+      {
+        "id": "c",
+        "text": "It runs the punctuator after every `process()` call"
+      },
+      {
+        "id": "d",
+        "text": "It rejects the call, because punctuators need a `TopologyTestDriver`"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`MockProcessorContext` captures forwarded records (`forwarded()`), commit requests, and scheduled punctuators (`scheduledPunctuators()`). It does not run punctuators itself; the test fetches the captured `Punctuator` and calls it. For tests that need punctuators to fire on their own, the guide recommends a small topology with `TopologyTestDriver`.",
+    "references": [
+      {
+        "title": "Testing Kafka Streams: unit testing processors",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/testing/#unit-testing-processors",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "test-ttd-001",
+    "domain": "testing",
+    "topics": [
+      "unit-testing",
+      "streams-dsl"
+    ],
+    "type": "single",
+    "stem": "You are writing a JUnit test for a Kafka Streams topology with `TopologyTestDriver`. Which order is correct?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Build the `Topology`; create the `TopologyTestDriver` from the topology and its config; create a `TestInputTopic` (with serializers) and a `TestOutputTopic` (with deserializers) from the driver; call `pipeInput(...)`; read the output and assert; `close()` the driver"
+      },
+      {
+        "id": "b",
+        "text": "Create the `TestInputTopic` and `TestOutputTopic`; build the `Topology`; create the `TopologyTestDriver`; call `pipeInput(...)`; read the output and assert; `close()` the driver"
+      },
+      {
+        "id": "c",
+        "text": "Build the `Topology`; create the `TopologyTestDriver`; call `pipeInput(...)` on the driver itself; create a `TestOutputTopic`; read the output and assert; `close()` the driver"
+      },
+      {
+        "id": "d",
+        "text": "Create the `TopologyTestDriver`; call `start()` on it; build the `Topology`; create the test topics; call `pipeInput(...)`; read the output and assert"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The testing guide follows this order: build a `Topology` (with `StreamsBuilder.build()` or the Processor API), create the driver with `new TopologyTestDriver(topology, props)`, then create the test topics **from the driver** with `createInputTopic(name, keySerializer, valueSerializer)` and `createOutputTopic(name, keyDeserializer, valueDeserializer)`. Pipe records in, read results with methods such as `readKeyValue()`, and finally \"always close the test driver at the end to make sure all resources are released properly\".\n\n- Test topics can't exist before the driver, because the driver creates them.\n- `pipeInput(...)` on the driver itself is the pre-2.4 API; it was removed in 3.0. Input goes through a `TestInputTopic`.\n- There is no `start()`: the driver processes each piped record synchronously, and it needs the topology when it is constructed.",
+    "references": [
+      {
+        "title": "Testing a Streams application",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/testing/#testing-a-streams-application",
+        "kind": "official"
+      },
+      {
+        "title": "TopologyTestDriver javadoc: driver setup (Kafka 4.4)",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/streams/TopologyTestDriver.html#driver-setup-heading",
+        "kind": "official"
+      },
+      {
+        "title": "Kafka Streams upgrade guide (Kafka 4.4)",
+        "url": "https://kafka.apache.org/44/streams/upgrade-guide/",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original",
+    "kafkaVersionNote": "`TopologyTestDriver#pipeInput`, `readOutput`, `ConsumerRecordFactory` and `OutputVerifier` were deprecated in 2.4 (KIP-470) and removed in 3.0. Older tutorials still use them."
+  },
+  {
+    "id": "test-ttd-002",
+    "domain": "testing",
+    "topics": [
+      "unit-testing",
+      "streams-dsl"
+    ],
+    "type": "single",
+    "stem": "This topology counts records per key:\n\n```java\nbuilder.stream(\"clicks\", Consumed.with(Serdes.String(), Serdes.String()))\n       .groupByKey()\n       .count()\n       .toStream()\n       .to(\"click-counts\", Produced.with(Serdes.String(), Serdes.Long()));\n```\n\nThe test pipes three records and checks the output:\n\n```java\nin.pipeInput(\"alice\", \"p1\");\nin.pipeInput(\"bob\", \"p2\");\nin.pipeInput(\"alice\", \"p3\");\nassertEquals(List.of(KeyValue.pair(\"alice\", 2L), KeyValue.pair(\"bob\", 1L)),\n             out.readKeyValuesToList());\n```\n\nThe assertion fails. Why?",
+    "options": [
+      {
+        "id": "a",
+        "text": "The driver processes records synchronously, as if a commit happened after every record, so no update is held back by caching. The list holds every update (`alice=1`, `bob=1`, `alice=2`). Use `readKeyValuesToMap()` to check the final table state."
+      },
+      {
+        "id": "b",
+        "text": "Nothing is written to `click-counts` until `commit.interval.ms` has elapsed, so the output topic is still empty."
+      },
+      {
+        "id": "c",
+        "text": "`readKeyValuesToList()` returns only the latest record per key, sorted by key, so the order of the expected list is wrong."
+      },
+      {
+        "id": "d",
+        "text": "KTable results are only kept in the `count` state store; the driver writes them to `click-counts` when it is closed."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The `TopologyTestDriver` javadoc: the driver \"processes input records synchronously. This implies that `commit.interval.ms` and `cache.max.bytes.buffering` configuration have no effect. The driver behaves as if both configs would be set to zero, i.e., as if a \"commit\" (and thus \"flush\") would happen after each input record.\" So every count update reaches the output topic: `alice=1`, `bob=1`, `alice=2`.\n\n`TestOutputTopic.readKeyValuesToList()` reads all records. For a table, `readKeyValuesToMap()` keeps only \"the last table update (ie, the final table state)\", which gives `{alice=2, bob=1}`.\n\n- The commit interval has no effect in the driver.\n- `readKeyValuesToList()` keeps duplicates and order; it doesn't deduplicate or sort.\n- The `to(\"click-counts\")` sink writes each update straight away; nothing waits for `close()`.",
+    "references": [
+      {
+        "title": "TopologyTestDriver javadoc: driver setup (Kafka 4.4)",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/streams/TopologyTestDriver.html#driver-setup-heading",
+        "kind": "official"
+      },
+      {
+        "title": "TestOutputTopic javadoc (Kafka 4.4)",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/streams/TestOutputTopic.html",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "test-ttd-003",
+    "domain": "testing",
+    "topics": [
+      "unit-testing",
+      "streams-joins-windows"
+    ],
+    "type": "multi",
+    "stem": "A Streams test relies on STREAM_TIME punctuations and windows, so it must move stream time forward. The input topic was created with a fixed start time and no auto-advance, and one record has been piped:\n\n```java\nTestInputTopic<String, Long> in = driver.createInputTopic(\n    \"readings\", new StringSerializer(), new LongSerializer(),\n    Instant.EPOCH, Duration.ZERO);\nin.pipeInput(\"s1\", 5L);   // timestamp 0\n```\n\nWhich of the following advance stream time to 30 seconds? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "`in.pipeInput(\"s1\", 7L, Instant.EPOCH.plusSeconds(30));`"
+      },
+      {
+        "id": "b",
+        "text": "`in.advanceTime(Duration.ofSeconds(30));` followed by `in.pipeInput(\"s1\", 7L);`"
+      },
+      {
+        "id": "c",
+        "text": "`in.advanceTime(Duration.ofSeconds(30));` on its own"
+      },
+      {
+        "id": "d",
+        "text": "`driver.advanceWallClockTime(Duration.ofSeconds(30));`"
+      },
+      {
+        "id": "e",
+        "text": "`in.pipeInput(\"s1\", 7L);` on its own"
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "Stream time only moves when the driver processes a record with a later timestamp. Event-time punctuations \"are triggered automatically based on the processed records' timestamps\".\n\n- An explicit timestamp sets the record time directly.\n- `TestInputTopic.advanceTime(...)` moves the topic's own clock: \"Each time a record without explicitly defined timestamp is piped, the current topic event time is used as record timestamp.\" The next record without a timestamp is stamped 30 s and moves stream time.\n- `advanceTime(...)` on its own does nothing to stream time: it \"does not advance the tracked stream time in `TopologyTestDriver` as long as no new input records are piped\", and it doesn't move wall-clock time either.\n- `advanceWallClockTime(...)` only drives WALL_CLOCK_TIME punctuations. Confluent's testing page warns that it \"has no effect on a suppression\".\n- With `autoAdvance` set to `Duration.ZERO`, a record piped without a timestamp is stamped with the topic time, which is still 0.",
+    "references": [
+      {
+        "title": "TestInputTopic javadoc (Kafka 4.4)",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/streams/TestInputTopic.html",
+        "kind": "official"
+      },
+      {
+        "title": "Testing a Streams application",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/testing/#testing-a-streams-application",
+        "kind": "official"
+      },
+      {
+        "title": "Testing Streams code: stream-time suppressions (Confluent)",
+        "url": "https://docs.confluent.io/platform/current/streams/developer-guide/test-streams.html#testing-stream-time-suppressions",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "test-ttd-004",
+    "domain": "testing",
+    "topics": [
+      "unit-testing",
+      "streams-state-eos"
+    ],
+    "type": "multi",
+    "stem": "A DSL topology counts per key with `count(Materialized.as(\"counts-store\"))`. After piping input, the test wants to inspect that store through the `TopologyTestDriver`. Which statements are true? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "`driver.getKeyValueStore(\"counts-store\")` works and returns a value-only view of the DSL's timestamped store, so `get(key)` returns the `Long` count."
+      },
+      {
+        "id": "b",
+        "text": "`driver.getTimestampedKeyValueStore(\"counts-store\")` returns `ValueAndTimestamp<Long>` values, so the test can also check the timestamp stored with each count."
+      },
+      {
+        "id": "c",
+        "text": "`driver.getStateStore(\"counts-store\")` is the recommended way to read stores that the DSL creates."
+      },
+      {
+        "id": "d",
+        "text": "Stores can only be read after `driver.close()`."
+      },
+      {
+        "id": "e",
+        "text": "`driver.getWindowStore(\"counts-store\")` returns the same data, because every DSL store is a window store."
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "The `TopologyTestDriver` javadoc:\n\n- `getKeyValueStore(name)` gets \"the `KeyValueStore`, `TimestampedKeyValueStore`, or `TimestampedKeyValueStoreWithHeaders`\". For a timestamped store it \"will return a value-only query interface\".\n- `getTimestampedKeyValueStore(name)` returns `KeyValueStore<K, ValueAndTimestamp<V>>`, for full access.\n\nThe distractors:\n\n- `getStateStore(name)` \"should be used for custom stores only\" and throws `IllegalArgumentException` for built-in stores.\n- The testing guide: \"you can access state stores via the test driver before or after a test\", for example to pre-populate them.\n- `getWindowStore(name)` returns `null` when no window store has that name; a non-windowed `count()` creates a key-value store.",
+    "references": [
+      {
+        "title": "TopologyTestDriver javadoc: processor state (Kafka 4.4)",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/streams/TopologyTestDriver.html#processor-state-heading",
+        "kind": "official"
+      },
+      {
+        "title": "Testing a Streams application",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/testing/#testing-a-streams-application",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "test-ttd-005",
+    "domain": "testing",
+    "topics": [
+      "unit-testing"
+    ],
+    "type": "multi",
+    "stem": "A team tests all its Kafka Streams code with `TopologyTestDriver`. Which behaviours do these tests NOT exercise, so an integration test against a real cluster is still needed? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "Input topics with several partitions spread over several application instances, including rebalances and task movement"
+      },
+      {
+        "id": "b",
+        "text": "How record caching and the commit interval batch KTable updates in production"
+      },
+      {
+        "id": "c",
+        "text": "Stateful aggregations backed by state stores"
+      },
+      {
+        "id": "d",
+        "text": "Topologies with several sub-topologies, for example after a `groupBy` that repartitions"
+      },
+      {
+        "id": "e",
+        "text": "Wall-clock-time punctuations"
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "The `TopologyTestDriver` javadoc says it \"works without a real Kafka broker\" and \"simulates single-partitioned input topics\". There is one driver and no consumer group, so multi-partition, multi-instance behaviour and rebalances are never exercised. It also \"processes input records synchronously\", so `commit.interval.ms` and caching \"have no effect\": the driver behaves as if a commit happened after each record.\n\nWhat the driver does cover:\n\n- State stores, which you can read and pre-populate through the driver.\n- \"Very complex topologies that have multiple sources, processors, sinks, or sub-topologies\".\n- Wall-clock punctuations, through `advanceWallClockTime(...)`.\n\nConfluent's testing guide recommends integration tests against a real broker (for example with Testcontainers) for end-to-end behaviour.",
+    "references": [
+      {
+        "title": "TopologyTestDriver javadoc: processing messages (Kafka 4.4)",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/streams/TopologyTestDriver.html#processing-messages-heading",
+        "kind": "official"
+      },
+      {
+        "title": "TopologyTestDriver javadoc: driver setup (Kafka 4.4)",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/streams/TopologyTestDriver.html#driver-setup-heading",
+        "kind": "official"
+      },
+      {
+        "title": "Test Confluent Cloud clients: integration testing",
+        "url": "https://docs.confluent.io/cloud/current/client-apps/testing.html#integration-testing",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "test-mock-001",
+    "domain": "testing",
+    "topics": [
+      "unit-testing",
+      "transactions-eos"
+    ],
+    "type": "multi",
+    "stem": "```java\nMockProducer<String, String> producer =\n    new MockProducer<>(true, null, new StringSerializer(), new StringSerializer());\nproducer.initTransactions();\nproducer.beginTransaction();\nproducer.send(new ProducerRecord<>(\"payments\", \"p-1\", \"ok\"));\nproducer.send(new ProducerRecord<>(\"payments\", \"p-2\", \"ok\"));\nproducer.commitTransaction();\n```\n\nWhich assertions pass after these lines? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "`assertTrue(producer.transactionCommitted());`"
+      },
+      {
+        "id": "b",
+        "text": "`assertEquals(2, producer.history().size());`"
+      },
+      {
+        "id": "c",
+        "text": "`assertTrue(producer.transactionInFlight());`"
+      },
+      {
+        "id": "d",
+        "text": "`assertEquals(2, producer.uncommittedRecords().size());`"
+      },
+      {
+        "id": "e",
+        "text": "`assertFalse(producer.flushed());`"
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "`MockProducer` records what the transactional calls did, so a test can check them:\n\n- `transactionCommitted()` \"checks whether the current transaction has been committed\": `true`.\n- `history()` is \"the list of sent records since the last call to `clear()`\": both records.\n\nWhy the others fail:\n\n- `transactionInFlight()` is `false` once the transaction has been committed.\n- `uncommittedRecords()` lists \"records sent in the current transaction that have not yet been committed\". After the commit it is empty.\n- `flushed()` \"checks whether all sent records have been completed (no pending completions)\". With `autoComplete=true` every send completes at once, so it returns `true`.\n\nRelated checks: `transactionAborted()`, `commitCount()` and `consumerGroupOffsetsHistory()` (offsets sent with `sendOffsetsToTransaction`).",
+    "references": [
+      {
+        "title": "MockProducer javadoc (Kafka 4.4)",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/producer/MockProducer.html",
+        "kind": "official"
+      },
+      {
+        "title": "MockProducer source (Apache Kafka 4.4.0)",
+        "url": "https://github.com/apache/kafka/blob/4.4.0/clients/src/main/java/org/apache/kafka/clients/producer/MockProducer.java",
+        "kind": "github"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "test-mock-002",
+    "domain": "testing",
+    "topics": [
+      "unit-testing",
+      "idempotence-retries"
+    ],
+    "type": "multi",
+    "stem": "```java\nMockProducer<String, String> producer =\n    new MockProducer<>(false, null, new StringSerializer(), new StringSerializer());\nFuture<RecordMetadata> f1 = producer.send(new ProducerRecord<>(\"t\", \"a\"), cb);\nFuture<RecordMetadata> f2 = producer.send(new ProducerRecord<>(\"t\", \"b\"), cb);\nFuture<RecordMetadata> f3 = producer.send(new ProducerRecord<>(\"t\", \"c\"), cb);\nproducer.completeNext();\nproducer.errorNext(new TimeoutException(\"simulated\"));\n```\n\nWhich statements are true at this point? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "`f1` completed successfully, `f2` failed with the `TimeoutException`, and `f3` is still pending."
+      },
+      {
+        "id": "b",
+        "text": "`producer.flushed()` returns `false`, because one send hasn't completed."
+      },
+      {
+        "id": "c",
+        "text": "`errorNext(...)` failed the most recent send, `f3`."
+      },
+      {
+        "id": "d",
+        "text": "`producer.history()` contains only the record behind `f1`, because failed and pending sends aren't recorded."
+      },
+      {
+        "id": "e",
+        "text": "`completeNext()` completed all three pending sends."
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "With `autoComplete=false`, every send stays pending until the test completes it. Pending sends complete in FIFO order:\n\n- `completeNext()`: \"Complete the earliest uncompleted call successfully.\"\n- `errorNext(e)`: \"Complete the earliest uncompleted call with the given error.\" It completes `f2`, so the callback and the future get the exception (here `org.apache.kafka.common.errors.TimeoutException`, a `RuntimeException`).\n- `f3` stays pending, so `flushed()` (\"no pending completions\") is `false`. Calling `completeNext()` again, or `flush()`, would complete it.\n\n`send()` \"adds the record to the list of sent records\" whether or not it later succeeds, so `history()` holds all three. Each `completeNext()` call completes only one send.",
+    "references": [
+      {
+        "title": "MockProducer javadoc (Kafka 4.4)",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/producer/MockProducer.html",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "test-mock-003",
+    "domain": "testing",
+    "topics": [
+      "unit-testing"
+    ],
+    "type": "single",
+    "stem": "Several tests in one class share a single `MockProducer` that is created once for the class. After its own `send()`, each test asserts `assertEquals(1, producer.history().size())`. The first test passes and the later ones fail. What is the simplest fix?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Call `producer.clear()` before each test, or create a new mock per test, because `history()` returns every record sent since the last `clear()`."
+      },
+      {
+        "id": "b",
+        "text": "Call `producer.flush()` before each test to empty `history()`."
+      },
+      {
+        "id": "c",
+        "text": "Call `producer.close()` at the end of each test, because closing resets the history."
+      },
+      {
+        "id": "d",
+        "text": "Assert on `producer.metrics()` instead, which is reset for each test."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`history()` returns \"the list of sent records since the last call to `clear()`\", and `clear()` will \"clear the stored history of sent records, consumer group offsets\". A shared mock keeps collecting records across tests until something clears it. Call `clear()` in a `@BeforeEach` method, or build a fresh `MockProducer` for each test.\n\n- `flush()` completes pending sends; it doesn't empty the history.\n- A closed producer can't be used for later sends, and closing doesn't reset anything.\n- Metrics aren't reset between tests, and they don't show which records were sent.",
+    "references": [
+      {
+        "title": "MockProducer javadoc (Kafka 4.4)",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/producer/MockProducer.html",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "test-mock-004",
+    "domain": "testing",
+    "topics": [
+      "unit-testing",
+      "consumer-groups"
+    ],
+    "type": "single",
+    "stem": "```java\nMockConsumer<String, String> consumer = new MockConsumer<>(\"earliest\");\nconsumer.subscribe(List.of(\"orders\"));\nTopicPartition tp = new TopicPartition(\"orders\", 0);\nconsumer.updateBeginningOffsets(Map.of(tp, 0L));\nconsumer.addRecord(new ConsumerRecord<>(\"orders\", 0, 0L, \"o-1\", \"created\"));\n```\n\nThe test throws `IllegalStateException` at `addRecord(...)`. What is the fix?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`subscribe()` doesn't assign any partition in the mock, because there's no group coordinator to run a rebalance. Call `consumer.rebalance(List.of(tp))` before adding records, for example inside `consumer.schedulePollTask(...)` so it runs during the first `poll()`."
+      },
+      {
+        "id": "b",
+        "text": "Create the mock with `\"latest\"` instead of `\"earliest\"`."
+      },
+      {
+        "id": "c",
+        "text": "Call `consumer.updateEndOffsets(Map.of(tp, 1L))` before `addRecord(...)`."
+      },
+      {
+        "id": "d",
+        "text": "Call `consumer.commitSync()` before `addRecord(...)` so that the group exists."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`MockConsumer.addRecord(...)` throws `IllegalStateException` \"if the partition is not assigned to the consumer\". After `subscribe()` the assignment is still empty: with a real consumer a group rebalance would assign partitions, and the mock has no coordinator. `rebalance(Collection)` will \"simulate a rebalance event\": it sets the assignment and calls the `ConsumerRebalanceListener`, if one was given to `subscribe`.\n\nA common pattern puts `rebalance(...)` and `addRecord(...)` in a task passed to `schedulePollTask(...)`. \"One enqueued task will be executed per `poll(Duration)` invocation\", so the records arrive the way they would from a real poll. In a test that doesn't care about groups, `assign(List.of(tp))` instead of `subscribe` works too.\n\nThe reset strategy, end offsets and commits don't change the assignment.",
+    "references": [
+      {
+        "title": "MockConsumer javadoc (Kafka 4.4)",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/MockConsumer.html",
+        "kind": "official"
+      },
+      {
+        "title": "MockConsumer source (Apache Kafka 4.4.0)",
+        "url": "https://github.com/apache/kafka/blob/4.4.0/clients/src/main/java/org/apache/kafka/clients/consumer/MockConsumer.java",
+        "kind": "github"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "likely",
+    "source": "original"
+  },
+  {
+    "id": "test-mock-005",
+    "domain": "testing",
+    "topics": [
+      "unit-testing"
+    ],
+    "type": "single",
+    "stem": "Your consumer loop must log and shut down cleanly when `poll()` throws a `KafkaException`. How does a test make the next `poll()` on a `MockConsumer` throw?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`consumer.setPollException(new KafkaException(\"simulated\"));`"
+      },
+      {
+        "id": "b",
+        "text": "`consumer.setOffsetsException(new KafkaException(\"simulated\"));`"
+      },
+      {
+        "id": "c",
+        "text": "`consumer.errorNext(new KafkaException(\"simulated\"));`"
+      },
+      {
+        "id": "d",
+        "text": "`consumer.enforceRebalance();`"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "`setPollException(KafkaException)` \"sets an exception to throw when `poll(Duration)` is called\".\n\n- `setOffsetsException(...)` targets \"offset-related methods\", not `poll()`.\n- `errorNext(...)` belongs to `MockProducer`; `MockConsumer` has no such method.\n- On the mock, `enforceRebalance()` only sets a flag that `shouldRebalance()` reports and `resetShouldRebalance()` clears. To simulate a rebalance, use `rebalance(Collection)`.",
+    "references": [
+      {
+        "title": "MockConsumer javadoc (Kafka 4.4)",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/clients/consumer/MockConsumer.html",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "test-mpc-001",
+    "domain": "testing",
+    "topics": [
+      "unit-testing"
+    ],
+    "type": "multi",
+    "stem": "You unit-test a custom `Processor` (the `org.apache.kafka.streams.processor.api` interface) with `MockProcessorContext` in Kafka 4.4. Which statements are true? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "Use `org.apache.kafka.streams.processor.api.MockProcessorContext`; the older `org.apache.kafka.streams.processor.MockProcessorContext` is deprecated since 4.0."
+      },
+      {
+        "id": "b",
+        "text": "After `process(...)`, `context.forwarded()` returns the captured records in forward order, and `context.forwarded(\"child\")` returns only those forwarded to that child."
+      },
+      {
+        "id": "c",
+        "text": "Calling `context.setCurrentStreamTimeMs(...)` past the interval fires a scheduled STREAM_TIME punctuator automatically."
+      },
+      {
+        "id": "d",
+        "text": "State stores used with the mock are backed by changelog topics, so build them with logging enabled."
+      },
+      {
+        "id": "e",
+        "text": "`context.commit()` throws unless a broker is reachable."
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "The javadoc of the old `org.apache.kafka.streams.processor.MockProcessorContext` says \"Deprecated. Since 4.0. Use MockProcessorContext instead\", meaning the `processor.api` class. `forwarded()` returns captured data \"in the same order as the calls to `forward(...)`\", and `forwarded(childName)` filters by child.\n\nWhy the others are wrong:\n\n- The mock \"does not take any automated actions (such as firing scheduled punctuators). It simply captures any data it witnesses.\" Get the punctuator from `scheduledPunctuators()` and call it yourself.\n- The testing guide: use an in-memory store with `withLoggingDisabled()`, because \"Changelog is not supported by MockProcessorContext\".\n- `commit()` is only captured. Check it with `committed()` and reset it with `resetCommit()`.",
+    "references": [
+      {
+        "title": "MockProcessorContext javadoc (Kafka 4.4)",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/streams/processor/api/MockProcessorContext.html",
+        "kind": "official"
+      },
+      {
+        "title": "Testing Kafka Streams: unit testing processors",
+        "url": "https://kafka.apache.org/44/streams/developer-guide/testing/#unit-testing-processors",
+        "kind": "official"
+      },
+      {
+        "title": "Deprecated MockProcessorContext javadoc (Kafka 4.4)",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/streams/processor/MockProcessorContext.html",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original",
+    "kafkaVersionNote": "KIP-1070 deprecated the old-API `MockProcessorContext` in 4.0. Material written for 3.x may use it."
+  },
+  {
+    "id": "test-sr-001",
+    "domain": "testing",
+    "topics": [
+      "unit-testing",
+      "serialization-wire-format"
+    ],
+    "type": "multi",
+    "stem": "A serde test configures Confluent's Avro serializer and deserializer like this, with no Schema Registry running:\n\n```java\nMap<String, Object> cfg = Map.of(\"schema.registry.url\", \"mock://orders-test\");\nKafkaAvroSerializer ser = new KafkaAvroSerializer();\nser.configure(cfg, false);\nKafkaAvroDeserializer de = new KafkaAvroDeserializer();\nde.configure(cfg, false);\n```\n\nWhich statements are true? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "The `mock://` pseudo-protocol gives both serdes an in-memory mock registry client for the scope `orders-test`, so no HTTP request is made."
+      },
+      {
+        "id": "b",
+        "text": "Because both serdes use the same scope, the deserializer can look up the schema ID that the serializer registered."
+      },
+      {
+        "id": "c",
+        "text": "A serde configured with `mock://other-test` in the same JVM sees the same schemas."
+      },
+      {
+        "id": "d",
+        "text": "If the mock doesn't know a subject, the serializer falls back to `http://localhost:8081`."
+      },
+      {
+        "id": "e",
+        "text": "Mock scopes are reset automatically after each test method."
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "Confluent's testing guide: \"If your application is using Schema Registry, you can simulate a Schema Registry instance in your unit testing\" with the `MockSchemaRegistryClient`. The serde configuration accepts a shortcut for this. The `schema.registry.url` documentation in the serializer source says: \"If you wish to get a connection to a mocked schema registry for testing, you can specify a scope using the 'mock://' pseudo-protocol. For example, 'mock://my-scope-name' corresponds to 'MockSchemaRegistry.getClientForScope(\\\"my-scope-name\\\")'.\"\n\n`MockSchemaRegistry` documents that \"each named scope is an independent registry\", \"statically defined and visible to the entire JVM\":\n\n- Serdes with the same scope share schemas; a different scope is a separate registry.\n- Nothing resets a scope for you. Call `MockSchemaRegistry.dropScope(...)` in teardown so schemas don't leak into later tests.\n- There is no fallback to a real URL.\n\nIn `TopologyTestDriver` tests, use the same `mock://` URL in the application's serde config and in the test's serializers.",
+    "references": [
+      {
+        "title": "Test Confluent Cloud clients: schema management and evolution",
+        "url": "https://docs.confluent.io/cloud/current/client-apps/testing.html#schema-management-and-evolution",
+        "kind": "official"
+      },
+      {
+        "title": "MockSchemaRegistry source (confluentinc/schema-registry)",
+        "url": "https://github.com/confluentinc/schema-registry/blob/master/client/src/main/java/io/confluent/kafka/schemaregistry/testutil/MockSchemaRegistry.java",
+        "kind": "github"
+      },
+      {
+        "title": "AbstractKafkaSchemaSerDeConfig source (confluentinc/schema-registry)",
+        "url": "https://github.com/confluentinc/schema-registry/blob/master/schema-serializer/src/main/java/io/confluent/kafka/serializers/AbstractKafkaSchemaSerDeConfig.java",
+        "kind": "github"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "likely",
+    "source": "original"
+  },
+  {
+    "id": "test-sr-002",
+    "domain": "testing",
+    "topics": [
+      "unit-testing",
+      "schema-compatibility"
+    ],
+    "type": "single",
+    "stem": "Subject `orders-value` has compatibility `BACKWARD_TRANSITIVE` and versions 1 to 3. A CI step tests a new schema with `POST /compatibility/subjects/orders-value/versions/latest` and gets `{\"is_compatible\": true}`. At deploy time, registering the same schema fails as incompatible. What is the most likely explanation?",
+    "options": [
+      {
+        "id": "a",
+        "text": "The CI call compared the schema with one version only, the latest. Registration checks against every earlier version under a transitive level. `POST /compatibility/subjects/orders-value/versions`, without a version, runs the same check as registration."
+      },
+      {
+        "id": "b",
+        "text": "The compatibility endpoint always applies the global compatibility level and ignores the subject's level."
+      },
+      {
+        "id": "c",
+        "text": "`is_compatible: true` only means that the schema parses; compatibility is checked only at registration."
+      },
+      {
+        "id": "d",
+        "text": "The compatibility call registered the schema as version 4, so the later registration was rejected as a duplicate."
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The Schema Registry API reference describes two compatibility calls:\n\n- `POST /compatibility/subjects/{subject}/versions/{version}` will \"test input schema against a particular version of a subject's schema\". With `latest`, that is the last registered schema only.\n- `POST /compatibility/subjects/{subject}/versions` \"will perform the same compatibility check as register for that subject\": against the latest version for `BACKWARD`/`FORWARD`/`FULL`, and \"if compatibility is set to one of the TRANSITIVE types, the check is against all previous versions\".\n\nThe new schema can be compatible with version 3 but not with version 1.\n\n- Both calls apply the subject's configured level, and fall back to the global level only if the subject's level was never set.\n- `is_compatible` is the result of a real compatibility check; add `?verbose=true` to see why a schema fails.\n- The compatibility endpoints never register anything.",
+    "references": [
+      {
+        "title": "Schema Registry API: test schema compatibility against all schemas under a subject",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/develop/api.html#test-schema-compatibility-against-all-schemas-under-a-subject",
+        "kind": "official"
+      },
+      {
+        "title": "Schema Registry API: test compatibility against a particular schema subject version",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/develop/api.html#test-compatibility-against-a-particular-schema-subject-version",
+        "kind": "official"
+      },
+      {
+        "title": "Schema evolution: transitive property",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/fundamentals/schema-evolution.html#transitive-property",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 3,
+    "confidence": "likely",
+    "source": "original"
+  },
+  {
+    "id": "test-sr-003",
+    "domain": "testing",
+    "topics": [
+      "unit-testing",
+      "schema-compatibility"
+    ],
+    "type": "single",
+    "stem": "A CI build must fail when an `.avsc` file in the repository is incompatible with the schemas already registered in the staging Schema Registry. It must not register anything. Which Schema Registry Maven plugin goal fits?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`schema-registry:test-compatibility`"
+      },
+      {
+        "id": "b",
+        "text": "`schema-registry:validate`"
+      },
+      {
+        "id": "c",
+        "text": "`schema-registry:register`"
+      },
+      {
+        "id": "d",
+        "text": "`schema-registry:test-local-compatibility`"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "The plugin docs: \"The `test-compatibility` goal reads schemas from the local file system and tests them for compatibility against the Schema Registry servers. Use it in a continuous integration pipeline to ensure that schemas in the project are compatible with the schemas in another environment.\"\n\n- `validate` checks schemas locally \"to find and correct syntax errors\" before registration, not compatibility.\n- `register` registers the schemas, which is a deployment step.\n- `test-local-compatibility` compares a schema with other local schema files \"without connecting to Schema Registry\", so it doesn't see what is registered in staging.",
+    "references": [
+      {
+        "title": "Schema Registry Maven plugin: test-compatibility",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/develop/maven-plugin.html#schema-registry-test-compatibility",
+        "kind": "official"
+      },
+      {
+        "title": "Schema Registry Maven plugin: test-local-compatibility",
+        "url": "https://docs.confluent.io/platform/current/schema-registry/develop/maven-plugin.html#schema-registry-test-local-compatibility",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "test-int-001",
+    "domain": "testing",
+    "topics": [
+      "unit-testing"
+    ],
+    "type": "multi",
+    "stem": "A service has unit tests that use `MockProducer`, `MockConsumer` and `TopologyTestDriver`. The team adds integration tests that start a real Kafka broker in a container (for example with Testcontainers). Which problems can only the integration tests catch? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "Client settings that only a real broker checks, such as a `security.protocol` or `bootstrap.servers` value that doesn't match the cluster's listeners"
+      },
+      {
+        "id": "b",
+        "text": "Behaviour that depends on several partitions and on consumer group rebalances across application instances"
+      },
+      {
+        "id": "c",
+        "text": "A `filter` predicate in the topology that drops the wrong records"
+      },
+      {
+        "id": "d",
+        "text": "A producer callback that doesn't handle a failed send"
+      },
+      {
+        "id": "e",
+        "text": "A punctuator that forwards the wrong value"
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "Confluent's testing guide: unit tests \"verify that isolated functional blocks of code work as expected\" with \"minimal dependencies on other services\"; integration tests \"look at end-to-end testing with other services\", for example with Testcontainers.\n\nThe mocks never open a network connection: `MockProducer` works with \"invented metadata\", and `TopologyTestDriver` \"works without a real Kafka broker\" and \"simulates single-partitioned input topics\". Connection and security settings, partitioning across instances and rebalances only show up against a real broker.\n\nThe other three are logic bugs that unit tests catch faster:\n\n- A wrong predicate shows up in `TestOutputTopic`.\n- A failed send can be simulated with `MockProducer.errorNext(...)`.\n- A punctuator can be fired with `advanceWallClockTime(...)` or by piping a later timestamp.",
+    "references": [
+      {
+        "title": "Test Confluent Cloud clients: integration testing",
+        "url": "https://docs.confluent.io/cloud/current/client-apps/testing.html#integration-testing",
+        "kind": "official"
+      },
+      {
+        "title": "Test Confluent Cloud clients: unit testing",
+        "url": "https://docs.confluent.io/cloud/current/client-apps/testing.html#unit-testing",
+        "kind": "official"
+      },
+      {
+        "title": "TopologyTestDriver javadoc: processing messages (Kafka 4.4)",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/streams/TopologyTestDriver.html#processing-messages-heading",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "likely",
+    "source": "original"
+  },
+  {
+    "id": "test-double-001",
+    "domain": "testing",
+    "topics": [
+      "unit-testing"
+    ],
+    "type": "single",
+    "stem": "Which pairing of each test double with the real component it stands in for is correct?",
+    "options": [
+      {
+        "id": "a",
+        "text": "`MockProducer` replaces `KafkaProducer`; `MockConsumer` replaces `KafkaConsumer`; `TopologyTestDriver` replaces a `KafkaStreams` instance and its broker; `MockProcessorContext` replaces the `ProcessorContext` passed to `Processor.init()`"
+      },
+      {
+        "id": "b",
+        "text": "`MockProducer` replaces `KafkaProducer`; `MockConsumer` replaces `KafkaConsumer`; `TopologyTestDriver` replaces the `ProcessorContext`; `MockProcessorContext` replaces a `KafkaStreams` instance"
+      },
+      {
+        "id": "c",
+        "text": "`MockProducer` replaces the broker; `MockConsumer` replaces the group coordinator; `TopologyTestDriver` replaces `StreamsBuilder`; `MockProcessorContext` replaces a state store"
+      },
+      {
+        "id": "d",
+        "text": "`MockProducer` replaces `KafkaConsumer`; `MockConsumer` replaces `KafkaProducer`; `TopologyTestDriver` replaces a `KafkaStreams` instance and its broker; `MockProcessorContext` replaces the `ProcessorContext` passed to `Processor.init()`"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "- `MockProducer` and `MockConsumer` \"implement the same interfaces and mock all the I/O operations as implemented in the `KafkaProducer` and `KafkaConsumer`, respectively\". They implement `Producer` and `Consumer`, so code written against those interfaces accepts them.\n- `TopologyTestDriver` is \"a drop-in replacement for the `KafkaStreams` class\" with \"no external system dependencies\". You still build the `Topology` with `StreamsBuilder` or the Processor API.\n- `MockProcessorContext` is \"a mock of `ProcessorContext`\" for testing `Processor` implementations; it captures forwards, commits and punctuators.",
+    "references": [
+      {
+        "title": "Test Confluent Cloud clients: unit testing",
+        "url": "https://docs.confluent.io/cloud/current/client-apps/testing.html#unit-testing",
+        "kind": "official"
+      },
+      {
+        "title": "Testing Streams code (Confluent)",
+        "url": "https://docs.confluent.io/platform/current/streams/developer-guide/test-streams.html#testing-a-streams-application",
+        "kind": "official"
+      },
+      {
+        "title": "MockProcessorContext javadoc (Kafka 4.4)",
+        "url": "https://kafka.apache.org/44/javadoc/org/apache/kafka/streams/processor/api/MockProcessorContext.html",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 1,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "test-int-002",
+    "domain": "testing",
+    "topics": [
+      "unit-testing"
+    ],
+    "type": "multi",
+    "stem": "A team chooses between Testcontainers and `EmbeddedKafkaCluster` for integration tests. Which statements are true? (Choose two.)",
+    "options": [
+      {
+        "id": "a",
+        "text": "Testcontainers runs the broker in its own container, so its memory and CPU are isolated from the test JVM"
+      },
+      {
+        "id": "b",
+        "text": "`EmbeddedKafkaCluster` runs in the same JVM as the tests and isn't a public API, so it has no backward-compatibility guarantees"
+      },
+      {
+        "id": "c",
+        "text": "`EmbeddedKafkaCluster` is the officially supported public API for client integration tests"
+      },
+      {
+        "id": "d",
+        "text": "Testcontainers replaces brokers with mocks, so no Docker runtime is needed"
+      },
+      {
+        "id": "e",
+        "text": "Both options run without a real broker"
+      }
+    ],
+    "correct": [
+      "a",
+      "b"
+    ],
+    "explanation": "Confluent's testing guide: \"With a Testcontainer, Kafka brokers can get their own JVMs with their own classpath, and the broker's memory and CPU are isolated from the tests themselves.\" `EmbeddedKafkaCluster` instead \"allocates extra threads and objects in the same JVM as your tests\" and \"is not a public interface and does not have backward compatibility guarantees\".\n\n- Testcontainers starts real brokers in Docker, so it needs a container runtime.\n- Both run real broker code; that's what makes them integration tests rather than mock-based unit tests.",
+    "references": [
+      {
+        "title": "Test clients: integration testing",
+        "url": "https://docs.confluent.io/cloud/current/client-apps/testing.html#integration-testing",
+        "kind": "official"
+      },
+      {
+        "title": "Testcontainers Kafka module",
+        "url": "https://java.testcontainers.org/modules/kafka/",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  },
+  {
+    "id": "test-int-003",
+    "domain": "testing",
+    "topics": [
+      "unit-testing"
+    ],
+    "type": "single",
+    "stem": "An integration test starts `new KafkaContainer(\"apache/kafka:4.0.0\")` with Testcontainers. The test's producer uses `bootstrap.servers=localhost:9092` and times out. What is the likely fix?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Use `kafka.getBootstrapServers()` for `bootstrap.servers`, because the container's port is mapped to a random host port"
+      },
+      {
+        "id": "b",
+        "text": "Replace the producer with `MockProducer`, because real producers can't reach containers"
+      },
+      {
+        "id": "c",
+        "text": "Set `acks=0` so the producer doesn't wait for the container"
+      },
+      {
+        "id": "d",
+        "text": "Add `group.id` to the producer config"
+      }
+    ],
+    "correct": [
+      "a"
+    ],
+    "explanation": "Testcontainers maps the broker's listener to a free, random host port so parallel tests don't collide. The Kafka module docs connect the client \"by using the following bootstrap server location: `kafka.getBootstrapServers()`\". A hard-coded `localhost:9092` points at nothing.\n\n- `MockProducer` would make it a unit test and lose what the integration test is for.\n- `acks=0` doesn't help when the client can't connect at all.\n- Producers don't use `group.id`.",
+    "references": [
+      {
+        "title": "Testcontainers Kafka module",
+        "url": "https://java.testcontainers.org/modules/kafka/",
+        "kind": "official"
+      },
+      {
+        "title": "Test clients: integration testing",
+        "url": "https://docs.confluent.io/cloud/current/client-apps/testing.html#integration-testing",
+        "kind": "official"
+      }
+    ],
+    "difficulty": 2,
+    "confidence": "verified",
+    "source": "original"
+  }
+]
